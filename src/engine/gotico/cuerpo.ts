@@ -5,6 +5,7 @@ import { MATERIALES } from './materiales';
 import { ruido } from './render';
 import { rasgos, mechones, hebras, type MarcoCab } from './rostro';
 import { prendas, type Prenda } from './vestuario';
+import { efectosSeleccion } from './seleccion';
 import { codalBrazal } from './armadura';
 import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado, tunica as tunicaForjada, colgantes, tabardoFaldon, jubon } from './armadura';
 import { pose, CUADROS, cuadrosDe, SEL_CUADROS, SEL_ENTRADA, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
@@ -1105,6 +1106,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   if (eq.izq) ps.push(...manoIzq(e, eq.izq, eq.arma?.tipo));
   if (e.pose?.objetoI === 'frasco') ps.push(...frasco(e, acc === 'presentar' ? f / CUADROS.presentar : 0));
   if (acc === 'presentar' && cu.presentacion) ps.push(...efectos(cu, eq, e, dir, f));
+  if (acc === 'seleccion') ps.push(...efectosSeleccion(cu.presentacion, e, f));
   if (acc === 'lanzar' && cu.presentacion === 'naturaleza') ps.push(...raices(e, f));
   marcarHuesos(ps, R, F);
   return ps;

@@ -2,6 +2,8 @@ import {
   K, actuar, animar, plantar, mirar, quieto, TAU, mod1, SEL_CUADROS, SEL_ENTRADA,
   type Pose, type ArmaPose, type Presentacion, type ManoPose, type Clave, type Vals,
 } from './figura';
+import { esfera, caja, poliedro, type Pieza, type V3 } from './render';
+import type { Esqueleto } from './cuerpo';
 
 /**
  * La presentación cinematográfica de cada clase en el menú de inicio (acción 'seleccion', 48 cuadros a 12 por segundo):
@@ -25,8 +27,11 @@ export function seleccion(p: Pose, f: number, arma: ArmaPose, estilo?: Presentac
     quieto(p, enEntrada ? 0 : mod1(ub * 2), arma, estilo);
   } else if (enEntrada) {
     // la entrada sale de la pose del bucle y vuelve a ella (el juego puede pasar del bucle a la entrada y de vuelta)
-    const b0 = animar(g.bucle, 0) as Vals;
-    actuar(p, [K(0, b0, true), ...g.entrada, K(0.94, b0, true)], ue, g.o);
+    const b0 = animar(g.bucle, 0) as Record<string, number | number[]>;
+    // lo que el gesto mueve y el bucle no fija (los hombros del alquimista, por ejemplo) vuelve a su valor del bucle
+    const base: Pose = { ...p }; actuar(base, g.bucle, 0, g.o);
+    for (const c of g.entrada) for (const [k, v] of Object.entries(c.v)) if (!(k in b0)) { const bv = (base as unknown as Record<string, number | number[] | undefined>)[k]; b0[k] = bv ?? (Array.isArray(v) ? v.map(() => 0) : 0); }
+    actuar(p, [K(0, b0 as Vals, true), ...g.entrada, K(0.88, b0 as Vals, true)], ue, g.o);
   } else actuar(p, g.bucle, mod1(ub), g.o);
   g?.post?.(p, ub, enEntrada ? ue : null);
   viento(p, ub);
@@ -45,6 +50,11 @@ function guion(p: Pose, arma: ArmaPose, estilo?: Presentacion, mano?: ManoPose):
     case 'rugido': return berserker(p, arma);
     case 'guardia': return templario(p, arma, mano);
     case 'apunta': return cazadora(p);
+    case 'invoca': return nigromante(p, arma);
+    case 'conjuro': return arcanista(p, arma);
+    case 'naturaleza': return druida(p);
+    case 'kata': return monje(p);
+    case 'frasco': return alquimista(p);
     default: return null;
   }
 }
@@ -150,3 +160,182 @@ function cazadora(p: Pose): Guion {
 }
 /** La mirada a lo lejos: la cabeza un poco arriba, sin bajar a los pies. */
 function mirarLejos(p: Pose) { p.cabeza = Math.min(p.cabeza, -2); void mirar; }
+
+// ------------------------------------------------------------------ nigromante
+/**
+ * Nigromante: alto y enjuto. Al ser elegido abre la mano izquierda hacia el piso, la deja un momento (el resplandor
+ * verde sube de la tierra hasta la palma, cuerpo.ts) y la sube despacio, en garra, hasta el pecho; se asienta. En
+ * reposo la daga descansa con la punta en la palma de la otra mano (o en el borde del escudo); la guadaña, al hombro.
+ */
+function nigromante(p: Pose, arma: ArmaPose): Guion {
+  plantar(p, [-1.4, 2.4], [1.4, 1.5], [14, 10]);
+  const dos = arma === 'dos';
+  const armaReposo: Vals = dos ? { hombroD: [10, 8, 118, 0], armaRel: [128, 28], manoI: [6, -8, 34], codoI: [-0.4, -1, 0] }
+    : { manoD: [12, 3, 31.5], armaD: [90, -84], codoD: [-1, 0.25, -0.4], manoI: [12.2, -5.6, 31.2], codoI: [-0.3, -1, -0.4] };
+  const bucle: Clave[] = [
+    K(0, { bajar: 1, torso: 5, lateral: 0.4, ladeoCadera: 1.6, ladeo: -0.6, giroTorso: 4, giroCadera: -2, respira: 0.1, hombros: [0.3, 0.3], cabeza: -2, giroCabeza: 8, ladeoCabeza: 2, ...armaReposo }),
+    K(0.25, { respira: 0.9, hombros: [0.7, 0.7], torso: 4, bajar: 0.8, ladeoCabeza: 0 }),
+    K(0.5, { respira: 0.15, torso: 5.5, bajar: 1.1, lateral: -0.15, ladeoCadera: -0.8, ladeo: 0.4, giroCabeza: 16, cabeza: -1 }, true),
+    K(0.75, { respira: 0.9, hombros: [0.7, 0.7], torso: 4, bajar: 0.8, giroCabeza: 10, ladeoCabeza: 3 }),
+  ];
+  const entrada: Clave[] = dos ? [
+    K(0.2, { bajar: 2.4, torso: 14, cabeza: 10, manoI: [17, -4, 14], codoI: [0.2, -1, 0.4] }, true),
+    K(0.42, { bajar: 2.6, torso: 16, cabeza: 12, manoI: [17.5, -4.2, 12] }, true),
+    K(0.7, { bajar: 0.6, torso: 2, cabeza: -6, respira: 1, manoI: [12, -5, 40] }),
+  ] : [
+    K(0.2, { bajar: 2.4, torso: 14, cabeza: 10, manoD: [9, 7, 30], armaD: [150, 20], manoI: [17, -4, 14], codoI: [0.2, -1, 0.4] }, true),
+    K(0.42, { bajar: 2.6, torso: 16, cabeza: 12, manoI: [17.5, -4.2, 12] }, true),
+    K(0.7, { bajar: 0.6, torso: 2, cabeza: -6, respira: 1, manoI: [12, -5, 40], manoD: [9, 6, 31] }),
+  ];
+  return { bucle, entrada, o: { lagCab: 0.04, capa: 0.9, tela: 1.2 } };
+}
+
+// ------------------------------------------------------------------ arcanista
+/**
+ * Arcanista: la vara apoyada en el piso a su derecha. Al ser elegida la alza, el remate gira rápido (las runas
+ * del remate dan la vuelta) y la vuelve a clavar; en reposo flota casi en puntas de pie, el remate gira despacio y
+ * la mano libre se mece abierta. La varita del novato descansa con la punta en la palma de la otra mano.
+ */
+function arcanista(p: Pose, arma: ArmaPose): Guion {
+  plantar(p, [-0.8, 1.8], [0.6, 0.9], [12, 14]);
+  const vara = arma === 'baculo';
+  const reposo: Vals = vara ? { varaPie: [13, 12.5, 0.5], manoD: [8, 10, 40], manoI: [10, -8, 30], codoI: [-0.2, -1, -0.3] }
+    : { manoD: [12, 3, 33], armaD: [90, -84], codoD: [-1, 0.25, -0.4], manoI: [12.2, -4.8, 32.6], codoI: [-0.3, -1, -0.4] };
+  const bucle: Clave[] = [
+    K(0, { bajar: 0.6, torso: 1, ladeo: -1.2, lateral: 0.7, ladeoCadera: 2.4, giroTorso: 2, giroCadera: 0, respira: 0.1, puntillas: [0.35, 0.35], cabeza: -2, giroCabeza: 10, ladeoCabeza: 3, ...reposo }),
+    K(0.25, { respira: 0.9, bajar: 0.2, puntillas: [0.5, 0.5], ladeoCabeza: 2 }),
+    K(0.5, { respira: 0.15, bajar: 0.7, puntillas: [0.35, 0.35], giroCabeza: 18, lateral: 0.4, ladeoCadera: 1.4 }, true),
+    K(0.75, { respira: 0.9, bajar: 0.2, puntillas: [0.5, 0.5], giroCabeza: 12, ladeoCabeza: 4 }),
+  ];
+  const entrada: Clave[] = vara ? [
+    K(0.2, { bajar: 1.4, torso: 4, varaPie: [16, 12, 6], manoD: [10, 10, 44], respira: 0.4 }),
+    K(0.45, { bajar: -0.4, torso: -6, puntillas: [0.9, 0.9], varaPie: [18, 11, 12], manoD: [11, 10, 52], respira: 1, cabeza: -12 }, true),
+    K(0.7, { bajar: 1.0, torso: 3, puntillas: [0.2, 0.2], varaPie: [13, 12.5, 0.5], manoD: [8, 10, 40], respira: 0.3, cabeza: -2 }, true),
+  ] : [
+    K(0.25, { bajar: 0.2, torso: -4, puntillas: [0.8, 0.8], manoD: [12, 8, 46], armaD: [10, 20], manoI: [14, -6, 36], respira: 1, cabeza: -10 }, true),
+    K(0.6, { bajar: 0.8, torso: 2, manoD: [11, 5, 38], armaD: [60, -20], respira: 0.4 }),
+  ];
+  return {
+    bucle, entrada, o: { lagCab: 0.04, lagArma: 0.03, capa: 0.7, tela: 1.2 },
+    // el remate gira siempre: despacio en el bucle (una vuelta) y rápido en la entrada (tres)
+    post: (q, ub, ue) => { q.giroVara = ue !== null ? 1080 * ue * ue * (3 - 2 * ue) : 360 * (((ub % 1) + 1) % 1); },
+  };
+}
+
+// ------------------------------------------------------------------ druida
+/**
+ * Druida: la vara apoyada al frente, las dos manos arriba en ella. Al ser elegido la alza y la clava en el piso de un
+ * golpe (el viento sube: la capa, el pelo y la barba se levantan), y se asienta; en reposo respira hondo y mira lejos.
+ */
+function druida(p: Pose): Guion {
+  plantar(p, [-1.5, 2], [1.6, 1.4], [16, 12]);
+  const bucle: Clave[] = [
+    K(0, { bajar: 1.4, torso: 7, ladeo: 0.8, lateral: 0.5, ladeoCadera: 1.8, giroTorso: 3, giroCadera: 0, respira: 0.1, hombros: [0.4, 0.4], cabeza: -6, giroCabeza: 8, ladeoCabeza: 1, varaPie: [13, 12.5, 0.5], manoD: [8, 10, 41], manoI: [4, -9, 29], codoI: [-0.2, -1, -0.3] }),
+    K(0.25, { respira: 1, hombros: [0.9, 0.9], torso: 6, bajar: 1.1 }),
+    K(0.5, { respira: 0.15, hombros: [0.4, 0.4], torso: 7.5, bajar: 1.5, giroCabeza: 16, lateral: 0.2, ladeoCadera: 0.8 }, true),
+    K(0.75, { respira: 1, hombros: [0.9, 0.9], torso: 6, bajar: 1.1, giroCabeza: 4 }),
+  ];
+  const entrada: Clave[] = [
+    K(0.22, { bajar: 0.6, torso: 2, varaPie: [14, 12, 9], manoD: [9, 10, 50], cabeza: -14, respira: 1 }, true),
+    K(0.42, { bajar: 3.2, torso: 14, varaPie: [13, 12.5, 0.5], manoD: [8, 10, 39], cabeza: -2, respira: 0.2 }, true),
+    K(0.6, { bajar: 2.6, torso: 11 }),
+  ];
+  return {
+    bucle, entrada, o: { lagCab: 0.04, capa: 1, tela: 1.4 },
+    // el golpe de la vara levanta el viento: la tela y el pelo se arrastran fuerte un momento
+    post: (q, _ub, ue) => { if (ue !== null) { const g = Math.max(0, Math.sin(Math.PI * Math.max(0, Math.min(1, (ue - 0.4) / 0.5)))); q.capa = [(q.capa?.[0] ?? 0) + 2.2 * g, (q.capa?.[1] ?? 0) + 1.2 * g]; q.pelo = [(q.pelo?.[0] ?? 0) + 1.6 * g, (q.pelo?.[1] ?? 0) + 0.8 * g]; } },
+  };
+}
+
+// ------------------------------------------------------------------ monje
+/**
+ * Monje: en guardia baja, las manos abiertas adelante. Al ser elegido hace una kata breve: un paso de peso, el puño
+ * derecho que sale recto y vuelve, y la palma izquierda que empuja; se asienta y respira hondo (el pecho sube).
+ */
+function monje(p: Pose): Guion {
+  plantar(p, [-2.4, 3.2], [2.6, 2.2], [24, 12]);
+  const guardia: Vals = { manoD: [11, 5, 38], manoI: [14, -3, 42], codoD: [-0.3, 1, -0.4], codoI: [-0.3, -1, -0.4] };
+  const bucle: Clave[] = [
+    K(0, { bajar: 3, torso: 4, lateral: 0.3, ladeoCadera: 1, ladeo: -0.6, giroTorso: 14, giroCadera: 6, respira: 0.1, hombros: [0.3, 0.3], cabeza: -3, giroCabeza: 4, ladeoCabeza: 0, ...guardia }),
+    K(0.25, { respira: 1, hombros: [1, 1], bajar: 2.6, torso: 2.5, manoD: [11, 5, 39], manoI: [14, -3, 43] }),
+    K(0.5, { respira: 0.15, hombros: [0.3, 0.3], bajar: 3.2, torso: 4.5, giroCabeza: 12, lateral: 0.1, ...guardia }, true),
+    K(0.75, { respira: 1, hombros: [1, 1], bajar: 2.6, torso: 2.5, manoD: [11, 5, 39], manoI: [14, -3, 43], giroCabeza: 6 }),
+  ];
+  const entrada: Clave[] = [
+    K(0.16, { bajar: 4.2, torso: 8, giroTorso: 26, giroCadera: 12, manoD: [6, 7, 36] }, true),
+    K(0.32, { bajar: 3.4, torso: 2, giroTorso: -10, giroCadera: -4, manoD: [24, 2, 42], codoD: [0, 1, -0.1], manoI: [8, -6, 36] }, true),
+    K(0.5, { giroTorso: 6, manoD: [10, 6, 37], manoI: [22, -1, 41], codoI: [0, -1, -0.1] }, true),
+    K(0.72, { bajar: 2.4, torso: 3, giroTorso: 12, respira: 1, hombros: [1.2, 1.2], ...guardia }),
+  ];
+  return { bucle, entrada, o: { lagCab: 0.03, capa: 0.6 } };
+}
+
+// ------------------------------------------------------------------ alquimista
+/**
+ * Alquimista: la ballesta baja, la izquierda bajo la caja. Al ser elegida saca el frasco, lo agita con fuerza, lo
+ * levanta contra la luz de la fogata y lo mira de reojo, y lo guarda; en reposo cambia el peso de pierna, nerviosa.
+ */
+function alquimista(p: Pose): Guion {
+  plantar(p, [-1.6, 2.6], [1.4, 1.2], [16, 10]);
+  const reposo: Vals = { manoD: [9, 5, 31], armaD: [96, -12], codoD: [-0.4, 1, -0.3], manoI: [16, 1.5, 30.5], codoI: [-0.2, -1, -0.4], pegaI: 0 };
+  const bucle: Clave[] = [
+    K(0, { bajar: 1, torso: 3, ladeo: -0.6, lateral: 0.6, ladeoCadera: 2, giroTorso: 2, giroCadera: -2, respira: 0.1, cabeza: -2, giroCabeza: 10, ladeoCabeza: 2, ...reposo }),
+    K(0.25, { respira: 0.9, lateral: 0.3, ladeoCadera: 1, giroCabeza: 22 }),
+    K(0.5, { respira: 0.15, lateral: -0.5, ladeoCadera: -1.8, ladeo: 0.6, giroCabeza: 4, ladeoCabeza: -1 }, true),
+    K(0.75, { respira: 0.9, lateral: 0.2, ladeoCadera: 0.6, giroCabeza: 16 }),
+  ];
+  const entrada: Clave[] = [
+    K(0.16, { manoI: [10, -2, 40], codoI: [-0.2, -1, -0.4], cabeza: 2, giroCabeza: 0 }),
+    K(0.26, { manoI: [11, -1, 45], hombros: [0.3, 0.8] }),
+    K(0.36, { manoI: [10, -3, 39], hombros: [0, 0.2] }),
+    K(0.46, { manoI: [11, -1, 45], hombros: [0.3, 0.8] }),
+    // lo alza contra la luz y lo mira
+    K(0.62, { manoI: [14, 2, 50], cabeza: -10, giroCabeza: 10, respira: 0.8 }, true),
+    K(0.78, { manoI: [14.5, 2.2, 50.5], cabeza: -11 }, true),
+  ];
+  return {
+    bucle, entrada, o: { lagCab: 0.04, capa: 0.7 },
+    // el frasco solo en la entrada (después vuelve al cinto)
+    post: (q, _ub, ue) => { if (ue !== null && ue > 0.08 && ue < 0.88) { q.objetoI = 'frasco'; q.pegaI = 0; } },
+  };
+}
+
+// ------------------------------------------------------------------ efectos de la entrada
+/**
+ * Lo que acompaña el gesto de entrada (cuadros 0 a 11), pintado por cuerpo.ts: el resplandor verde del nigromante que
+ * sube de la tierra a la palma; las runas de la arcanista que dan la vuelta al remate; las hojas que el golpe de la
+ * vara del druida levanta en remolino. Pocas piezas y chicas: el brillo queda en un acento.
+ */
+export function efectosSeleccion(estilo: Presentacion | undefined, e: Esqueleto, f: number): Pieza[] {
+  if (f >= SEL_ENTRADA || !estilo) return [];
+  const u = f / SEL_ENTRADA, S = e.S, ps: Pieza[] = [];
+  const h = (i: number) => { const x = Math.sin(i * 127.1 + 31.7) * 43758.5453; return x - Math.floor(x); };
+  if (estilo === 'invoca') {
+    // del piso bajo la mano abierta suben hebras de luz verde hasta la palma (más fuertes a mitad del gesto)
+    const m = e.brazos[1].mano, k = Math.sin(Math.PI * Math.min(1, Math.max(0, (u - 0.1) / 0.75)));
+    if (k <= 0.05) return ps;
+    for (let i = 0; i < 7; i++) {
+      const t = (h(i) + u * 1.6) % 1, a = h(i + 9) * Math.PI * 2, r = (1.5 + 2.5 * (1 - t)) * S;
+      const q: V3 = [m[0] + Math.cos(a) * r, m[1] + Math.sin(a) * r, m[2] * t + 0.5 * S];
+      ps.push(esfera(q[0], q[1], q[2], (0.35 + 0.4 * k * (1 - t)) * S, { mat: 'fuego_verde' }));
+    }
+  } else if (estilo === 'conjuro') {
+    // cuatro runas que orbitan el remate de la vara mientras gira
+    const mn = e.brazos[0].mano, v = e.vara ?? [0, 0, 1], tope: V3 = [mn[0] + v[0] * 20 * S, mn[1] + v[1] * 20 * S, mn[2] + v[2] * 20 * S], k = Math.sin(Math.PI * u);
+    if (k <= 0.1) return ps;
+    for (let i = 0; i < 4; i++) {
+      const a = u * Math.PI * 6 + (i * Math.PI) / 2, r = 3.2 * S;
+      ps.push(caja(tope[0] + Math.cos(a) * r, tope[1] + Math.sin(a) * r, tope[2] + 1 * S + Math.sin(a * 2) * 0.6 * S, 0.5 * S, 0.5 * S, 1.1 * S * k, { mat: 'magia', giro: (a * 180) / Math.PI }));
+    }
+  } else if (estilo === 'naturaleza') {
+    // hojas en remolino que el golpe de la vara levanta y el viento se lleva
+    const pie = e.varaPie ?? e.brazos[0].mano, k = Math.max(0, Math.min(1, (u - 0.38) / 0.5));
+    if (k <= 0) return ps;
+    for (let i = 0; i < 8; i++) {
+      const a = h(i) * Math.PI * 2 + k * 4, r = (2 + 7 * k) * S * (0.6 + 0.4 * h(i + 3)), z = (1 + 18 * k * h(i + 5)) * S;
+      const c: V3 = [pie[0] + Math.cos(a) * r - 4 * k * S, pie[1] + Math.sin(a) * r - 3 * k * S, z];
+      ps.push(poliedro([c, [c[0] + 1.1 * S, c[1] + 0.3 * S, c[2] + 0.4 * S], [c[0] + 0.4 * S, c[1] + 0.9 * S, c[2] - 0.2 * S], [c[0] + 0.6 * S, c[1] + 0.5 * S, c[2] + 0.5 * S]], { mat: i % 3 ? 'cu_tela_musgo' : 'cu_hoja_elfica', tono: 0.1 }));
+    }
+  }
+  return ps;
+}
