@@ -81,9 +81,9 @@ describe('paleta de las hojas', () => {
     expect(viejo, 'el corte viejo perdía el color de lo opaco').toBeGreaterThan(nuevo * 2);
   });
 
-  it('el atlas exportado entra en los 15 MB', () => {
+  it('el atlas exportado entra en los 16 MB (15 hasta la segunda tanda)', () => {
     const mb = MANIFIESTO.efectos.reduce((s, e) => s + e.paginas.reduce((t, p) => t + p.bytes, 0), 0) / 1024 / 1024;
-    expect(mb).toBeLessThanOrEqual(15);
+    expect(mb).toBeLessThanOrEqual(16);
   });
 });
 

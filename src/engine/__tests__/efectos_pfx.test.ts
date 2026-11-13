@@ -19,13 +19,17 @@ const MONSTRUOS = ('zombi necrofago penitente esqueleto esqueleto_arquero ahogad
   // modificadores de élite
   'rapido piel_piedra ardiente helado electrico vampiro maldito fuerte espectral').split(' ');
 const CLASES = ['berserker', 'templario', 'arcanista', 'cazadora', 'nigromante', 'monje', 'druida', 'alquimista'];
-/** lo que Rick pidió dejar afuera: no puede colarse */
+/** lo que Rick pidió dejar afuera: no puede colarse (scifi, armas de fuego, cohetes y láser, fuegos artificiales, nuke,
+ * cartoon-pow, transiciones crt y glitch, barras y contadores de UI, y los actores de los moves) */
 const EXCLUIDOS = [
-  /^scifi\//, /^ui\//, /^moves\//, 'explosions/firework-burst', 'explosions/firework-rocket', 'explosions/nuke', 'explosions/grenade', 'explosions/cartoon-pow',
-  'explosions/plasma-explosion', 'lightning/tesla-coil', 'lightning/plasma-ball', 'weather/cherry-blossoms', 'weather/shooting-stars', 'critters/butterfly',
-  'pickups/heart-pickup', 'pickups/power-star', 'status/charmed', 'spawn/egg-hatch', 'impacts/bullet-impact', 'impacts/impact-frame', 'fire/torch',
-  'fire/brazier', 'fire/campfire', 'fire/candle', 'status/burning', 'fire/flamethrower', /^projectiles\/(bullet|cannon|energy|flare|homing|laser|muzzle|plasma|rocket)/,
+  /^scifi\//, /^moves\//, 'explosions/firework-burst', 'explosions/firework-rocket', 'explosions/nuke', 'explosions/cartoon-pow',
+  'transitions/crt-off', 'transitions/glitch-wipe', 'ui/health-bar-hit', 'ui/combo-counter', 'ui/countdown', 'ui/damage-number', 'ui/heart-lost',
+  'ui/achievement', 'ui/coin-collect', 'ui/confetti', /^projectiles\/(bullet|cannon|energy|flare|homing|laser|muzzle|plasma|rocket)/,
+  // los fuegos del mundo son los de Doom
+  'fire/torch', 'fire/brazier', 'fire/campfire', 'fire/candle', 'fire/flamethrower',
 ];
+/** descartados al portar la segunda tanda: se leían de caricatura aun repintados (ver efectos_pfx_catalogo.ts) */
+const DESCARTADOS = ['ui/crit-number', 'pickups/power-star', 'impacts/impact-frame'];
 
 /** Bucles cuyo salto al empezar es el efecto mismo (el arco que se vuelve a encender). */
 const COSTURA_A_PROPOSITO = ['fx_arco_chispas'];
@@ -67,6 +71,7 @@ describe('efectos de pixelfx: catálogo y créditos', () => {
       expect(c.id, c.id).toMatch(/^fx_[a-z0-9_]+$/);
       expect(EFECTOS[c.origen], c.origen).toBeDefined();
       for (const x of EXCLUIDOS) expect(typeof x === 'string' ? c.origen === x : x.test(c.origen), `${c.origen} está excluido`).toBe(false);
+      expect(DESCARTADOS, `${c.origen} se descartó`).not.toContain(c.origen);
       expect(c.nombre[0].length && c.nombre[1].length, c.id).toBeTruthy();
       expect(c.uso.length, `${c.id} sin uso sugerido`).toBeGreaterThan(0);
       for (const u of c.uso) {
@@ -97,7 +102,7 @@ describe('efectos de pixelfx: manifiesto sincronizado', () => {
     }
   });
 
-  it('límites del atlas en la exportación real: páginas de 4096 px y 4 Mpx como mucho, 150 Mpx y 15 MB en total', () => {
+  it('límites del atlas en la exportación real: páginas de 4096 px y 4 Mpx como mucho, 150 Mpx y 16 MB en total', () => {
     let mpx = 0, bytes = 0;
     for (const e of MANIFIESTO.efectos) {
       expect(e.paginas.length, e.id).toBeGreaterThan(0);
@@ -123,7 +128,8 @@ describe('efectos de pixelfx: manifiesto sincronizado', () => {
       if (['impactos', 'cuerpo_a_cuerpo'].includes(e.categoria)) expect(e.t, e.id).toBeLessThanOrEqual(2);
     }
     expect(mpx, `total ${mpx.toFixed(1)} Mpx`).toBeLessThanOrEqual(150);
-    expect(bytes / 1024 / 1024, 'MB de PNG').toBeLessThanOrEqual(15);
+    // 15 MB con los 169 de la primera mudanza; la segunda tanda (15 efectos) suma ~0.5 MB
+    expect(bytes / 1024 / 1024, 'MB de PNG').toBeLessThanOrEqual(16);
   });
 
   it('la luz del json es la del manifiesto, con una curva por cuadro', () => {
@@ -159,7 +165,7 @@ describe('efectos de pixelfx: hojas', () => {
       const e = efectoPfx(id), dirs = e.direccional ? 8 : 1;
       expect(e.cuadros, id).toBeGreaterThan(1);
       expect([1, 2, 3, 4]).toContain(e.t);
-      expect(e.escala).toBe(e.capa === 'pantalla' ? 1 : 2);
+      expect(e.escala).toBe(EFECTOS_PFX.find((c) => c.id === id)!.escala ?? (e.capa === 'pantalla' ? 1 : 2));
       for (let d = 0; d < dirs; d++)
         for (let f = 0; f < e.cuadros; f++) {
           const { img: q, ancla } = pintarEfectoPfx(id, d, f);

@@ -24,6 +24,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['bola_fuego', 'saeta_ignea'], nota: 'el proyectil en vuelo; al pegar, fx_explosion_chica' },
       { tipo: 'poder', clase: 'alquimista', habilidades: ['virote_dragon'] },
       { tipo: 'monstruo', monstruos: ['brujo_diablillo', 'cultista'], nota: 'bola de fuego de los lanzadores' },
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['brasas_saltarinas', 'lanza_magma'], rol: 'proyectil', nota: 'las brasas que buscan solas; la lanza de magma que atraviesa' },
     ],
   },
   {
@@ -42,6 +43,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['combustion'], nota: 'el fuego corre por el piso en un anillo alrededor de la arcanista' },
       { tipo: 'poder', clase: 'monje', habilidades: ['rodilla_volcan'] },
       { tipo: 'monstruo', monstruos: ['abadesa'], nota: 'el pisotón de fuego de la Abadesa en El Pozo de la Brasa' },
+      { tipo: 'poder', clase: 'templario', habilidades: ['aura_llama'], rol: 'lanzador', nota: 'el aura de brasa a sus pies; los quemados, fx_ardiendo' },
     ],
   },
   {
@@ -122,8 +124,9 @@ export const CATALOGO_PFX: CfgPfx[] = [
     opciones: { palette: rampa('fuego', 8), stone: PIEDRA }, maxSeg: 3.2, cola: 0.02, rapido25: [0, 0.5],
     uso: [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['bola_fuego'], nota: 'al pegar la bola de fuego' },
-      { tipo: 'poder', clase: 'alquimista', habilidades: ['bomba_ignea', 'virote_explosivo', 'bomba_cluster'] },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['bomba_ignea', 'virote_explosivo'] },
       { tipo: 'poder', clase: 'nigromante', habilidades: ['explosion_cadaver'] },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['flecha_ignea'], rol: 'impacto', nota: 'la flecha de brasa que estalla' },
     ],
   },
   {
@@ -318,7 +321,6 @@ export const CATALOGO_PFX: CfgPfx[] = [
     opciones: { palette: rampa('rayo', 8), sparks: CHISPAS_RAYO() },
     uso: [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['chispa', 'descarga_prismatica'], nota: 'la esfera que avanza chisporroteando' },
-      { tipo: 'poder', clase: 'alquimista', habilidades: ['frasco_rayo'] },
       { tipo: 'ambiente', zonas: ['a7_cielo', 'a7_boveda'], nota: 'fuego de San Telmo suelto en el Cielo Roto' },
     ],
   },
@@ -399,6 +401,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'templario', habilidades: ['celo', 'corte_sello'], nota: 'el arco del tajo delante del templario, en la dirección del golpe' },
       { tipo: 'poder', clase: 'berserker', habilidades: ['tajo_salvaje', 'doble_golpe'] },
       { tipo: 'monstruo', monstruos: ['esqueleto', 'caballero_muerto', 'bandido'], nota: 'tajo de los espadachines' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['navaja_viento'], rol: 'proyectil', nota: 'el filo de aire: el arco del tajo que viaja recto (moverlo como proyectil)' },
     ],
   },  {
     id: 'fx_zarpazo', origen: 'melee/claw-swipe', nombre: ['Zarpazo', 'Claw swipe'], categoria: 'cuerpo_a_cuerpo', elemento: 'sangre',
@@ -422,6 +425,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
     uso: [
       { tipo: 'poder', clase: 'berserker', habilidades: ['doble_golpe', 'desgarro'] },
       { tipo: 'monstruo', monstruos: ['verdugo', 'caballero_espectral'] },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['torrente_sangre'], rol: 'impacto', nota: 'el tajo al final de la carga; los alcanzados, fx_sangrando' },
     ],
   },
   {
@@ -497,6 +501,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'golpe', nota: 'impacto de maza, puño o garrote sobre un enemigo' },
       { tipo: 'poder', clase: 'monje', habilidades: ['codo_piedra'] },
       { tipo: 'poder', clase: 'templario', habilidades: ['golpe_escudo'] },
+      { tipo: 'poder', clase: 'nigromante', habilidades: ['lanza_hueso'], rol: 'impacto', nota: 'hueso contra hueso' },
     ],
   },
   {
@@ -514,6 +519,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'berserker', habilidades: ['ira_jarl', 'desatar'], nota: 'el pisotón que sacude la tierra' },
       { tipo: 'poder', clase: 'druida', habilidades: ['rugido_primigenio'] },
       { tipo: 'monstruo', monstruos: ['ogro', 'golem_de_piedra', 'gigante_helado'], nota: 'pisotón de los grandes' },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['rugido', 'alarido'], rol: 'lanzador', nota: 'el grito sacude el piso alrededor del berserker; los que huyen llevan fx_confundido y los aturdidos fx_aturdido' },
     ],
   },
   {
@@ -533,7 +539,10 @@ export const CATALOGO_PFX: CfgPfx[] = [
   {
     id: 'fx_chispa_golpe', origen: 'impacts/hit-spark', nombre: ['Chispa de golpe', 'Hit spark'], categoria: 'impactos', elemento: 'fuego',
     dir: { modo: 'vuelo', pivote: [0, -10] }, opciones: { palette: tramo('fuego', 7, 0.1, 1) }, cola: 0.02,
-    uso: [{ tipo: 'golpe', nota: 'acero contra armadura o hueso: chispas en el punto de impacto (orientar con el golpe)' }],
+    uso: [
+      { tipo: 'golpe', nota: 'acero contra armadura o hueso: chispas en el punto de impacto (orientar con el golpe)' },
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['brasas_saltarinas', 'lanza_magma'], rol: 'impacto', nota: 'sobre cada enemigo que tocan' },
+    ],
   },
   {
     id: 'fx_parada', origen: 'impacts/parry', nombre: ['Parada', 'Parry'], categoria: 'impactos', elemento: 'oro',
@@ -541,6 +550,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
     uso: [
       { tipo: 'golpe', nota: 'bloqueo con el arma: choque de acero' },
       { tipo: 'poder', clase: 'templario', habilidades: ['aura_firmeza'], nota: 'al desviar un golpe' },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['piel_hierro'], rol: 'lanzador', nota: 'el chasquido de yunque cuando la piel se endurece' },
     ],
   },
   {
@@ -566,6 +576,8 @@ export const CATALOGO_PFX: CfgPfx[] = [
     uso: [
       { tipo: 'poder', clase: 'cazadora', habilidades: ['flecha_certera', 'flecha_rastro', 'andanada', 'lluvia_flechas'] },
       { tipo: 'monstruo', monstruos: ['esqueleto_arquero', 'ballestero_oscuro'] },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['flecha_ignea', 'flecha_racimo'], rol: 'proyectil' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['virote_perforante', 'rafaga_virotes', 'tormenta_virotes', 'torreta'], rol: 'proyectil', nota: 'los virotes' },
     ],
   },
   {
@@ -575,6 +587,8 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'nigromante', habilidades: ['dientes_tumba'], nota: 'sale de la mano y pega ~4 cuerpos adelante' },
       { tipo: 'poder', clase: 'monje', habilidades: ['lanza_espiritu'] },
       { tipo: 'monstruo', monstruos: ['brujo_diablillo', 'lich', 'sacerdote_caido'], nota: 'saeta de los hechiceros' },
+      { tipo: 'poder', clase: 'templario', habilidades: ['saeta_fe'], rol: 'proyectil', nota: 'la saeta de luz (lo más cercano que hay: repintarla en sagrado si se quiere más fiel)' },
+      { tipo: 'poder', clase: 'nigromante', habilidades: ['lanza_hueso'], rol: 'proyectil', nota: 'la pica de hueso en vuelo' },
     ],
   },
 
@@ -642,6 +656,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
     uso: [
       { tipo: 'muerte', nota: 'desaparecer en humo: espectros menores, ilusiones, el que huye' },
       { tipo: 'poder', clase: 'alquimista', habilidades: ['bomba_humo'], nota: 'versión chica' },
+      { tipo: 'poder', clase: 'druida', habilidades: ['invocar_lobo'], rol: 'area', nota: 'cada lobo llega en una humareda' },
     ],
   },
   {
@@ -684,6 +699,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
     uso: [
       { tipo: 'poder', clase: 'nigromante', habilidades: ['alzar_esqueleto', 'golem_sangre', 'marcha_fosa'], nota: 'el invocado sale del agujero' },
       { tipo: 'monstruo', monstruos: ['senor_demonio', 'caballero_abismo', 'golem_de_piedra'], nota: 'entrada de jefe que sale del piso' },
+      { tipo: 'poder', clase: 'nigromante', habilidades: ['sabueso_osario', 'mago_hueso'], rol: 'area', nota: 'el sabueso o el arquero de hueso se arma saliendo del piso' },
     ],
   },
   // ============================================================ arcano
@@ -719,6 +735,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['paso_tormenta'], nota: 'donde llega (mostrar el sprite con cuerpo.alfa)' },
       { tipo: 'poder', clase: 'monje', habilidades: ['paso_viento'] },
       { tipo: 'monstruo', monstruos: ['aparecida', 'sin_rostro'], nota: 'el que se teletransporta' },
+      { tipo: 'poder', clase: 'druida', habilidades: ['oso_espiritu'], rol: 'area', nota: 'el oso espíritu se condensa donde aparece' },
     ],
   },
   {
@@ -804,6 +821,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'templario', habilidades: ['egida_alba'], nota: 'burbuja en bucle mientras dura' },
       { tipo: 'poder', clase: 'monje', habilidades: ['cortina_viento', 'mantra_piedra'] },
       { tipo: 'estado', estado: 'invulnerable' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['tonico_hierro'], rol: 'lanzador', nota: 'el tónico que endurece' },
     ],
   },
   {
@@ -813,6 +831,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'muerte', nota: 'muerte de un cuervo o de un ser alado (gárgola, demonio alado: plumas negras con otra paleta)' },
       { tipo: 'poder', clase: 'cazadora', habilidades: ['llamar_halcon', 'cielo_halcones'], nota: 'el halcón que aparece o se va' },
       { tipo: 'cinematica', nota: 'plumas en el Jardín de los que Intentaron (acto 7)' },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['picada'], rol: 'area', nota: 'el halcón que cae en picada; los alcanzados, fx_presa_marcada' },
     ],
   },
   {
@@ -839,6 +858,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'botin', nota: 'al beber una poción de vida' },
       { tipo: 'poder', clase: 'monje', habilidades: ['palma_serena'] },
       { tipo: 'ambiente', zonas: ['a1_refugio', 'a2_oasis'], nota: 'el pozo o la fuente que cura' },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['canto_remero'], rol: 'lanzador', nota: 'el canto que cierra heridas' },
     ],
   },
   {
@@ -864,6 +884,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
     uso: [
       { tipo: 'poder', clase: 'templario', habilidades: ['golpe_sagrado', 'juicio', 'sentencia_final'], nota: 'el rayo de luz cae sobre el blanco' },
       { tipo: 'poder', clase: 'templario', habilidades: ['martillo_bendito'], nota: 'al pegar' },
+      { tipo: 'poder', clase: 'templario', habilidades: ['filo_alba'], rol: 'impacto', nota: 'la hoja que arde con luz al pegar' },
     ],
   },
   {
@@ -984,6 +1005,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'estado', estado: 'sangrado', nota: 'en bucle sobre el herido' },
       { tipo: 'poder', clase: 'berserker', habilidades: ['desgarro', 'sangria', 'marea_roja'], nota: 'sobre los que alcanza' },
       { tipo: 'poder', clase: 'cazadora', habilidades: ['cepo_dientes', 'marca_presa'] },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['torrente_sangre'], rol: 'blanco' },
     ],
   },
   {
@@ -1021,6 +1043,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'templario', habilidades: ['aura_presteza'], nota: 'estelas detrás del que corre, en la dirección de la marcha' },
       { tipo: 'poder', clase: 'cazadora', habilidades: ['caceria_salvaje'] },
       { tipo: 'monstruo', monstruos: ['rapido'], nota: 'el modificador de élite rápido' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['grulla'], rol: 'lanzador' },
     ],
   },
   {
@@ -1039,6 +1062,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'berserker', habilidades: ['ira_jarl', 'grito_guerra', 'hambre_batalla'], nota: 'en bucle mientras la furia está llena' },
       { tipo: 'poder', clase: 'druida', habilidades: ['frenesi_luna'] },
       { tipo: 'monstruo', monstruos: ['fuerte'], nota: 'el modificador de élite fuerte' },
+      { tipo: 'poder', clase: 'templario', habilidades: ['aura_fuerza'], rol: 'lanzador', nota: 'en bucle sobre el templario mientras el aura está encendida' },
     ],
   },
   {
@@ -1068,6 +1092,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'estado', estado: 'aturdido', nota: 'en bucle sobre la cabeza' },
       { tipo: 'poder', clase: 'templario', habilidades: ['golpe_escudo'] },
       { tipo: 'poder', clase: 'monje', habilidades: ['puno_dios', 'codo_piedra'] },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['alarido'], rol: 'blanco' },
     ],
   },
   // ============================================================ naturaleza
@@ -1111,6 +1136,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
     uso: [
       { tipo: 'poder', clase: 'druida', habilidades: ['huracan', 'forma_lobo'], nota: 'en bucle alrededor del druida' },
       { tipo: 'poder', clase: 'monje', habilidades: ['ojo_tifon'] },
+      { tipo: 'poder', clase: 'druida', habilidades: ['forma_oso'], rol: 'lanzador', nota: 'las hojas envuelven al druida mientras se vuelve oso' },
     ],
   },
   {
@@ -1380,6 +1406,126 @@ export const CATALOGO_PFX: CfgPfx[] = [
     uso: [
       { tipo: 'ambiente', zonas: ['a6_criptas', 'a6_criptas2', 'a6_catedral1', 'a3_hundida2'], nota: 'medusas que flotan en el aire de las criptas inundadas' },
       { tipo: 'cinematica', nota: 'bajo el agua en la catedral ahogada' },
+    ],
+  },
+  // ============================================================ segunda tanda (pedido de Rick): rayo, bombas, estados, clima,
+  // criaturas, botín, avisos de mundo e impactos
+  {
+    id: 'fx_tempestad_arcos', origen: 'lightning/tesla-coil', nombre: ['Arcos de tempestad', 'Storm arcs'], categoria: 'rayo', elemento: 'rayo', enLanzador: true,
+    opciones: { maquina: false, alto: -24, radio: 5, palette: rampa('rayo', 8), sparks: CHISPAS_RAYO() },
+    notas: 'La bobina de Tesla sin la máquina (tesla-coil.js de la Forja): los arcos restallan desde el pecho de la arcanista y cada tanto uno baja al piso, a su alrededor, en profundidad 2:1.',
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['tempestad'], rol: 'lanzador', nota: 'en bucle sobre la arcanista mientras dura; los rayos que caen sobre cada enemigo, fx_relampago' },
+      { tipo: 'monstruo', monstruos: ['electrico'], nota: 'el modificador de élite eléctrico, en bucle sobre el monstruo' },
+    ],
+  },
+  {
+    id: 'fx_latido_galvanico', origen: 'lightning/plasma-ball', nombre: ['Latido galvánico', 'Galvanic heartbeat'], categoria: 'rayo', elemento: 'rayo', enLanzador: true,
+    opciones: { pedestal: false, cristal: false, alto: -22, radio: 22, palette: rampa('rayo', 8) }, luz: { mezcla: 'aditiva' },
+    notas: 'El globo de plasma sin el pie de lámpara ni el velo del vidrio (plasma-ball.js de la Forja), sumado a la luz: un núcleo que late en el pecho y filamentos que buscan la cáscara alrededor del cuerpo.',
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['latido_galvanico'], rol: 'lanzador', nota: 'el pulso alrededor de la arcanista; una vuelta por lanzamiento (o en bucle mientras carga)' },
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['furia_firmamento'], rol: 'lanzador', nota: 'la arcanista cargada mientras el cielo se rompe (los rayos: fx_relampago)' },
+    ],
+  },
+  {
+    id: 'fx_estallido_galvanico', origen: 'explosions/plasma-explosion', nombre: ['Estallido galvánico', 'Galvanic burst'], categoria: 'explosiones', elemento: 'rayo', ancla: [0, 22],
+    opciones: { palette: rampa('rayo', 7), accent: tramo('arcano', 5, 0.1, 1), alcance: 0.6 }, cola: 0.02, rapido25: [0, 0.5],
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['descarga_prismatica'], rol: 'impacto', nota: 'donde revienta la descarga' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['frasco_rayo'], rol: 'impacto', nota: 'el frasco con la tormenta adentro que revienta en chispas' },
+    ],
+  },
+  {
+    id: 'fx_bomba_metralla', origen: 'explosions/grenade', nombre: ['Bomba de metralla', 'Shrapnel bomb'], categoria: 'explosiones', elemento: 'fuego',
+    // sin el tiro: la bomba quieta tiembla con la mecha encendida y revienta (el juego la tira)
+    opciones: { rodar: false, bola: true, palette: rampa('fuego', 8), body: tramo('acero', 5, 0, 0.75) }, ventana: [1.3, 4.2], rapido25: [1.6, 2.1], cola: 0.02,
+    notas: 'La granada de pixelfx como bomba de hierro redonda con mecha (grenade.js de la Forja), sin el tiro: tiembla, revienta en metralla, chispas y una bola de fuego chica, y deja la quemadura.',
+    uso: [
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['bomba_cluster'], rol: 'impacto', nota: 'cada bomba que cae: la madre y las cinco hijas' },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['flecha_racimo'], rol: 'impacto', nota: 'la punta llena de esquirlas que revienta al tocar (sin la bola: arrancar en el cuadro del estallido)' },
+    ],
+  },
+  {
+    id: 'fx_ardiendo', origen: 'status/burning', nombre: ['Ardiendo', 'Burning'], categoria: 'estado', elemento: 'fuego',
+    opciones: { cuerpo: false, palette: rampa('fuego', 9), char: tramo('ceniza', 3, 0, 0.4), smoke: '#3a3332' },
+    cuerpo: { quitar: 'silueta', tinte: { color: '#c63c0e', fuerza: 0.3, nota: 'brasa que late en el sprite con cada llamarada (cada 0.6 s)' } },
+    notas: 'Sin el destello blanco ni las quemaduras sobre el muñeco (siguen su silueta, no la del que arde): lenguas de fuego en cuatro puntos del borde, chispas y humo fino.',
+    uso: [
+      { tipo: 'estado', estado: 'quema', nota: 'en bucle mientras arde (quema > 0, héroe o monstruo)' },
+      { tipo: 'monstruo', monstruos: ['ardiente'], nota: 'el modificador de élite encantado de fuego' },
+      { tipo: 'poder', clase: 'templario', habilidades: ['aura_llama'], rol: 'blanco', nota: 'sobre los que el aura quema' },
+    ],
+  },
+  {
+    id: 'fx_presa_marcada', origen: 'status/charmed', nombre: ['Presa marcada', 'Marked prey'], categoria: 'estado', elemento: 'sangre',
+    opciones: { palette: tramo('sangre', 7, 0.05, 1), corazoncitos: 5 }, cuerpo: { quitar: 'silueta' }, gradacion: { brillo: 0.78 },
+    notas: 'El hechizo de amor de pixelfx, al revés: un corazón oscuro late sobre la cabeza de la presa (la cazadora lo oye) y suelta corazoncitos que se apagan.',
+    uso: [
+      { tipo: 'estado', estado: 'marca', nota: 'en bucle sobre la presa marcada (marca > 0)' },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['marca_presa', 'picada', 'caceria_salvaje', 'flecha_rastro'], rol: 'blanco' },
+    ],
+  },
+  {
+    id: 'fx_astros_caen', origen: 'weather/shooting-stars', nombre: ['Astros que caen', 'Falling stars'], categoria: 'clima', elemento: 'brasa', capa: 'pantalla',
+    opciones: { cielo: false, palette: tramo('brasa', 6, 0.1, 1), sky: rampa('noche', 5) },
+    notas: 'Sin el cielo estrellado (shooting-stars.js de la Forja): solo los astros que cruzan la pantalla como brasas y su estela de ceniza.',
+    uso: [{ tipo: 'clima', actos: [7], zonas: ['a7_cielo', 'a7_boveda', 'a7_islas1', 'a7_islas2'], nota: 'el Cielo Roto: astros que caen sobre las islas' }],
+  },
+  {
+    id: 'fx_ceniza_cae', origen: 'weather/cherry-blossoms', nombre: ['Ceniza que cae', 'Falling ash'], categoria: 'clima', elemento: 'ceniza', capa: 'pantalla',
+    opciones: { cielo: false, suelo: false, flores: false, palette: tramo('hueso', 6, 0.15, 0.85), destello: '#d86a24' }, gradacion: { sat: 0.35, tope: 0 },
+    notas: 'Los pétalos de cerezo como copos de ceniza (cherry-blossoms.js de la Forja): sin cielo, sin flores y sin la franja de pétalos caídos; cada copo se posa a su altura y, cuando gira de frente, muestra una brasa.',
+    uso: [{ tipo: 'clima', actos: [5], zonas: ['a5_llanuras', 'a5_rio', 'a5_bastion'], nota: 'las Llanuras de Ceniza' }],
+  },
+  {
+    id: 'fx_polilla', origen: 'critters/butterfly', nombre: ['Polilla', 'Moth'], categoria: 'criaturas', elemento: 'tierra',
+    ancla: [0, 34], escala: 1, opciones: { palette: tramo('tierra', 7, 0, 1), spots: tramo('brasa', 4, 0, 0.7) }, gradacion: { brillo: 0.85, sat: 0.7 },
+    notas: 'La mariposa iridiscente repintada como polilla parda con ojos ocres en las alas traseras y polvo pálido. Va a escala 1 (un pixel de pixelfx por pixel de pantalla): a 2 abría las alas casi del alto del héroe.',
+    uso: [{ tipo: 'ambiente', zonas: ['a1_abadia1', 'a1_cripta', 'a2_tumbas1', 'a6_faro'], nota: 'polillas que rondan velas, faroles y braseros' }],
+  },
+  {
+    id: 'fx_huevo_arana', origen: 'spawn/egg-hatch', nombre: ['Huevo de araña', 'Spider egg'], categoria: 'aparicion', elemento: 'veneno',
+    opciones: { palette: tramo('hueso', 6, 0, 0.9), glow: tramo('veneno', 3, 0.55, 1), speckle: '#2e281f' }, cola: 0.02,
+    uso: [
+      { tipo: 'monstruo', monstruos: ['arana_reina'], nota: 'la Madre del Pozo invoca: el huevo se abre y el juego hace aparecer la arana_cueva en el ancla' },
+      { tipo: 'ambiente', zonas: ['a1_guarida', 'a3_nido'], nota: 'huevos que revientan al acercarse el héroe' },
+    ],
+  },
+  {
+    id: 'fx_corazon', origen: 'pickups/heart-pickup', nombre: ['Corazón que late', 'Beating heart'], categoria: 'botin', elemento: 'sangre',
+    opciones: { palette: tramo('sangre', 8, 0, 1) }, gradacion: { brillo: 0.85 },
+    uso: [
+      { tipo: 'botin', nota: 'orbe de vida que suelta un enemigo; el corazón del niño de la nieve (misión m4_nino) en el piso' },
+    ],
+  },
+  {
+    id: 'fx_ascenso', origen: 'ui/level-up', nombre: ['Ascenso', 'Ascension'], categoria: 'avisos', elemento: 'brasa', enLanzador: true, paquete: 'base',
+    opciones: { text: '', heroe: false, palette: rampa('brasa', 8) }, rapido25: [0.24, 0.62], cola: 0.02,
+    notas: 'Subir de nivel sin letras (el juego escribe el texto en su idioma) y sin pintar al muñeco: la brasa se junta a los pies y sube en columna alrededor del héroe.',
+    uso: [
+      { tipo: 'evento', evento: 'subir_nivel', nota: 'en los pies del héroe al subir de nivel' },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['cuerno_ancestros'], rol: 'lanzador', nota: 'los ancestros responden al cuerno' },
+    ],
+  },
+  {
+    id: 'fx_sello_lacre', origen: 'ui/quest-complete', nombre: ['Sello de lacre', 'Wax seal'], categoria: 'avisos', elemento: 'sangre', ancla: [0, 56], paquete: 'base',
+    opciones: { cinta: false, radio: 15, text: '', palette: tramo('sangre', 8, 0, 1) }, rapido25: [0.8, 1.3], cola: 0.02,
+    notas: 'Sin la cinta ni las letras: un sello de lacre cae sobre la cabeza del héroe, estampa con un destello, se marca el visto y se deshace en motas.',
+    uso: [{ tipo: 'evento', evento: 'mision_cumplida', nota: 'sobre el héroe al cumplir una misión (el ancla va en sus pies)' }],
+  },
+  {
+    id: 'fx_aviso', origen: 'ui/exclamation', nombre: ['Aviso', 'Alert'], categoria: 'avisos', elemento: 'brasa', enLanzador: true, paquete: 'base',
+    opciones: { palette: rampa('brasa', 8) }, cola: 0.02,
+    uso: [{ tipo: 'evento', evento: 'aviso', nota: 'sobre la cabeza del héroe: emboscada, algo que notar, un NPC que lo llama' }],
+  },
+  {
+    id: 'fx_impacto_muro', origen: 'impacts/bullet-impact', nombre: ['Impacto contra el muro', 'Wall impact'], categoria: 'impactos', elemento: 'fuego',
+    dir: { modo: 'vuelo', pivote: [0, -24], giro: 0.5 }, opciones: { palette: tramo('fuego', 7, 0.1, 0.95), stone: PIEDRA }, cola: 0.02,
+    notas: 'La bala contra el muro como punta de hierro: chispas que rebotan en cono, astillas de piedra que caen, polvo y la marca que se enfría.',
+    uso: [
+      { tipo: 'golpe', nota: 'flechas y virotes que pegan en un muro o una roca (orientar con el tiro)' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['virote_perforante', 'rafaga_virotes', 'tormenta_virotes', 'torreta'], rol: 'impacto' },
     ],
   },
   // ============================================================ transiciones
