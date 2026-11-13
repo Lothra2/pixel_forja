@@ -186,7 +186,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
     marco(px, py, pw, ph, 0.88);
     let y = py + 26;
     texto(f.rol.map((r) => TT(ROL[r])).join(' · ').toUpperCase(), px + 16, y, { tam: 12, color: `rgb(${lc})`, fuente: TITULO });
-    texto(T('Dificultad', 'Difficulty'), px + pw - 80, y, { tam: 11, color: '#8a7a60', alin: 'right' }); calaveras(f.dif, px + pw - 62, y - 4);
+    if (f.rol.length < 2) texto(T('Dificultad', 'Difficulty'), px + pw - 80, y, { tam: 11, color: '#8a7a60', alin: 'right' }); calaveras(f.dif, px + pw - 62, y - 4);
     y += 12;
     for (const l of envolver(TT(c.descripcion), pw - 32, 13).slice(0, 4)) { y += 16; texto(l, px + 16, y, { tam: 13, color: '#d8ccb0' }); }
     y += 24; texto(T('Mecánica propia', 'Signature mechanic'), px + 16, y, { tam: 12, color: '#c8a050', fuente: TITULO });
