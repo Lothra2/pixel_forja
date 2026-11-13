@@ -239,7 +239,8 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   // portal
   if (j.portal) {
     const pz = (j as any).portalZona === z.id ? aPant(j.portal.x, j.portal.y) : z.tipo === 'pueblo' && z.entradas.portal ? aPant(z.entradas.portal[0] + 0.5, z.entradas.portal[1] - 1) : null;
-    if (pz) L.push({ id: 'portal', x: pz[0], y: pz[1], h: 40, r: 160, c: [70, 130, 255], k: 0.8 });
+    const tp = z.tipo === 'pueblo' ? 'pueblo' : /^a5_/.test(z.id) ? 'infierno' : 'mazmorra';
+    if (pz) L.push({ id: 'portal', x: pz[0], y: pz[1], h: 40, r: 170, c: tp === 'pueblo' ? [255, 174, 85] : tp === 'infierno' ? [224, 64, 26] : [74, 184, 176], k: 0.85 });
   }
   // cada salida con su luz propia, ámbar: tiñe el piso y se ve de lejos
   j.zona.salidas.forEach((sa, i) => { const [sx, sy] = aPant(...puntoSalida(j.zona, sa)); if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200) return; L.push({ id: 'sal' + i, x: sx, y: sy, h: 34, r: 150 + Math.sin(t * 2.2 + sa.cx) * 12, c: [255, 180, 95], k: 0.6, sinSombra: true }); });

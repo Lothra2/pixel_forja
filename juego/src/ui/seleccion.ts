@@ -31,6 +31,8 @@ export function firmaRama(clase: string, rama: number): Habilidad | undefined {
 
 const parts: { x: number; y: number; vx: number; vy: number; t: number; d: number; c: string; s: number; atras?: boolean; ang?: number }[] = [];
 let ultima = -1, tCambio = 0, nivelVista = 0;
+/** La presentación 'sel' de la Forja: apagada hasta que llegue su luz de retrato definitiva (window.__sel = true la prueba). */
+const USAR_SEL = false || !!(globalThis as any).__sel;
 /** Las partículas del aura en dos pasadas: `atras` se dibuja antes del héroe y la de adelante después. */
 function particulas(f: Ficha, cx: number, cy: number, dt: number, t: number, pasada: 'atras' | 'adelante') {
   if (pasada === 'atras') emitir(f, cx, cy, dt, t);
@@ -129,7 +131,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   let escQ = esc;
   // la presentación de la Forja (grupo 'sel', al doble): la entrada al elegir la clase y después el reposo en bucle
   const sl = cuadrosSel(c.id, vista), ms = metaSel();
-  if (sl.length && ms) {
+  if (sl.length && ms && USAR_SEL) {
     const n = Math.floor((t - tCambio) * ms.fps), ent = ms.entrada;
     q = sl[n < ent ? n : ent + ((n - ent) % (sl.length - ent))];
     escQ = 1; // la Forja lo hornea al tamaño final (unos 195 px): a ×1 exacto los píxeles quedan parejos

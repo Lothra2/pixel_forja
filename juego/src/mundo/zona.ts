@@ -3,6 +3,9 @@
 import './actos67';
 import { REGISTRO, huellaDe, generarPaisaje, type ObjetoDef, type Tema, type AmbienteId } from '../../../src/engine/gotico/index';
 import { ATRIO_CATEDRAL } from '../../../src/engine/gotico/catalogo/atrio_oria';
+import { juncosDeTramo } from '../../../src/engine/gotico/agua';
+import { pisosParamo, estadoEn } from '../../../src/engine/gotico/suelo_paramo';
+import { regarDecalsParamo } from '../../../src/engine/gotico/decals_paramo';
 import { rng, clamp } from '../nucleo/azar';
 
 export interface ObjZ { id: string; v: string; cx: number; cy: number; hw: number; hh: number; bloquea: boolean; tag?: string; dato?: any }
@@ -520,6 +523,7 @@ function exterior(def: DefZona, semilla: number): Zona {
   // dónde salen los monstruos: lejos de las entradas
   sembrar(k, Math.floor((area / 700) * dens), puntos);
   if (def.jefe) { const p = lejos(k, puntos); z.spawns.push({ cx: p[0], cy: p[1], tipo: 'jefe', fuerza: 1 }); }
+  if (def.tema === 'paramo') sueloParamo(k);
   return z;
 }
 
@@ -703,6 +707,8 @@ function rioDeLava(k: Constructor, r: () => number, arroyo = false) {
     }
     const v = codo ?? (arroyo ? (r() < 0.6 ? 'recto_y' : r() < 0.5 ? 'piedras_y' : 'juncal_y') : r() < 0.6 ? 'recto_y' : r() < 0.5 ? 'ancho_y' : 'meandro_y');
     k.poner(rio, x0 + 2, y0 + 2, v, true);
+    // los juncos de la orilla van como objeto aparte: el agua se dibuja como suelo y lo alto tiene que poder tapar
+    if (arroyo) for (const j of juncosDeTramo(v, tx * 31 + ty)) k.poner('par_juncos_orilla', x0 + 2 + j.dx, y0 + 2 + j.dy, j.v, true);
     // el camino no se corta: si un codo cae sobre él, se deja pasar
     bloquear(tx, ty, codo && cruzaCamino(tx, ty) ? 0 : 1);
   };
@@ -716,6 +722,21 @@ function rioDeLava(k: Constructor, r: () => number, arroyo = false) {
       bx = nx;
     } else tramo(bx, by);
   }
+}
+
+/**
+ * Suelo del páramo de la Forja: cada baldosa de pasto, tierra o camino pasa a `par_suelo` con la variante que empalma con
+ * sus vecinas (manchas continuas, sin mosaico), y después se riegan detalles en el piso (raíces, piedras, pisadas, rodadas,
+ * charcos, ceniza junto a los fuegos). `humedos`: centros de baldosa donde el suelo va más mojado.
+ */
+function sueloParamo(k: Constructor, humedos: [number, number][] = []) {
+  const z = k.z;
+  pisosParamo(z.tw, z.th, (bx, by) => z.pisos[by * z.tw + bx]?.id, z.semilla, { humedos }).forEach((p, i) => { if (p) z.pisos[i] = p; });
+  const fuegos = z.objetos.filter((o) => /fogata|hoguera|rescoldos/.test(o.id)).map((o) => [o.cx, o.cy] as [number, number]);
+  for (const d of regarDecalsParamo({ W: z.W, H: z.H, semilla: z.semilla, fuegos,
+    tipo: (x, y) => (z.bloq[y * z.W + x] ? 'bloqueado' : k.reserva?.[y * z.W + x] ? 'camino' : 'libre'),
+    estado: (x, y) => { const p = z.pisos[Math.floor(y / 5) * z.tw + Math.floor(x / 5)]; return p?.id === 'par_suelo' ? estadoEn(p.v, ((x % 5) + 0.5) / 5, ((y % 5) + 0.5) / 5) : 1; } }))
+    k.poner(d.id, d.cx, d.cy, d.v, true);
 }
 
 /** Murallas de fortaleza en los bordes de atrás de un pueblo, con portón abierto donde salen los caminos. */
@@ -966,6 +987,7 @@ function pueblo(def: DefZona, semilla: number): Zona {
   if (def.amurallado) amurallar(k, z.salidas.filter((s) => s.cx < 12 || s.cy < 12).map((s) => [s.cx, s.cy] as [number, number]));
   z.entradas.centro = [Math.round(cx0 + 2), Math.round(cy0 + 3)];
   z.entradas.portal = [Math.round(cx0 - 3), Math.round(cy0 + 5)];
+  if (def.tema === 'paramo') sueloParamo(k, [[cx0 / 5, cy0 / 5]]);
   void r;
   return z;
 }

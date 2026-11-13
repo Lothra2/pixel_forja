@@ -668,12 +668,21 @@ function dibujarBotinSuelo(s: any, px: number, py: number, t: number) {
   ctx.restore();
 }
 
+/** Qué portal vivo va en esta zona: el del pueblo, el del infierno (acto 5) o el de las mazmorras y el campo. */
+export const tipoPortal = (j: Juego) => (j.zona.tipo === 'pueblo' ? 'pueblo' : /^a5_/.test(j.zona.id) ? 'infierno' : 'mazmorra');
 function dibujarPortal(j: Juego, t: number) {
   const p = j.portal!;
   if ((j as any).portalZona !== j.zona.id && j.zona.tipo !== 'pueblo') return;
   const [px, py] = j.zona.tipo === 'pueblo' ? aPant(j.zona.entradas.portal[0] + 0.5, j.zona.entradas.portal[1] - 1) : aPant(p.x, p.y);
-  const meta = objetoMeta('com_portal_azul', 'abierto');
-  if (meta) dibujar(ctx, meta.f[Math.floor(t * 25 / meta.t) % meta.f.length], px, py);
+  // el portal vivo de la Forja: arco gótico con vórtice ámbar en el pueblo, grieta verde mar en la mazmorra, arco roto en
+  // el infierno; la luz del piso va aparte, sumada en modo screen debajo del portal
+  const tipoP = tipoPortal(j);
+  const meta = objetoMeta('com_portal_vivo', tipoP) ?? objetoMeta('com_portal_azul', 'abierto');
+  if (meta) {
+    const i = Math.floor(t * 25 / meta.t) % meta.f.length, luzP = objetoMeta('com_portal_luz', tipoP);
+    if (luzP) { ctx.save(); ctx.globalCompositeOperation = 'screen'; dibujar(ctx, luzP.f[i % luzP.f.length], px, py); ctx.restore(); }
+    dibujar(ctx, meta.f[i], px, py);
+  }
   else { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = '#4080ff80'; ctx.beginPath(); ctx.ellipse(px, py - 40, 18, 40, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
   picks.push({ tipo: 'portal', ref: p, x0: px - 22, y0: py - 90, x1: px + 22, y1: py + 6, prof: 1e9 });
 }
