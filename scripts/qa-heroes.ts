@@ -14,7 +14,7 @@
 import { HEROES, MONSTRUOS } from '../src/engine/gotico/catalogo/personajes.ts';
 import { geometriaQA, dentroElip, telaQA, armaduraDeLinea, esqueleto, type Cuerpo, type Equipo, type GeoQA } from '../src/engine/gotico/cuerpo.ts';
 import { DIRS, cuadrosDe, SEL_CUADROS, SEL_ENTRADA, type Accion } from '../src/engine/gotico/figura.ts';
-import { aPantalla, pintarEscena, type V3 } from '../src/engine/gotico/render.ts';
+import { aPantalla, pintarEscena, VISTA, type V3 } from '../src/engine/gotico/render.ts';
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
 const SOLO_CLASE = arg('--clase'), SOLO_ACC = arg('--accion'), DETALLE = +(arg('--detalle') ?? 30);
@@ -429,7 +429,9 @@ export function costuraSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {})
  *   del hombro, o de la otra mano. Nunca flota. (El arco se sostiene en la mano que lo empuña: solo cuenta el ángulo.)
  */
 export const RANGO_AGARRE: Record<'puno' | 'pomo' | 'vara' | 'culata', [number, number]> = { puno: [50, 130], pomo: [0, 70], vara: [30, 150], culata: [0, 50] };
-export interface FilaContacto { clase: string; nivel: string; agarre: string; angulo: [number, number]; contacto: string; peor: number }
+export interface FilaContacto { clase: string; nivel: string; agarre: string; angulo: [number, number]; contacto: string; peor: number; cara: number }
+/** El arma no tapa más que esta fracción de la cabeza (en pantalla, 'so') en ningún cuadro del bucle. */
+export const LIMITE_CARA = 0.15;
 export function contactoSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {}): { filas: FilaContacto[]; fallas: Falla[] } {
   const filas: FilaContacto[] = [], fallas: Falla[] = [];
   const distSeg = (p: V3, a: V3, b: V3) => { const ab: V3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], t = Math.max(0, Math.min(1, ((p[0] - a[0]) * ab[0] + (p[1] - a[1]) * ab[1] + (p[2] - a[2]) * ab[2]) / Math.max(1e-9, ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2))); return len([p[0] - a[0] - ab[0] * t, p[1] - a[1] - ab[1] * t, p[2] - a[2] - ab[2] * t]); };
@@ -440,7 +442,7 @@ export function contactoSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {}
     for (const [nivel, eq] of h.niveles) {
       const tipo = eq.arma?.tipo ?? 'nada';
       if (tipo === 'nada' || tipo === 'puno' || tipo === 'garras' || tipo === 'katar' || tipo === 'cestus' || tipo === 'frasco') continue;
-      let amin = 999, amax = -999, peor = 0, agarre = '', donde = new Set<string>();
+      let amin = 999, amax = -999, peor = 0, agarre = '', donde = new Set<string>(), caraMax = 0;
       for (let f = SEL_ENTRADA; f < SEL_CUADROS; f++) {
         const g = geometriaQA(h.cuerpo, eq, 'so', 'seleccion', f);
         if (!g.arma) continue;
@@ -466,9 +468,28 @@ export function contactoSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {}
         const d = Math.min(piso, dHombro, dMano);
         if (d === piso) donde.add('piso'); else if (d === dHombro) donde.add('hombro'); else donde.add('mano');
         peor = Math.max(peor, d);
+        // la cara libre: los pixeles del círculo de la cabeza en pantalla que el arma tapa (más cerca de la cámara)
+        {
+          const c = g.craneo.c, rc = 3.9 * g.craneo.r[1] / 3.55, [cx, cy] = aPantalla(c), dc = c[0] * VISTA[0] + c[1] * VISTA[1] + c[2] * VISTA[2];
+          const segsR: [V3, V3, number][] = [[g.arma.a, g.arma.b, g.arma.r], ...(g.arma.cabeza ? [[g.arma.cabeza[0], g.arma.cabeza[1], g.arma.rCabeza ?? g.arma.r] as [V3, V3, number]] : [])];
+          let tot = 0, tap = 0;
+          for (let y = -rc; y <= rc; y += 0.5) for (let x = -rc; x <= rc; x += 0.5) {
+            if (x * x + y * y > rc * rc) continue;
+            tot++;
+            const px = cx + x, py = cy + y;
+            for (const [p, q, rr] of segsR) {
+              const [ax, ay] = aPantalla(p), [bx2, by2] = aPantalla(q), vx = bx2 - ax, vy = by2 - ay, t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / Math.max(1e-9, vx * vx + vy * vy)));
+              if (Math.hypot(px - ax - vx * t, py - ay - vy * t) > rr) continue;
+              const w: V3 = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t];
+              if (w[0] * VISTA[0] + w[1] * VISTA[1] + w[2] * VISTA[2] < dc) { tap++; break; }
+            }
+          }
+          const fr = tap / Math.max(1, tot); caraMax = Math.max(caraMax, fr);
+          if (fr > LIMITE_CARA) fallas.push({ chequeo: 'arma tapa la cara', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(fr * 100) / 100 });
+        }
         if (d > 1 && !arco) fallas.push({ chequeo: 'arma sin apoyo', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(d * 100) / 100 });
       }
-      filas.push({ clase: h.id, nivel, agarre, angulo: [Math.round(amin), Math.round(amax)], contacto: [...donde].join('+'), peor: Math.round(peor * 100) / 100 });
+      filas.push({ clase: h.id, nivel, agarre, angulo: [Math.round(amin), Math.round(amax)], contacto: [...donde].join('+'), peor: Math.round(peor * 100) / 100, cara: Math.round(caraMax * 100) / 100 });
     }
   }
   return { filas, fallas };
@@ -527,7 +548,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log(`  ${'costura de la selección'.padEnd(26)} ${costura.fallas.length} fallas (el salto 47→12 y 11→12 ≤ ${LIMITE_COSTURA} × el mayor paso entre vecinos; el 0 igual al 12)`);
     for (const f of costura.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} paso ${String(f.paso).padEnd(6)} costura ${String(f.costura).padEnd(6)} entrada ${String(f.entrada).padEnd(6)} inicio ${f.inicio}`);
     console.log(`  ${'agarre y apoyo (selección)'.padEnd(26)} ${contacto.fallas.length} fallas (ángulo antebrazo-arma: puño 50°–130°, pomo 0°–70°, vara 30°–150°, culata 0°–50°; el arma a ≤ 1 del piso, el hombro o la otra mano en todo el bucle)`);
-    for (const f of contacto.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} ${f.agarre.padEnd(5)} ángulo ${f.angulo[0]}°–${f.angulo[1]}°  apoyo ${f.contacto.padEnd(12)} peor ${f.peor}`);
+    for (const f of contacto.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} ${f.agarre.padEnd(5)} ángulo ${f.angulo[0]}°–${f.angulo[1]}°  apoyo ${f.contacto.padEnd(12)} peor ${f.peor}  cara tapada ${Math.round(f.cara * 100)} %`);
   }
   console.log(`TOTAL: ${fallas.length} fallas`);
   for (const [k, n] of [...por].sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(5)}  ${k}`);
