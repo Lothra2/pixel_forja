@@ -289,7 +289,7 @@ function estatico(e: EstiloAgua, L: LienzoAgua, reflejo?: Reflejado): Estatico {
         const zHit = best * rv[2];
         // la cara de abajo del arco va en sombra; lo que mira a la luz, apenas más claro; más lejos, más tenue
         const dif = Math.max(0, nb[0] * LUZ[0] + nb[1] * LUZ[1] + nb[2] * LUZ[2]);
-        const k2 = 0.35 + 0.65 * dif - Math.max(0, -nb[2]) * 0.25;
+        const k2 = 0.55 + 0.45 * dif - Math.max(0, -nb[2]) * 0.2;
         c = [reflejo.color[0] * k2, reflejo.color[1] * k2, reflejo.color[2] * k2];
         void zHit;
       }
@@ -373,7 +373,7 @@ function colorAgua(est: Estatico, x: number, y: number, G0: Geo, borde: number, 
   c = [c[0] + COL.brillo[0] * brillo, c[1] + COL.brillo[1] * brillo, c[2] + COL.brillo[2] * brillo];
   // espuma: en la orilla, alrededor de las piedras y en su estela; se rompe con la corriente
   const fn = espuma(G0.s, G0.k, G0.w);
-  let mascara = Math.exp(-(((borde - ak) / 1.9) ** 2)) * (0.25 + 1.0 * sm(0.38, 0.68, nsk(G0.s - t * P, G0.k, 9, 12, 57)));
+  let mascara = Math.exp(-(((borde - ak) / 2.3) ** 2)) * (0.4 + 0.95 * sm(0.36, 0.66, nsk(G0.s - t * P, G0.k, 9, 12, 57)));
   // contra los estribos del puente (o cualquier muro en el agua): espuma que se junta y se arrastra
   for (const [x0, x1, y0, y1] of e.muros ?? []) {
     const dx = Math.max(x0 - x, 0, x - x1), dy = Math.max(y0 - y, 0, y - y1), dm = Math.hypot(dx, dy);

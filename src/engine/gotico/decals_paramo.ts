@@ -25,7 +25,7 @@ const fbm = (x: number, y: number, s: number) => vn(x, y, s) * 0.6 + vn(x * 2.1,
 const COL = {
   barroMojado: hex('#16110c'), barro: hex('#261d14'), cielo: hex('#8a959c'), cieloAlto: hex('#46515a'), brillo: hex('#b4c3cb'),
   agua: hex('#11181e'), corteza: hex('#3a2c1f'), cortezaClara: hex('#7a6448'), piedra: hex('#8c8579'), piedraOsc: hex('#3c3832'),
-  musgo: hex('#2f3b1f'), musgoClaro: hex('#56682f'), pastoVerde: hex('#66733a'), pastoVerdeClaro: hex('#87904f'),
+  musgo: hex('#2d381e'), musgoClaro: hex('#526031'), pastoVerde: hex('#626b3d'), pastoVerdeClaro: hex('#7f8452'),
   tierraOsc: hex('#1d1710'), sombra: hex('#100c08'), brizna: hex('#8a7646'), briznaOsc: hex('#5e4f2e'), briznaClara: hex('#b09a62'),
   ceniza: hex('#3f3d3a'), cenizaClara: hex('#5d5a55'), carbon: hex('#121110'), brasaVieja: hex('#3a1c10'), hollin: hex('#191716'),
 };
@@ -201,6 +201,8 @@ function musgo(seed: number, rx: number, ry: number): Decal {
       }
     }
     if (best > 0) { c = mixC(c, mixC(COL.pastoVerde, COL.pastoVerdeClaro, sm(1.2, 2.4, alto) * 0.7), cl(best * 1.7)); h += alto * cl(best * 2); }
+    // la tierra húmeda alrededor, más oscura: la mancha se asienta en el piso
+    c = mixC(c, COL.tierraOsc, sm(0.72, 1.1, d) * 0.65);
     return { c, a: borde * 0.95, h, moja: 0.18 * borde };
   };
 }

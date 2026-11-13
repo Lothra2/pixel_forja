@@ -821,7 +821,7 @@ reg({
     if (ejeY) ps = mover(ps, [0, 0, 0], 90);
     // los estribos (de |x| 16.5 a 52, el tablero de 23 de ancho) meten espuma en el agua; girados 90° en las _y
     const muros: [number, number, number, number][] = ejeY ? [[-11.5, 11.5, -52, -16.5], [-11.5, 11.5, 16.5, 52]] : [[-52, -16.5, -11.5, 11.5], [16.5, 52, -11.5, 11.5]];
-    return aguaConPiezas(`par_puente|${v}|${seed}`, { ...estiloArroyo(ejeY ? 'puente' : 'puente_y'), muros }, ps, f, '#3a3b37');
+    return aguaConPiezas(`par_puente|${v}|${seed}`, { ...estiloArroyo(ejeY ? 'puente' : 'puente_y'), muros }, ps, f, '#4f504a');
   },
 });
 conVarianteY('par_puente');

@@ -42,7 +42,7 @@ const hc = (i: number, j: number, n: number, s: number) => hash3(((i % n) + n) %
 // ------------------------------------------------------------------ paleta (tonos tierra apagados)
 const COL = {
   // tres valores separados: pasto seco claro (ocre y paja), tierra pisada media, barro oscuro; verde apagado en lo húmedo
-  tierra: hex('#3f3122'), tierraOsc: hex('#2b2118'), grava: hex('#7a7264'), gravaOsc: hex('#3a342c'),
+  tierra: hex('#3f3122'), tierraOsc: hex('#2b2118'), grava: hex('#6c6558'), gravaOsc: hex('#38322a'),
   secoBase: hex('#5c4828'), secoOsc: hex('#45351d'), paja: hex('#9c8650'), pajaClara: hex('#b8a066'),
   brizna: hex('#a68e55'), briznaOsc: hex('#7a6538'), briznaVerde: hex('#66733d'), briznaClara: hex('#cbb375'),
   tierraFria: hex('#3b3630'), charco: hex('#1a222b'),
@@ -130,7 +130,7 @@ function tierra(x: number, y: number): Muestra {
   // tierra pisada: algo más fría y lisa en manchas, más cálida y suelta en otras
   c = mixC(c, COL.tierraFria, sm(0.5, 0.8, q) * 0.35);
   let h = n * 0.9 + m * 0.25;
-  const [g, gt] = grava(x, y, 0.12 + 0.18 * nper(x, y, 9, 38), 33); if (g > 0) { c = mixC(COL.gravaOsc, COL.grava, 0.25 + gt * 0.6); h += g; }
+  const [g, gt] = grava(x, y, 0.08 + 0.14 * nper(x, y, 9, 38), 33); if (g > 0) { c = mixC(COL.gravaOsc, COL.grava, 0.25 + gt * 0.6); h += g; }
   return { c, h, moja: 0 };
 }
 function barro(x: number, y: number): Muestra {
