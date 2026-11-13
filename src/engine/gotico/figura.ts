@@ -382,7 +382,7 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
   if (arma === 'una') porteUna(p, 0, k, k2, 0, 0, estilo);
   if (arma === 'ballesta') { p.hombroD = [26 + 3 * k, 10, 60 + 4 * k, 0]; }
   // el arco cuelga natural de la izquierda, la cuerda recta; la derecha descansa
-  if (arma === 'arco') { p.hombroI = [16 + 1.5 * k, 22, 18 + 2 * k, 0]; p.hombroD = [12 + 3 * k, 12, 26 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
+  if (arma === 'arco') { p.hombroI = [14 + 1.5 * k, 13, 24 + 2 * k, 0]; p.hombroD = [9 + 3 * k, 7, 24 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
   // la vara al costado y apenas atrás, con el remate afuera de la silueta de la cabeza (en diagonal, so y o, la vara
   // adelantada quedaba alineada con la cara y el remate la tapaba)
   if (arma === 'baculo') { p.hombroD = [6 + 2 * k, 24, 56 + 3 * k, 0]; p.vara = [-4 + 1.5 * k2, 10]; }
@@ -393,7 +393,9 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
       // jadea encorvado: inspira rápido (los hombros suben, el pecho se levanta) y suelta el aire despacio; los brazos
       // cuelgan pesados y un poco abiertos
       const j = jadeo(u);
-      p.bajar = 3.4 - 0.9 * j; p.torso = 13 - 3 * j; p.cabeza = -8 + 3.5 * j; p.respira = 0.1 + 0.9 * j;
+      // (erguido: con el torso a 13° y la cabeza hundida el reposo se leía de gorila y la cara no se veía nunca; ahora
+      // planta los pies abiertos, saca el pecho y levanta la cabeza: sigue jadeando pero de pie, como un guerrero)
+      p.bajar = 1.8 - 0.7 * j; p.torso = 4 - 2.5 * j; p.cabeza = -5 + 2 * j; p.respira = 0.1 + 0.9 * j;
       p.hombros = [1.2 + 1.5 * j, 1.1 + 1.5 * j];
       p.pasos = [-2.6, 3]; p.abre = [2.6, 2.4]; p.lateral = 0.3 + 0.25 * j; p.ladeoCadera = 1.5; p.ladeo = -1 - 0.6 * j;
       // el hacha baja y atrás junto a la cadera, como al andar (no cambia de postura al arrancar)

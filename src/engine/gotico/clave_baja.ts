@@ -20,15 +20,22 @@ const DIR_BORDE: V3 = [-0.35, -1, 0.55];
 export const BORDE_FRIO = '#47505e';
 export const BORDE_CALIDO = '#6e4630';
 
+// (13 nov: la clave baja de antes, con amb 0,07, gamma 1,2 y los claros comprimidos desde 80, dejaba a los personajes
+// como manchas oscuras del mismo valor que el piso, y el juego los aclaraba después mezclándolos consigo mismos, lo que
+// los lavaba. Ahora la luz sale bien desde acá: principal fuerte, sombra propia honda pero con color, los claros
+// enteros, oclusión en las juntas y la línea oscura de pixel art en la silueta. El juego ya no los retoca.)
 const BASE: Iluminacion = {
-  amb: 0.07, dif: 0.7, cielo: 0.05, rebote: 0.02,
-  especular: 0.55, especularMin: 0.4,
-  expo: 0.88, gamma: 1.2,
-  sombra: { color: '#05070d', fuerza: 0.45, hasta: 0.3 },
-  techo: { desde: 80, k: 0.36, color: '#8c8170', mezcla: 0.45 },
+  amb: 0.16, dif: 0.95, cielo: 0.14, rebote: 0.05,
+  especular: 0.9, especularMin: 0.25,
+  expo: 1.05, gamma: 1.08,
+  sombra: { color: '#141826', fuerza: 0.3, hasta: 0.25 },
+  techo: { desde: 205, k: 0.6, color: '#e8dcc0', mezcla: 0.3 },
   // el metal responde aunque el resto quede en penumbra: placa y oro destellan en sus facetas y todo lo que tiene algo
   // de brillo (malla, hueso pulido) agarra un hilo de contraluz en los cantos
   metal: { brillo: 0.6, esp: 3.0, exp: 12, filo: 0.18, borde: 1.1, ancho: 1.2, piso: 0.24 },
+  ao: { radio: 3, fuerza: 0.45 },
+  linea: { k: 0.62, kLuz: 0.2, dentro: 0.4, salto: 2.5 },
+  satura: 1.18,
 };
 export const CLAVE_BAJA_FRIA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.22, color: BORDE_FRIO, ancho: 1.6, mezcla: 0.45, contorno: 0 } };
 export const CLAVE_BAJA_CALIDA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.22, color: BORDE_CALIDO, ancho: 1.6, mezcla: 0.45, contorno: 0 } };

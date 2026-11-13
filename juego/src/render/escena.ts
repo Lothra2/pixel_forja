@@ -487,7 +487,8 @@ function pajaro(x: number, y: number, t: number) {
 }
 
 /** Cuánto se mezcla cada sprite sobre sí mismo en modo 'screen' (0 = como viene horneado). Levanta sombras y medios sin quemar los claros. */
-const REALCE = { heroe: 1, aliado: 0.65, monstruo: 0.65 };
+// (13 nov: la luz de los personajes ahora sale bien desde el motor; el realce queda en 0 y solo se prende a mano con window.__realce)
+const REALCE = { heroe: 0, aliado: 0, monstruo: 0 };
 /** Si un objeto grande (12 casillas o más) se puede pisar por dentro en al menos un tercio de su huella. */
 function pisable(z: Juego['zona'], o: { cx: number; cy: number; hw: number; hh: number; _pis?: boolean }): boolean {
   if (o._pis !== undefined) return o._pis;
@@ -585,7 +586,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (ok && !e.muerto && alfaM >= 1 && !(window as any).__sinRealce) {
     const k = (window as any).__realce ?? (e.tipo === 'heroe' ? REALCE.heroe : (e as any).dueno || e.tipo === 'npc' ? REALCE.aliado : REALCE.monstruo);
     // (en el pueblo hay luz de sobra: la mitad)
-    ctx.save(); ctx.globalCompositeOperation = (window as any).__realceModo ?? 'screen'; ctx.globalAlpha = k * (j.zona.tipo === 'pueblo' ? 0.5 : 1); dibujar(ctx, q, px, py, esc); ctx.restore();
+    if (k > 0) { ctx.save(); ctx.globalCompositeOperation = (window as any).__realceModo ?? 'screen'; ctx.globalAlpha = k * (j.zona.tipo === 'pueblo' ? 0.5 : 1); dibujar(ctx, q, px, py, esc); ctx.restore(); }
   }
   if (alfaM < 1) ctx.globalAlpha = 1;
   if (ok && !e.muerto && !(window as any).__sinReflejos) reflejos(ctx, e, q, px, py, esc);

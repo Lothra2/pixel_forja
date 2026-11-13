@@ -414,6 +414,15 @@ export interface Iluminacion {
    * profundidad de lo ya pintado; oscurece axilas, entrepierna, juntas y lo que queda bajo el casco. Apagada si falta.
    */
   ao?: { radio: number; fuerza: number; muestras?: number };
+  /**
+   * Línea de pixel art: el pixel del borde de la silueta se oscurece `k` (0..1) hacia `color` cuando su vecino vacío
+   * queda abajo o a la derecha (el lado de sombra) y `kLuz` cuando queda arriba o a la izquierda (el lado de la luz: la
+   * línea se rompe, como se entinta a mano). `dentro` oscurece además el pixel que queda detrás de un salto de
+   * profundidad de más de `salto` unidades (el brazo delante del torso, la cabeza sobre el pecho); necesita `ao`.
+   */
+  linea?: { k: number; kLuz?: number; color?: string; dentro?: number; salto?: number };
+  /** Saturación final de todo lo que no emite (1 = igual). */
+  satura?: number;
   /** La piel (materiales cu_piel*): su sombra tira a este color (sangre bajo la piel) y su color se satura `satura`. */
   piel?: { sombra: string; satura: number };
 }
@@ -650,12 +659,12 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   const techo = L?.techo ? { ...L.techo, rgb: rgb(L.techo.color ?? '#8a8070') } : null;
   const prin = L?.principal ? { rgb: rgb(L.principal.color), k: L.principal.tinte ?? 0.8, pos: L.principal.pos, alcance: L.principal.alcance ?? 60, foco: L.principal.foco } : null;
   // la oclusión necesita la profundidad, la normal y el punto de cada pixel
-  const ao = L?.ao, prof = ao ? new Float32Array(W * H).fill(NaN) : null, nrm = ao ? new Float32Array(W * H * 3) : null, pun = ao ? new Float32Array(W * H * 3) : null;
+  const ao = L?.ao, conProf = !!ao || !!L?.linea?.dentro, prof = conProf ? new Float32Array(W * H).fill(NaN) : null, nrm = conProf ? new Float32Array(W * H * 3) : null, pun = conProf ? new Float32Array(W * H * 3) : null;
   const rell = L?.relleno ? { ...L.relleno, d: norm(L.relleno.dir), rgb: rgb(L.relleno.color), k: L.relleno.tinte ?? 0.8 } : null;
   // por sub-muestra: material, brillo, punto, cuánto la toca la luz de borde y qué parte del brillo es de la principal
   // y del relleno (para teñir con sus colores)
   const sm: { mat: string; s: number; p: V3; b: number; cp: number; cr: number; n: V3; t: number }[] = [];
-  const luzPropia = borde?.contorno || L?.metal ? new Uint8Array(W * H) : null;
+  const luzPropia = borde?.contorno || L?.metal || L?.linea || L?.satura !== undefined ? new Uint8Array(W * H) : null;
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
     const cand = grilla[Math.floor(py / G) * gw + Math.floor(px / G)];
     const i = (py * W + px) * 4;
@@ -795,6 +804,8 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   if (ao && prof) oclusionPantalla(img, prof, nrm!, pun!, luzPropia, W, H, ax, ay, z0, ao);
   if (borde?.contorno && luzPropia) contornoBorde(img, luzPropia, borde.d, borde.rgb, borde.contorno, !!borde.alto, L?.principal ? norm(L.principal.dir) : undefined);
   if (lMetal && luzPropia) sinSal(img, luzPropia);
+  if (L?.satura !== undefined && L.satura !== 1) for (let q = 0; q < W * H; q++) { const o = q * 4; if (img.data[o + 3] !== 255 || luzPropia?.[q]) continue; const y = 0.2126 * img.data[o] + 0.7152 * img.data[o + 1] + 0.0722 * img.data[o + 2]; for (let t = 0; t < 3; t++) img.data[o + t] = Math.max(0, Math.min(255, y + (img.data[o + t] - y) * L.satura)); }
+  if (L?.linea) lineaSilueta(img, luzPropia, prof, L.linea);
   return { img, ancla: [ax, ay] };
 }
 
@@ -844,6 +855,24 @@ function oclusionPantalla(img: Raster, prof: Float32Array, nrm: Float32Array, pu
     k[j] = Math.min(1, occ / (N * 1.15));
   }
   for (let j = 0; j < W * H; j++) if (k[j] > 0) { const f = 1 - o.fuerza * k[j]; d[j * 4] *= f; d[j * 4 + 1] *= f; d[j * 4 + 2] *= f; }
+}
+
+/** La línea de la silueta y la de adentro (ver Iluminacion.linea). Lo que emite no se toca. */
+function lineaSilueta(img: Raster, luzPropia: Uint8Array | null, prof: Float32Array | null, o: NonNullable<Iluminacion['linea']>) {
+  const W = img.w, H = img.h, d = img.data, c = rgb(o.color ?? '#0a0810'), f = new Float32Array(W * H);
+  const lleno = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] === 255;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const j = y * W + x; if (!lleno(x, y) || luzPropia?.[j]) continue;
+    const sombra = !lleno(x + 1, y) || !lleno(x, y + 1), luz = !lleno(x - 1, y) || !lleno(x, y - 1);
+    let k = sombra ? o.k : luz ? o.kLuz ?? o.k * 0.35 : 0;
+    if (!k && o.dentro && prof) {
+      // detrás de un salto de profundidad: el vecino está bastante más cerca de la cámara
+      const t = prof[j], s = o.salto ?? 3;
+      for (const [i, m] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) { if (!lleno(x + i, y + m)) continue; const tv = prof[(y + m) * W + x + i]; if (t - tv > s) { k = o.dentro; break; } }
+    }
+    f[j] = k;
+  }
+  for (let j = 0; j < W * H; j++) if (f[j] > 0) { const q = j * 4; for (let t = 0; t < 3; t++) d[q + t] += (c[t] - d[q + t]) * f[j]; }
 }
 
 /** El filo de la silueta que da hacia la luz de borde: el pixel cuyo vecino de ese lado está vacío se aclara a su color. */
