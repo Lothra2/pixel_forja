@@ -585,6 +585,8 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   for (const [e, v2] of Object.entries(g.extra ?? {})) if (v2) partes.push([e as Elemento, v2 * entre(0.7, 1.3)]);
   let crit = false;
   if (g.critico && R() * 100 < g.critico) crit = true;
+  // el golpe crítico del héroe se ve: el destello de pixelfx en el punto del golpe y chispas blancas
+  if (crit && g.deHeroe) { efecto(j, 'pfx:fx_critico', v.x, v.y, 0, 0.9); particulas(j, v.x, v.y, 8, 'chispa', '#fff4c0', 1.6, 34); }
   for (let [e, d] of partes) {
     // el crítico dobla lo físico y la sangre, y el daño elemental del arma también sube (×1.5)
     if (crit) d *= e === 'fisico' || e === 'sangre' ? 2 : 1.5;
@@ -797,6 +799,7 @@ export function ganarXp(j: Juego, xp: number) {
     h.d.nivel++; h.d.puntosAtrib += 5; h.d.puntosHab += 1;
     recalc(j); h.vida = h.vidaMax; h.mana = h.c.manaMax;
     efecto(j, 'subida_nivel', h.x, h.y, 0, 1);
+    { const ev = usosPfx.evento.get('subir_nivel'); if (ev) efecto(j, 'pfx:' + ev, h.x, h.y, 0, 1); }
     sonar(j, 'nivel');
     j.eventos.push({ tipo: 'nivel' });
     msg(j, [`¡Nivel ${h.d.nivel}! Tienes puntos nuevos para repartir.`, `Level ${h.d.nivel}! You have new points to spend.`], '#ffe080');
@@ -1136,6 +1139,8 @@ function resolverHabilidad(j: Juego, parte?: number, cb?: { remate: boolean }) {
   const golpes = Math.round(val(hb.n, n)) || 1;
   const prec = (hb.bonos?.precision ? val(hb.bonos.precision, n) : 0);
   const efectoDir = DIRS.indexOf(h.dir);
+  // el efecto que la habilidad declara en el lanzador (pies del héroe)
+  { const up = !basico ? usosPfx.hab.get(id) : undefined; if (up?.lanzador && parte === undefined) efecto(j, 'pfx:' + up.lanzador, h.x, h.y, 0, 1); }
   const reembolso = () => { h.mana += costoMana(j, hb); if (hb.recarga) h.recargas[hb.id] = 0; };
   // gritos del berserker: dan furia
   if (h.d.clase === 'berserker' && hb.rama === 1 && !basico) ganarFuria(j, 12 + bono(h, 'furia_grito'));
@@ -2097,7 +2102,8 @@ const CHISPAS_ELEM: Partial<Record<Elemento, [string, Particula['tipo'], string]
 function chocar(j: Juego, p: Proyectil, contraMundo: boolean) {
   const [color, tipo, son] = CHISPAS_ELEM[p.elem] ?? CHISPAS_ELEM.fisico!;
   if (contraMundo) {
-    efecto(j, impactoDe(p), p.x, p.y, 0, 0.55);
+    const fis = p.elem === 'fisico' || /flecha|virote/.test(p.efecto);
+    efecto(j, fis ? 'pfx:fx_impacto_muro' : impactoDe(p), p.x, p.y, Math.round(((Math.atan2(p.vy, p.vx) * 180) / Math.PI / 45 + 8) % 8), fis ? 1 : 0.55);
     particulas(j, p.x, p.y, p.deHeroe ? 12 : 7, tipo, color, 1.5, p.z);
     if (p.elem !== 'frio' && p.elem !== 'veneno') particulas(j, p.x, p.y, 4, 'chispa', '#ffffff', 2, p.z);
     if (p.deHeroe) { j.sacudida = Math.max(j.sacudida, 0.07); sonar(j, son, p.x, p.y, 0.45); }

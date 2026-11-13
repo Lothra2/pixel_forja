@@ -25,7 +25,7 @@ def grupo(e):
 
 paquetes = {}
 for e in datos['efectos']:
-    g = grupo(e); e['paquete'] = g
+    g = e.get('paquete') or grupo(e); e['paquete'] = g  # respeta el paquete que declara el catálogo
     buf = paquetes.setdefault(g, bytearray())
     for p in e['paginas']:
         b = open(os.path.join(ORIGEN, p['archivo']), 'rb').read()
