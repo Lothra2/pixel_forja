@@ -650,12 +650,22 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: st
     if (tiene('antebrazo')) {
       const fin = extra.hasta !== undefined ? mez(b.codo, b.mun, extra.hasta) : b.mun;
       const ini = extra.hasta !== undefined && extra.hasta < 0 ? b.codo : b.codo;
-      cs.push(hueso(ini, fin, 1.85 * fino * A + inf, 1.2 * fino * A + inf, o));
-      cs.push(bulto(mez(b.codo, b.mun, 0.28), [3.1 * S + inf * 0.5, (1.5 + mu * 0.5) * A + inf, (1.4 + mu * 0.4) * A + inf], { eje: b.d2, mat }));
+      // el antebrazo afina hacia la muñeca: grueso arriba (la masa de los músculos junto al codo) y fino abajo
+      cs.push(hueso(ini, fin, 1.85 * fino * A + inf, 1.0 * fino * A + inf, o));
+      cs.push(bulto(mez(b.codo, b.mun, 0.26), [2.9 * S + inf * 0.5, (1.55 + mu * 0.5) * fino * A + inf, (1.4 + mu * 0.4) * fino * A + inf], { eje: b.d2, mat }));
+      // el codo: la punta del hueso asoma por detrás cuando el brazo se dobla (sin esto el brazo era un tubo que se curva)
+      const tras = sub(b.d1, b.d2);
+      if (len(tras) > 0.25) cs.push(bulto(add(b.codo, nor(tras), 0.75 * fino * A), [1.15 * fino * A + inf, 1.0 * fino * A + inf, 1.0 * fino * A + inf], { mat, k: 1.2 }));
     }
     if (tiene('mano')) {
-      cs.push(bulto(b.mano, [1.9 * S + inf, 1.1 * A + inf, 1.6 * S + inf], { eje: b.d2, mat }));
-      cs.push(hueso(add(b.mun, cruz(b.d2, [0, 0, 1]), 0.6 * b.s), add(b.mano, cruz(b.d2, [0, 0, 1]), 1.1 * b.s), 0.55 * S + inf, 0.5 * S + inf, o));
+      // la mano: palma chata entre la muñeca y el puño, nudillos un poco más anchos y el pulgar aparte, del lado de adentro
+      // (antes era un solo bulto: a la escala de la selección se leía como una manopla)
+      const lat = nor(cruz(b.d2, [0, 0, 1])), n = nor(cruz(b.d2, lat)), ej: [V3, V3, V3] = [b.d2, lat, n], f = fino;
+      const largo = len(sub(b.mano, b.mun));
+      cs.push(bulto(mez(b.mun, b.mano, 0.5), [largo * 0.62 + inf, 1.2 * f * A + inf, 0.75 * S + inf], { ejes: ej, mat }));
+      cs.push(bulto(add(b.mano, b.d2, 0.15 * S), [0.85 * S + inf, 1.3 * f * A + inf, 0.85 * S + inf], { ejes: ej, mat, k: 1.1 }));
+      const p0 = add(add(b.mun, b.d2, 0.5 * S), lat, 0.9 * f * A * b.s), p1 = add(add(add(b.mun, b.d2, 1.7 * S), lat, 1.45 * f * A * b.s), n, 0.35 * S);
+      cs.push(hueso(p0, p1, 0.5 * S + inf, 0.38 * S + inf, o));
     }
   }
   for (const p of e.piernas) {
@@ -926,7 +936,10 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     ps.push(masa(partes(e, cu, ['mano', 'antebrazo'], inf, mn.mat, { hasta: 1 }), { mat: mn.mat, suave: 1.2 }));
     // guanteletes: brazal acampanado hacia el puño y nudillos de placa
     if (mn.tipo === 'guanteletes') for (const b of e.brazos) {
-      ps.push(masa([hueso(mez(b.codo, b.mun, 0.25), mez(b.codo, b.mun, 1.02), 1.75 * A, 2.15 * A, { mat: mn.mat, tono: 0.04 })], { mat: mn.mat }));
+      // el guantelete: brazal que afina hacia el codo y se abre en el puño, con una lámina de borde arriba (sin el tubo parejo
+      // que hacía del antebrazo una salchicha)
+      ps.push(masa([hueso(mez(b.codo, b.mun, 0.3), mez(b.codo, b.mun, 1.0), 1.5 * A, 2.05 * A, { mat: mn.mat, tono: 0.04 })], { mat: mn.mat }));
+      ps.push(masa([hueso(mez(b.codo, b.mun, 0.26), mez(b.codo, b.mun, 0.34), 1.75 * A, 1.7 * A, { mat: mn.mat, tono: -0.16 })], { mat: mn.mat, tono: -0.16 }));
       ps.push(cilindro(...add(b.mun, b.d2, -0.6 * S), 2.25 * A, 0.7 * S, { mat: mn.linea ? acentoDe(mn.linea) : mn.mat === 'cu_oro' ? 'cu_placa' : 'cu_oro', r1: 2.3 * A, eje: b.d2 }));
     }
   }
