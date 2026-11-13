@@ -400,8 +400,15 @@ export interface Iluminacion {
    * Luces de retrato (la selección de personaje): la principal con su dirección propia (en vez de LUZ, también para las
    * sombras) y su color, y un relleno bajo de otro color. Lo que tiñen va en proporción a cuánto alumbran cada pixel.
    */
-  principal?: { dir: V3; color: string; tinte?: number };
+  principal?: { dir: V3; color: string; tinte?: number; pos?: V3; alcance?: number; /** [z de abajo, z de arriba, factor abajo]: la luz manda en lo alto (cara y pecho) y cae hacia los pies */ foco?: [number, number, number] };
   relleno?: { dir: V3; color: string; fuerza: number; tinte?: number };
+  /**
+   * Oclusión ambiental en pantalla: muestras en la media esfera de la normal (radio en unidades del mundo) contra la
+   * profundidad de lo ya pintado; oscurece axilas, entrepierna, juntas y lo que queda bajo el casco. Apagada si falta.
+   */
+  ao?: { radio: number; fuerza: number; muestras?: number };
+  /** La piel (materiales cu_piel*): su sombra tira a este color (sangre bajo la piel) y su color se satura `satura`. */
+  piel?: { sombra: string; satura: number };
 }
 export interface Render { img: Raster; ancla: [number, number] }
 export interface Ambiente { tinte?: [number, number, number]; luz?: number }
@@ -632,12 +639,15 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   const lEsp = L?.especular ?? 1, lEspMin = L?.especularMin ?? 0, lMetal = L?.metal;
   const borde = L?.borde ? { ...L.borde, d: norm(L.borde.dir), rgb: rgb(L.borde.color) } : null;
   const sombraL = L?.sombra ? { ...L.sombra, rgb: rgb(L.sombra.color) } : null;
+  const pielL = L?.piel ? { ...L.piel, rgb: rgb(L.piel.sombra) } : null;
   const techo = L?.techo ? { ...L.techo, rgb: rgb(L.techo.color ?? '#8a8070') } : null;
-  const prin = L?.principal ? { rgb: rgb(L.principal.color), k: L.principal.tinte ?? 0.8 } : null;
+  const prin = L?.principal ? { rgb: rgb(L.principal.color), k: L.principal.tinte ?? 0.8, pos: L.principal.pos, alcance: L.principal.alcance ?? 60, foco: L.principal.foco } : null;
+  // la oclusión necesita la profundidad, la normal y el punto de cada pixel
+  const ao = L?.ao, prof = ao ? new Float32Array(W * H).fill(NaN) : null, nrm = ao ? new Float32Array(W * H * 3) : null, pun = ao ? new Float32Array(W * H * 3) : null;
   const rell = L?.relleno ? { ...L.relleno, d: norm(L.relleno.dir), rgb: rgb(L.relleno.color), k: L.relleno.tinte ?? 0.8 } : null;
   // por sub-muestra: material, brillo, punto, cuánto la toca la luz de borde y qué parte del brillo es de la principal
   // y del relleno (para teñir con sus colores)
-  const sm: { mat: string; s: number; p: V3; b: number; cp: number; cr: number }[] = [];
+  const sm: { mat: string; s: number; p: V3; b: number; cp: number; cr: number; n: V3; t: number }[] = [];
   const luzPropia = borde?.contorno || L?.metal ? new Uint8Array(W * H) : null;
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
     const cand = grilla[Math.floor(py / G) * gw + Math.floor(px / G)];
@@ -668,15 +678,19 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
       if (m.emite) {
         s = 0.8 + (fbm(p[0] * m.escala, p[1] * m.escala, p[2] * m.escala) - 0.5) * m.ruido + tono;
       } else {
-        const dif = Math.max(0, dot(n, LUZ));
+        // (retrato: la principal es una antorcha, con su punto y su caída; la sombra sigue la dirección media)
+        let Ld = LUZ, att = 1;
+        if (prin?.pos) { const v = add(prin.pos, p, -1), dd = Math.hypot(v[0], v[1], v[2]) || 1; Ld = [v[0] / dd, v[1] / dd, v[2] / dd]; att = Math.min(1.35, (prin.alcance / dd) ** 2); }
+        if (prin?.foco) { const [z0f, z1f, mn] = prin.foco, t = Math.max(0, Math.min(1, (p[2] - z0f) / (z1f - z0f))); att *= mn + (1 - mn) * t * t * (3 - 2 * t); }
+        const dif = Math.max(0, dot(n, Ld));
         const lz = dif > 0 ? luzDe(add(p, n, borrador ? 0.8 : 0.55), giro, 0.3 + 0.6 * (1 - dif)) : 0;
         const oc = borrador ? Math.max(0, 1 - Math.max(0, p[2]) / 10) * 0.5 : oclusion(alturas, p, n);
         const arriba = Math.max(0, n[2]);
-        s = lAmb + lDif * dif * (0.22 + 0.78 * lz) + lCielo * arriba + lReb * Math.max(0, dot(n, rebote));
-        if (prin || rell) {
-          const sp = lDif * dif * (0.22 + 0.78 * lz), sr = rell ? rell.fuerza * Math.max(0, dot(n, rell.d)) : 0;
-          s += sr; cp = sp / Math.max(1e-3, s); cr = sr / Math.max(1e-3, s);
-        }
+        const sKey = lDif * dif * (0.22 + 0.78 * lz) * att;
+        s = lAmb + sKey + lCielo * arriba + lReb * Math.max(0, dot(n, rebote));
+        // lo que pone la principal (difuso y brillos) y el relleno: con eso se tiñen después
+        let sp = sKey, sr = 0, sbm = 0;
+        if (rell) { sr = rell.fuerza * Math.max(0, dot(n, rell.d)); s += sr; }
         // el grano (ruido y patrón del material) modula el difuso, no el brillo: en lo oscuro casi no se ve y nunca
         // levanta un pixel suelto hasta el blanco; los materiales `local` llevan el grano pegado a su pieza
         const pl = m.local ? enPieza(hit, p) : p;
@@ -685,27 +699,32 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
         const metalBaja = !!(lMetal && m.brillo && m.brillo >= lMetal.brillo);
         // canto: lo que se ve de refilón (el filo de una lámina, el borde de la silueta)
         const canto = Math.min(1, (1 - Math.abs(dot(n, VISTA))) * 2.2);
-        if (m.brillo && m.brillo >= lEspMin && !metalBaja) s += m.brillo * lEsp * Math.pow(Math.max(0, dot(n, media)), 12) * lz;
+        const med = prin?.pos ? norm(add(Ld, VISTA, -1)) : media;
+        if (m.brillo && m.brillo >= lEspMin && !metalBaja) { const e = m.brillo * lEsp * Math.pow(Math.max(0, dot(n, med)), 12) * lz * att; s += e; sp += e; }
         if (lMetal && m.brillo) {
           // metal en penumbra: un brillo ancho y suave en la cara de la lámina y el fuerte solo en filos y cantos
           if (metalBaja) {
-            const h = Math.max(0, dot(n, media));
-            s += lMetal.esp * m.brillo * (0.16 * Math.pow(h, 4) + Math.pow(h, lMetal.exp) * canto) * (0.35 + 0.65 * lz) + (lMetal.piso ?? 0) * m.brillo * (0.5 + 0.5 * dif);
+            const h = Math.max(0, dot(n, med));
+            const e = lMetal.esp * m.brillo * (0.16 * Math.pow(h, 4) + Math.pow(h, lMetal.exp) * canto) * (0.35 + 0.65 * lz) * att;
+            s += e + (lMetal.piso ?? 0) * m.brillo * (0.5 + 0.5 * dif); sp += e;
           }
-          if (m.brillo >= lMetal.filo && borde) s += lMetal.borde * Math.min(1, m.brillo * 1.6) * Math.pow(1 - Math.max(0, -dot(n, VISTA)), lMetal.ancho) * Math.max(0, dot(n, borde.d) + 0.3);
+          if (m.brillo >= lMetal.filo && borde) { sbm = lMetal.borde * Math.min(1, m.brillo * 1.6) * Math.pow(1 - Math.max(0, -dot(n, VISTA)), lMetal.ancho) * Math.max(0, dot(n, borde.d) + (prin ? 0 : 0.3)); s += sbm; }
           // tope: el metal no se quema; al blanco solo llega en el filo
           if (metalBaja) s = Math.min(s, 0.56 + 0.22 * canto * canto);
         }
         s += tono;
         s *= 1 - 0.42 * oc;
         s *= luzAmb;
+        if (prin || rell) { const tot = Math.max(1e-3, s); cp = sp / tot; cr = sr / tot; }
         if (L) {
           if (s > 0) s = (L.expo ?? 1) * Math.pow(s, L.gamma ?? 1);
           if (borde) { bb = Math.pow(1 - Math.max(0, -dot(n, VISTA)), borde.ancho ?? 3) * Math.max(0, dot(n, borde.d)); s += borde.fuerza * bb; }
+          // retrato: el filo del metal del lado de la contraluz se tiñe de su frío (el del lado de la antorcha, de su calor)
+          if (prin && sbm > 0) bb = Math.min(1.5, bb + sbm * 0.6);
         }
         if (resp) { const dd = Math.hypot(p[0] - resp.c[0], p[1] - resp.c[1], p[2] - resp.c[2]); s += Math.max(0, 1 - dd / resp.r) * 0.25; }
       }
-      sm.push({ mat: matId, s, p, b: bb, cp, cr });
+      sm.push({ mat: matId, s, p, b: bb, cp, cr, n: hit.n, t: hit.t });
     }
     if (sm.length * 2 < n2 || (n2 === 1 && !sm.length)) {
       if (pisos) { const a = Math.round((sombraPiso / n2) * 255); if (a > 6) { img.data[i] = 8; img.data[i + 1] = 6; img.data[i + 2] = 12; img.data[i + 3] = Math.min(200, a); } }
@@ -715,7 +734,11 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     let matId = sm[0].mat;
     if (sm.length > 1) { const cuenta = new Map<string, number>(); let best = 0; for (const q of sm) { const c = (cuenta.get(q.mat) ?? 0) + 1; cuenta.set(q.mat, c); if (c > best) { best = c; matId = q.mat; } } }
     let s = 0, nn = 0, p: V3 = sm[0].p, bb = 0, cp = 0, cr = 0;
-    for (const q of sm) if (q.mat === matId) { s += q.s; bb += q.b; cp += q.cp; cr += q.cr; if (!nn) p = q.p; nn++; }
+    for (const q of sm) if (q.mat === matId) {
+      s += q.s; bb += q.b; cp += q.cp; cr += q.cr;
+      if (!nn) { p = q.p; if (prof) { const j = py * W + px; prof[j] = q.t; nrm!.set(q.n, j * 3); pun!.set(q.p, j * 3); } }
+      nn++;
+    }
     s /= nn; bb /= nn; cp /= nn; cr /= nn;
     if (!Number.isFinite(s)) s = 0.5;
     const m = MATERIALES[matId] ?? MATERIALES.piedra;
@@ -736,11 +759,17 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
           r = r * k + (techo.rgb[0] * yy - r * k) * f; g = g * k + (techo.rgb[1] * yy - g * k) * f; b = b * k + (techo.rgb[2] * yy - b * k) * f;
         }
       }
-      if (sombraL) { const f = sombraL.fuerza * Math.max(0, 1 - Math.max(0, s) / (sombraL.hasta ?? 0.4)); r += (sombraL.rgb[0] - r) * f; g += (sombraL.rgb[1] - g) * f; b += (sombraL.rgb[2] - b) * f; }
+      const esPiel = !!pielL && matId.startsWith('cu_piel');
+      if (esPiel) {
+        // la piel: menos saturada (no plástico naranja) y la sombra hacia el rojo oscuro (subdispersión aproximada)
+        const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        r = y + (r - y) * pielL!.satura; g = y + (g - y) * pielL!.satura; b = y + (b - y) * pielL!.satura;
+      }
+      if (sombraL) { const f = sombraL.fuerza * Math.max(0, 1 - Math.max(0, s) / (sombraL.hasta ?? 0.4)), c = esPiel ? pielL!.rgb : sombraL.rgb; r += (c[0] - r) * f; g += (c[1] - g) * f; b += (c[2] - b) * f; }
       // retrato: la principal y el relleno tiñen lo que alumbran (sin cambiar la luminancia)
       for (const [lz, k] of [[prin, cp], [rell, cr]] as const) {
         if (!lz || k <= 0) continue;
-        const ly = (0.2126 * lz.rgb[0] + 0.7152 * lz.rgb[1] + 0.0722 * lz.rgb[2]) || 1, f = Math.min(1, k * lz.k);
+        const ly = (0.2126 * lz.rgb[0] + 0.7152 * lz.rgb[1] + 0.0722 * lz.rgb[2]) || 1, f = Math.min(1, k * lz.k * (pielL && matId.startsWith('cu_piel') && lz === prin ? 0.45 : 1));
         r *= 1 + (lz.rgb[0] / ly - 1) * f; g *= 1 + (lz.rgb[1] / ly - 1) * f; b *= 1 + (lz.rgb[2] / ly - 1) * f;
       }
       if (borde && bb > 0) { const f = Math.min(1, bb * (borde.mezcla ?? 0.6)); r += (borde.rgb[0] - r) * f; g += (borde.rgb[1] - g) * f; b += (borde.rgb[2] - b) * f; }
@@ -748,6 +777,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     if (!m.emite) { r *= tin[0]; g *= tin[1]; b *= tin[2]; } else if (luzPropia) luzPropia[py * W + px] = 1;
     img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = 255;
   }
+  if (ao && prof) oclusionPantalla(img, prof, nrm!, pun!, luzPropia, W, H, ax, ay, z0, ao);
   if (borde?.contorno && luzPropia) contornoBorde(img, luzPropia, borde.d, borde.rgb, borde.contorno);
   if (lMetal && luzPropia) sinSal(img, luzPropia);
   return { img, ancla: [ax, ay] };
@@ -769,6 +799,36 @@ function sinSal(img: Raster, luzPropia: Uint8Array) {
     if (mx <= 140) bajar.push([q, Math.max(mx, 115) / lum(q)]);
   }
   for (const [q, k] of bajar) for (let t = 0; t < 3; t++) d[q + t] *= k;
+}
+
+/**
+ * Oclusión ambiental en pantalla: para cada pixel, muestras en la media esfera de su normal (dos radios, girando por
+ * pixel con la trama); una muestra está tapada si lo pintado en su pixel queda delante de ella (más cerca de la cámara)
+ * y no demasiado lejos (si no, la silueta de adelante oscurecería el fondo). Oscurece el color, salvo lo que emite.
+ */
+function oclusionPantalla(img: Raster, prof: Float32Array, nrm: Float32Array, pun: Float32Array, luzPropia: Uint8Array | null, W: number, H: number, ax: number, ay: number, z0: number, o: { radio: number; fuerza: number; muestras?: number }) {
+  const N = o.muestras ?? 8, R = o.radio, d = img.data, k = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const j = y * W + x;
+    if (Number.isNaN(prof[j]) || luzPropia?.[j]) continue;
+    const n: V3 = [nrm[j * 3], nrm[j * 3 + 1], nrm[j * 3 + 2]], p: V3 = [pun[j * 3], pun[j * 3 + 1], pun[j * 3 + 2]];
+    const t1 = norm(cross(n, Math.abs(n[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0])), t2 = cross(n, t1);
+    const rot = trama(x, y) * Math.PI * 2;
+    let occ = 0;
+    for (let i = 0; i < N; i++) {
+      const a = rot + (i / N) * Math.PI * 2, r = R * (i % 2 ? 1 : 0.45);
+      const v = norm(add(add(n, t1, Math.cos(a) * 0.9), t2, Math.sin(a) * 0.9));
+      const q = add(p, v, r);
+      const [sx, sy] = aPantalla(q), qx = Math.floor(sx + ax), qy = Math.floor(sy + ay);
+      if (qx < 0 || qy < 0 || qx >= W || qy >= H) continue;
+      const tb = prof[qy * W + qx];
+      if (Number.isNaN(tb)) continue;
+      const tq = (q[2] - z0) / VISTA[2];
+      if (tb < tq - 0.25 && tq - tb < R * 2) occ += i % 2 ? 1 : 1.3;
+    }
+    k[j] = Math.min(1, occ / (N * 1.15));
+  }
+  for (let j = 0; j < W * H; j++) if (k[j] > 0) { const f = 1 - o.fuerza * k[j]; d[j * 4] *= f; d[j * 4 + 1] *= f; d[j * 4 + 2] *= f; }
 }
 
 /** El filo de la silueta que da hacia la luz de borde: el pixel cuyo vecino de ese lado está vacío se aclara a su color. */

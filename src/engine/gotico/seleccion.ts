@@ -61,14 +61,14 @@ function berserker(p: Pose, arma: ArmaPose): Guion {
   const libre: Vals = { hombroI: [8, 15, 24, 10], pegaI: 0, agarreI: -7 };
   void arma;
   const bucle: Clave[] = [
-    K(0, { bajar: 2.4, torso: 7, avanza: 0, lateral: 0.7, ladeoCadera: 2.2, ladeo: -1.6, giroTorso: 10, giroCadera: -4, respira: 0.1, hombros: [1, 0.9], cabeza: -3, giroCabeza: -8, ladeoCabeza: 1, ...hombro, ...libre }),
+    K(0, { bajar: 2.4, torso: 7, avanza: 0, lateral: 0.7, ladeoCadera: 2.2, ladeo: -1.6, giroTorso: 10, giroCadera: -4, respira: 0.1, hombros: [1, 0.9], cabeza: -3, giroCabeza: 10, ladeoCabeza: 1, ...hombro, ...libre }),
     K(0.11, { respira: 1, hombros: [2.3, 2.1], torso: 5, bajar: 1.8 }),
     K(0.24, { respira: 0.15, hombros: [1, 0.9], torso: 7.5, bajar: 2.5, lateral: 0.8, hombroI: [9, 15, 28, 10] }, true),
     // rota el cuello: inclina a la derecha, baja la barbilla, pasa a la izquierda y vuelve
-    K(0.36, { respira: 0.55, cabeza: 1, ladeoCabeza: 13, giroCabeza: 6, hombros: [1.6, 1.2] }),
-    K(0.46, { cabeza: 9, ladeoCabeza: 0, giroCabeza: -2, respira: 1, hombros: [2.4, 2.2] }),
-    K(0.56, { cabeza: 2, ladeoCabeza: -13, giroCabeza: -12, respira: 0.6 }),
-    K(0.66, { cabeza: -4, ladeoCabeza: 0, giroCabeza: -8, respira: 0.15, hombros: [1, 0.9], lateral: 0.55, ladeoCadera: 1.8, hombroD: [14, 10, 109, 0], hombroI: [7, 15, 22, 10] }, true),
+    K(0.36, { respira: 0.55, cabeza: 1, ladeoCabeza: 13, giroCabeza: 24, hombros: [1.6, 1.2] }),
+    K(0.46, { cabeza: 9, ladeoCabeza: 0, giroCabeza: 16, respira: 1, hombros: [2.4, 2.2] }),
+    K(0.56, { cabeza: 2, ladeoCabeza: -13, giroCabeza: 6, respira: 0.6 }),
+    K(0.66, { cabeza: -4, ladeoCabeza: 0, giroCabeza: 10, respira: 0.15, hombros: [1, 0.9], lateral: 0.55, ladeoCadera: 1.8, hombroD: [14, 10, 109, 0], hombroI: [7, 15, 22, 10] }, true),
     K(0.8, { respira: 1, hombros: [2.2, 2], torso: 5.5, bajar: 1.9, lateral: 0.6 }),
     K(0.92, { respira: 0.3, hombros: [1.2, 1.1], torso: 6.8, bajar: 2.3 }),
   ];
@@ -98,16 +98,16 @@ function templario(p: Pose, arma: ArmaPose, mano?: ManoPose): Guion {
   const pomo: Vals = { manoD: [13, 1, 33], armaD: [152, -2], pisoArma: 0, codoD: [-0.2, 1, -0.3] };
   const escudo: Vals = { hombroI: [-2, 26, 12, 0] };
   const bucle: Clave[] = [
-    K(0, { bajar: 1.2, torso: 3, lateral: 0.45, ladeoCadera: 1.8, ladeo: -0.8, giroTorso: 6, giroCadera: -3, respira: 0.1, hombros: [0.3, 0.3], cabeza: -2, giroCabeza: -10, ladeoCabeza: 1, ...pomo, ...escudo }),
-    K(0.25, { respira: 1, hombros: [0.9, 0.8], torso: 2, bajar: 0.9, giroCabeza: -2 }),
-    K(0.5, { respira: 0.15, hombros: [0.3, 0.3], torso: 3.5, bajar: 1.3, lateral: -0.25, ladeoCadera: -1.2, ladeo: 0.6, giroCabeza: 8, cabeza: -3 }, true),
-    K(0.75, { respira: 0.95, hombros: [0.9, 0.8], torso: 2, bajar: 0.9, giroCabeza: 2 }),
+    K(0, { bajar: 1.2, torso: 3, lateral: 0.45, ladeoCadera: 1.8, ladeo: -0.8, giroTorso: 6, giroCadera: -3, respira: 0.1, hombros: [0.3, 0.3], cabeza: -2, giroCabeza: 6, ladeoCabeza: 1, ...pomo, ...escudo }),
+    K(0.25, { respira: 1, hombros: [0.9, 0.8], torso: 2, bajar: 0.9, giroCabeza: 14 }),
+    K(0.5, { respira: 0.15, hombros: [0.3, 0.3], torso: 3.5, bajar: 1.3, lateral: -0.25, ladeoCadera: -1.2, ladeo: 0.6, giroCabeza: 24, cabeza: -3 }, true),
+    K(0.75, { respira: 0.95, hombros: [0.9, 0.8], torso: 2, bajar: 0.9, giroCabeza: 18 }),
   ];
   const entrada: Clave[] = [
     // tira de la espada hacia arriba y atrás (anticipación)
     K(0.16, { bajar: 2.2, torso: 6, cabeza: 1, manoD: [8, 9, 36], armaD: [120, 30], pisoArma: 0 }, true),
     // el saludo: la guarnición junto al mentón, al costado derecho, la hoja vertical
-    K(0.36, { bajar: 0.4, torso: -3, cabeza: -6, giroCabeza: 0, respira: 1, hombros: [0.8, 0.7], manoD: [3, 13, 45], armaD: [-6, 22] }, true),
+    K(0.36, { bajar: 0.4, torso: -3, cabeza: -6, giroCabeza: 16, respira: 1, hombros: [0.8, 0.7], manoD: [3, 13, 45], armaD: [-6, 22] }, true),
     // la clava al frente de un golpe
     K(0.56, { bajar: 2.6, torso: 9, cabeza: 2, respira: 0.3, hombros: [0.2, 0.2], manoD: [14, 1, 31], armaD: [150, -2], pisoArma: 0 }, true),
     K(0.72, { bajar: 1.8, torso: 5, manoD: [13.5, 1, 32.5] }),
@@ -125,12 +125,12 @@ function cazadora(p: Pose): Guion {
   plantar(p, [-2.8, 3.2], [2, 1.5], [40, 12]);
   const reposo: Vals = { manoI: [11, -7, 30], manoD: [8, -4, 31], codoD: [-0.35, 0.8, -0.5] };
   const bucle: Clave[] = [
-    K(0, { bajar: 1.2, torso: 0, ladeo: -0.6, giroTorso: 14, giroCadera: 6, lateral: 0.35, ladeoCadera: 1.4, respira: 0.1, hombros: [0.2, 0.2], cabeza: -5, giroCabeza: -22, ladeoCabeza: -1, ...reposo }),
+    K(0, { bajar: 1.2, torso: 0, ladeo: -0.6, giroTorso: 14, giroCadera: 6, lateral: 0.35, ladeoCadera: 1.4, respira: 0.1, hombros: [0.2, 0.2], cabeza: -5, giroCabeza: 8, ladeoCabeza: -1, ...reposo }),
     K(0.17, { respira: 0.9, hombros: [0.6, 0.6], torso: -1, bajar: 0.9 }),
-    K(0.33, { respira: 0.15, torso: 0.5, bajar: 1.3, giroCabeza: -8, cabeza: -6, lateral: 0.1, ladeoCadera: 0.6 }, true),
-    K(0.5, { respira: 0.9, hombros: [0.6, 0.6], torso: -1, bajar: 0.9, giroCabeza: 4, cabeza: -7, manoI: [12, -7, 32] }),
-    K(0.67, { respira: 0.15, torso: 0.8, bajar: 1.4, giroCabeza: -6, lateral: 0.5, ladeoCadera: 1.8 }, true),
-    K(0.84, { respira: 0.9, hombros: [0.6, 0.6], torso: -1, bajar: 0.9, giroCabeza: -18, manoI: [11, -7, 30] }),
+    K(0.33, { respira: 0.15, torso: 0.5, bajar: 1.3, giroCabeza: 22, cabeza: -6, lateral: 0.1, ladeoCadera: 0.6 }, true),
+    K(0.5, { respira: 0.9, hombros: [0.6, 0.6], torso: -1, bajar: 0.9, giroCabeza: 34, cabeza: -7, manoI: [12, -7, 32] }),
+    K(0.67, { respira: 0.15, torso: 0.8, bajar: 1.4, giroCabeza: 24, lateral: 0.5, ladeoCadera: 1.8 }, true),
+    K(0.84, { respira: 0.9, hombros: [0.6, 0.6], torso: -1, bajar: 0.9, giroCabeza: 12, manoI: [11, -7, 30] }),
   ];
   const entrada: Clave[] = [
     K(0.16, { bajar: 2.2, torso: 5, giroTorso: 22, cabeza: 2, respira: 0.6, manoI: [15, -5, 37], manoD: [12, -3, 38] }),
