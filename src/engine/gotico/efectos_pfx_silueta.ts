@@ -1,7 +1,12 @@
 /**
  * La silueta de nuestro héroe a la escala de pixelfx (1x = la mitad de la pantalla), para los efectos de pixelfx que
- * leen el cuerpo (estados, muertes, auras). Se pinta con el render de figuras del motor (templario veterano, quieto,
- * mirando al sur, sin sombra en el piso) y se reduce a la mitad.
+ * leen el cuerpo (estados, muertes, auras).
+ *
+ * Está congelada: es la del templario veterano, quieto, mirando al sur, sin sombra, reducido a la mitad, tal como lo
+ * pintaba el render de figuras cuando se exportaron los efectos (commit 96f28d64). Los archivos de personajes ahora
+ * son del juego y cambian; si la silueta siguiera al render, cada retoque de un personaje cambiaría en silencio los
+ * ~40 efectos de cuerpo ya horneados y el json dejaría de coincidir. `heroeReferencia` (solo para las láminas) sí
+ * sigue al render de hoy.
  */
 import { pintarEscena, type Render } from './render';
 import { personajeEscena } from './cuerpo';
@@ -27,37 +32,61 @@ export function heroeReferencia(): Render {
   return FIG;
 }
 
+/**
+ * La silueta congelada: una fila por renglón, '.' sin cuerpo y un dígito hexadecimal con el brillo del cuerpo en 16
+ * pasos (0 a f). Los pies van en la fila de abajo y el cuerpo centrado en x.
+ */
+const SILUETA_CONGELADA = [
+  '..........f.........',
+  '.........fd7........',
+  '........fff87.......',
+  '.......fffe87.......',
+  '.......aefeb67......',
+  '.......9933465......',
+  '...ffeca7655557eeb..',
+  '..ffffcb5653346bea7.',
+  '.efffe9532423458a75.',
+  '..8ba756f845544444..',
+  '..44333bfc75554343..',
+  '..774459a875544434..',
+  '..a753566352344344..',
+  '..97424432523444444.',
+  '..86433332523433344.',
+  '..75432332523433345.',
+  '.ffcabcccc523334455.',
+  '.983365345523334555.',
+  '..62233222523444555.',
+  '..22233222523344444.',
+  '..23444332423444454.',
+  '..22222332423444554.',
+  '...2222222323333565.',
+  '...22222233233337a6.',
+  '...42332233233346857',
+  '...63222233233347a66',
+  '...6522323323333bfa.',
+  '...65323233233339ed.',
+  '...444333..333338fd.',
+  '...553333..33333bfe.',
+  '...433333..333339f..',
+  '...432333..33333....',
+  '...433333..33333....',
+  '....3333...32233....',
+  '....3333...53333....',
+  '....4333...43333....',
+  '....77333..3344.....',
+  '....c843....3443....',
+  '...6853......33.....',
+  '....33..............',
+];
+
 /** La silueta del héroe a 1x, con los pies en la fila de abajo y centrada en x. */
 export function siluetaHeroe(): Silueta {
   if (SIL) return SIL;
-  const h = HEROES.find((x) => x.id === 'templario')!;
-  // con la luz de siempre (no la clave baja de los sprites): el muñeco de los efectos sale de este brillo y los efectos ya horneados no cambian
-  const r = pintarEscena({ ...personajeEscena(h.cuerpo, h.niveles[1], 's', 'quieto', 0), sinSombra: true, luz: undefined });
-  const { img, ancla } = r;
-  // columnas y filas con cuerpo
-  let x0 = img.w, x1 = -1, y0 = img.h, y1 = -1;
-  for (let y = 0; y < img.h; y++)
-    for (let x = 0; x < img.w; x++)
-      if (img.data[(y * img.w + x) * 4 + 3] > 96) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
-  // a la mitad, centrada en el ancla (pies)
-  const izq = Math.ceil((ancla[0] - x0) / 2), der = Math.ceil((x1 + 1 - ancla[0]) / 2);
-  const w = 2 * Math.max(izq, der), hh = Math.ceil((Math.max(y1 + 1, ancla[1]) - y0) / 2);
-  const mask = new Uint8Array(w * hh), luz = new Float32Array(w * hh);
-  for (let y = 0; y < hh; y++)
-    for (let x = 0; x < w; x++) {
-      // bloque de 2×2 de la imagen grande
-      const X = ancla[0] + (x - w / 2) * 2, Y = Math.max(y1 + 1, ancla[1]) - (hh - y) * 2;
-      let a = 0, l = 0;
-      for (let dy = 0; dy < 2; dy++)
-        for (let dx = 0; dx < 2; dx++) {
-          const px = X + dx, py = Y + dy;
-          if (px < 0 || py < 0 || px >= img.w || py >= img.h) continue;
-          const i = (py * img.w + px) * 4, al = img.data[i + 3] / 255;
-          a += al;
-          l += al * (0.299 * img.data[i] + 0.587 * img.data[i + 1] + 0.114 * img.data[i + 2]) / 255;
-        }
-      if (a >= 2) { mask[y * w + x] = 1; luz[y * w + x] = Math.min(1, (l / a) * 1.6); }
-    }
-  SIL = { w, h: hh, mask, luz };
+  const h = SILUETA_CONGELADA.length, w = SILUETA_CONGELADA[0].length;
+  const mask = new Uint8Array(w * h), luz = new Float32Array(w * h);
+  SILUETA_CONGELADA.forEach((fila, y) => {
+    for (let x = 0; x < w; x++) if (fila[x] !== '.') { mask[y * w + x] = 1; luz[y * w + x] = parseInt(fila[x], 16) / 15; }
+  });
+  SIL = { w, h, mask, luz };
   return SIL;
 }
