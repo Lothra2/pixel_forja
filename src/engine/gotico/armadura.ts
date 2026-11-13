@@ -469,7 +469,7 @@ export function jubon(e: Esqueleto, cu: Cuerpo, to: NonNullable<Equipo['torso']>
     const tira: [number, number][] = [[16.4, 4.4], [12.0, 1.4], [7.6, -2.0], [3.6, -4.8]];
     for (const k of [1, -1]) for (let i = 0; i < tira.length - 1; i++) {
       const [[u0, y0], [u1, y1]] = [tira[i], tira[i + 1]];
-      ps.push(poliedro([r(u0, y0 - 0.85, k), r(u0, y0 + 0.85, k), r(u1, y1 - 0.85, k), r(u1, y1 + 0.85, k), r(u0, y0 - 0.85, k, 0.4), r(u0, y0 + 0.85, k, 0.4), r(u1, y1 - 0.85, k, 0.4), r(u1, y1 + 0.85, k, 0.4)], { mat: borde, tono: 0.04 }));
+      ps.push(poliedro([r(u0, y0 - 0.85, k), r(u0, y0 + 0.85, k), r(u1, y1 - 0.85, k), r(u1, y1 + 0.85, k), r(u0, y0 - 0.85, k, 0.4), r(u0, y0 + 0.85, k, 0.4), r(u1, y1 - 0.85, k, 0.4), r(u1, y1 + 0.85, k, 0.4)], { mat: m === 'cu_cuero_negro' ? 'cu_cuero' : 'cu_cuero_oscuro', tono: 0.1 })); // (la correa negra sobre el jubón se leía como huecos en el pecho)
     }
     ps.push(caja(...r(10.6, 0.3, 1), 0.6, 1.5 * A, 1.4 * S, { mat: 'cu_placa', giro: (Math.atan2(e.ejesT[0][1], e.ejesT[0][0]) * 180) / Math.PI }));
   }

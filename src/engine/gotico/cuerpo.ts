@@ -885,7 +885,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     if (to.tipo === 'malla' && !to.linea) ps.push(...mallaForjada(e, cu, to));
     // (la túnica cruzada lleva su solapa en el vestuario: sin la abertura recta ni los pliegues de la túnica oscura)
     if (to.tipo === 'tunica' && !eq.prendas?.some((p) => p.tipo === 'cruce')) ps.push(...tunicaForjada(e, cu, to));
-    if ((to.tipo === 'cuero' || to.tipo === 'cuero_tachonado') && !to.linea) ps.push(...jubon(e, cu, to, cu.presentacion === 'apunta'));
+    if ((to.tipo === 'cuero' || to.tipo === 'cuero_tachonado') && !to.linea && !(globalThis as any).process?.env?.SINJUBON) ps.push(...jubon(e, cu, to, cu.presentacion === 'apunta'));
     if (to.tipo === 'placas') {
       // peto curvo, espaldar, faldares y el borde dorado
       // los héroes llevan la coraza forjada por láminas (armadura.ts); las líneas épicas y los monstruos, la de siempre

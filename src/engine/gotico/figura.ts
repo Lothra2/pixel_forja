@@ -425,7 +425,7 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
     }
     case 'apunta': {
       // liviana y atenta: el peso en la pierna de atrás, un poco agazapada, la cabeza que escucha a los costados
-      p.bajar = 1.2 - 0.4 * k; p.torso = 1 - 1.2 * k; p.giroTorso = 9 + k; p.giroCabeza = -10 + 9 * Math.sin(u * TAU + 0.6); p.cabeza = 1 - 1.5 * k;
+      p.bajar = 1.2 - 0.4 * k; p.torso = 1 - 1.2 * k; p.giroTorso = 9 + k; p.giroCabeza = -10 + 9 * Math.sin(u * TAU + 0.6); p.cabeza = -4 - 1.5 * k;
       p.lateral = 0.9 + 0.15 * k; p.ladeoCadera = 2.8;
       break;
     }
