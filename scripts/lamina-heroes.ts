@@ -28,7 +28,9 @@ const t = createRaster(suj.length * cols * CW, CH);
 for (let i = 0; i < t.w * t.h; i++) t.data.set([FONDO[0], FONDO[1], FONDO[2], 255], i * 4);
 suj.forEach((h, hi) => {
   const nvs = h.niveles.length > 1 ? [h.niveles[0], h.niveles[h.niveles.length - 1]] : [h.niveles[0]];
-  nvs.forEach(([, eq], ni) => DIRS.forEach((dir, di) => {
+  nvs.forEach(([, eq0], ni) => DIRS.forEach((dir, di) => {
+    // --sin capa,prendas,...: quita esas piezas del equipo (para aislar de dónde sale un defecto)
+    const eq: any = { ...eq0 }; for (const k of (arg('--sin') ?? '').split(',').filter(Boolean)) delete eq[k];
     const e = personajeEscena(h.cuerpo, eq, dir, ACC, F); const r = pintarEscena({ ...e, luz: LUZ_PRUEBA ? { ...e.luz, ...LUZ_PRUEBA } : e.luz, sinSombra: true }, {}, { w: CW, h: CH, ax: AX, ay: AY });
     blit(t, r.img, (hi * cols + ni * DIRS.length + di) * CW, 0);
   }));

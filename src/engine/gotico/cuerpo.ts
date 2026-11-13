@@ -94,7 +94,8 @@ M.cu_cuerno = { rampa: ['#0a0806', '#16110c', '#241c14', '#33281d', '#453728', '
 M.cu_plata_elfica = { rampa: ['#161a1c', '#262c2f', '#394144', '#4f585b', '#677174', '#818b8d', '#9ca6a7', '#b8c1c1', '#d4dbda', '#eef3f1'], ruido: 0.03, escala: 0.5, brillo: 0.8 };
 M.cu_filigrana = { rampa: ['#261c0b', '#463514', '#6a521f', '#8f7230', '#b29346', '#cfb264', '#e6cf90', '#f6e8c0'], ruido: 0.03, escala: 0.6, brillo: 0.85 };
 M.cu_hoja_elfica = { rampa: ['#0a120c', '#142017', '#1f3124', '#2b4332', '#3a5842', '#4c6f55', '#62886b', '#7ea386', '#a2c0a7'], ruido: 0.08, escala: 0.6, brillo: 0.4, patron: (p) => (Math.abs(Math.sin(p[0] * 1.9 - p[1] * 1.9 + p[2] * 2.6)) < 0.12 ? 0.1 : 0) };
-M.cu_placa_demonio = { rampa: ['#030203', '#080606', '#0e0b0b', '#151111', '#1d1817', '#26201f', '#322a28', '#3a2a28', '#4a2e2a'], ruido: 0.05, escala: 0.6, brillo: 0.32, patron: (p) => (Math.abs(ruido(p[0] * 0.55, p[1] * 0.55, p[2] * 0.55) - 0.5) < 0.025 ? -0.22 : 0) };
+// (hierro quemado con el rojo en lo claro: con el tope en #4a2e2a la armadura demoníaca era una mancha negra sin forma)
+M.cu_placa_demonio = { rampa: ['#060404', '#100b0b', '#1b1413', '#291d1b', '#392824', '#4b332d', '#5f3f36', '#754b3e', '#8e5a48'], ruido: 0.05, escala: 0.6, brillo: 0.5, patron: (p) => (Math.abs(ruido(p[0] * 0.55, p[1] * 0.55, p[2] * 0.55) - 0.5) < 0.025 ? -0.22 : 0) };
 M.cu_hueso_demonio = { rampa: ['#110c07', '#21180e', '#352717', '#4b3921', '#634c2d', '#7d623c', '#977a50', '#b09466', '#c8b082'], ruido: 0.2, escala: 0.9, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 2.2) - 0.5) * 0.16 };
 // (plata vieja en la cara de la lámina y el blanco solo en filos y brillos: con la rampa casi blanca la armadura celestial se leía de yeso)
 M.cu_oro_blanco = { rampa: ['#1a1816', '#2c2926', '#423e39', '#59544d', '#736d63', '#8e877a', '#aba393', '#cbc3b1', '#ebe4d3', '#fffdf6'], ruido: 0.03, escala: 0.6, brillo: 0.8 };
@@ -907,13 +908,15 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       // el codal con aleta y el brazal con su canto (armadura.ts)
       if (!to.linea) ps.push(...codalBrazal(e, to));
     }
-    if (to.tipo === 'cuero') ps.push(palo(T(4.2 * A, 4.5 * A, e.zc + 17 * S), T(4.4 * A, -4 * A, e.zc + 3 * S), 0.55 * S, { mat: 'cu_cuero_negro' }));
+    // (en el busto la correa en diagonal y la costura de lazo se leían como puntos y un triángulo: la mujer lleva el jubón liso)
+    const jubonLiso = cu.genero === 'm';
+    if (to.tipo === 'cuero' && !jubonLiso) ps.push(palo(T(4.2 * A, 4.5 * A, e.zc + 17 * S), T(4.4 * A, -4 * A, e.zc + 3 * S), 0.55 * S, { mat: 'cu_cuero_negro' }));
     if (to.tipo === 'cuero' || to.tipo === 'cuero_tachonado') {
       // el jubón se lee como prenda y no como piel (el cuero y la piel morena tienen el mismo tono): cuello alto,
       // costura de lazo al frente y ribete en el ruedo y en las mangas, en cuero oscuro
       const ribete = to.mat === 'cu_cuero_negro' ? 'cu_cuero' : 'cu_cuero_negro';
       ps.push(masa([hueso(T(-0.4 * S, 0, e.hombroZ + 0.2 * S), cab(0.1 * S, 0, e.cz - 3.6 * S), 2.75 * S, 2.45 * S, { mat: ribete })], { mat: ribete }));
-      ps.push(masa([hueso(T(4.35 * A + 0.5, 0, e.zc + 15.6 * S), T(4.15 * A + 0.5, 0, e.zc + 9.5 * S), 0.42 * S, 0.42 * S, { mat: ribete }), hueso(T(4.15 * A + 0.5, 0, e.zc + 9.5 * S), T(3.85 * A + 0.5, 0, e.zc + 3.5 * S), 0.42 * S, 0.42 * S, { mat: ribete })], { mat: ribete, suave: 0.4 }));
+      if (!jubonLiso) ps.push(masa([hueso(T(4.35 * A + 0.5, 0, e.zc + 15.6 * S), T(4.15 * A + 0.5, 0, e.zc + 9.5 * S), 0.42 * S, 0.42 * S, { mat: ribete }), hueso(T(4.15 * A + 0.5, 0, e.zc + 9.5 * S), T(3.85 * A + 0.5, 0, e.zc + 3.5 * S), 0.42 * S, 0.42 * S, { mat: ribete })], { mat: ribete, suave: 0.4 }));
       ps.push(cilindro(...(e.Pv ?? e.W)(0, 0, e.zc + 0.2 * S), 4.85 * A, 1.1 * S, { mat: ribete, r1: 4.75 * A }));
       for (const b of e.brazos) ps.push(cilindro(...mez(b.hom, b.codo, 0.5), 2.45 * A, 0.9 * S, { mat: ribete, r1: 2.4 * A, eje: b.d1 }));
     }

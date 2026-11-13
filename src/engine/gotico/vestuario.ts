@@ -236,15 +236,16 @@ function prenda(c: CtxVestuario, p: Prenda): Pieza[] {
       // a la espalda, cruzado de la cadera izquierda al hombro derecho; boca con borde y flechas que asoman
       const atras: V3 = [-fT[0], -fT[1], -fT[2]];
       const a0 = apoyar(c.torso, T(1 * A, -2.4 * A, zc + 3 * S), atras, 1.5 * A), a1 = apoyar(c.torso, T(1 * A, 2.6 * A, e.hombroZ + 0.5 * S), atras, 1.6 * A);
-      const d = nor(sub(a1, a0)), boca = add(a1, d, 3 * S);
+      const d = nor(sub(a1, a0)), boca = add(a1, d, 1.2 * S);
       ps.push(palo(a0, boca, 1.35 * A, { mat: p.mat, r1: 1.5 * A }));
       ps.push(palo(add(boca, d, -0.7 * S), add(boca, d, 0.1 * S), 1.7 * A, { mat: p.mat2 ?? 'cu_cuero_negro' }));
       ps.push(palo(add(a0, d, -0.2 * S), add(a0, d, 0.6 * S), 1.55 * A, { mat: p.mat2 ?? 'cu_cuero_negro' }));
       const l1 = nor(cruz(d, fT)), l2 = cruz(d, l1);
       for (let k = 0; k < 5; k++) {
-        const o = add(add(boca, l1, Math.cos(k * 1.3) * 0.7 * A), l2, Math.sin(k * 1.3) * 0.7 * A), pt = add(o, d, (2.6 + (k % 3) * 0.5) * S);
+        const o = add(add(boca, l1, Math.cos(k * 1.3) * 0.7 * A), l2, Math.sin(k * 1.3) * 0.7 * A), pt = add(o, d, (1.3 + (k % 3) * 0.35) * S);
         ps.push(palo(add(o, d, -0.5 * S), pt, 0.16 * S, { mat: 'madera' }));
-        ps.push(poliedro([add(pt, d, -1.6 * S), pt, add(add(pt, d, -1.2 * S), l1, 0.55 * S), add(add(pt, d, -1.2 * S), l1, -0.55 * S)], { mat: 'cu_pluma', tono: -0.25 + (k % 2) * 0.08 }));
+        // (plumas grises, chicas y flechas cortas: blancas y largas eran un bloque brillante delante de la cabeza vista de costado)
+        ps.push(poliedro([add(pt, d, -1.1 * S), pt, add(add(pt, d, -0.8 * S), l1, 0.4 * S), add(add(pt, d, -0.8 * S), l1, -0.4 * S)], { mat: 'cu_pelaje_gris', tono: -0.1 + (k % 2) * 0.08 }));
       }
       break;
     }

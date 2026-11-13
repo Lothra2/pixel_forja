@@ -380,7 +380,9 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
   // el arma se lleva igual que al andar (mismo porte, sin vaivén): al arrancar a caminar no cambia de postura
   if (arma === 'dos') porteDosManos(p, 0, k, k2, 0, 0);
   if (arma === 'una') porteUna(p, 0, k, k2, 0, 0, estilo);
-  if (arma === 'ballesta') { p.hombroD = [26 + 3 * k, 10, 60 + 4 * k, 0]; }
+  // (la ballesta descansa cruzada y baja a dos manos, la culata junto a la cadera, como al andar: apuntando al frente con
+  // los brazos estirados el reposo se leía tieso)
+  if (arma === 'ballesta') { p.manoD = [9, 8.5, 33 + 0.6 * k]; p.armaD = [112 - 2 * k, 4]; p.codoD = [-0.6, 0.55, -0.6]; delete p.munecaD; }
   // el arco cuelga natural de la izquierda, la cuerda recta; la derecha descansa
   if (arma === 'arco') { p.hombroI = [14 + 1.5 * k, 13, 24 + 2 * k, 0]; p.hombroD = [9 + 3 * k, 7, 24 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
   // la vara al costado y apenas atrás, con el remate afuera de la silueta de la cabeza (en diagonal, so y o, la vara
@@ -917,8 +919,9 @@ function monje(p: Pose, acc: Accion, u: number, f: number, arma: ArmaPose) {
     const k = 0.5 - 0.5 * Math.cos(u * TAU), k2 = Math.sin(u * TAU), rb = 0.5 - 0.5 * Math.cos(u * 2 * TAU);
     plantar(p, [-2.2, 2.6], [2.2, 1.8], [26, 12]);
     p.puntillas = [0.35 + 0.1 * rb, 0.3 + 0.1 * rb];
-    p.bajar = 4 - 0.7 * rb; p.torso = 8 - k; p.respira = 0.2 + 0.8 * k; p.hombros = [0.3 + 0.3 * k, 0.3 + 0.3 * k];
-    p.lateral = 0.15; p.giroTorso = 14 + k; p.giroCadera = 8; p.cabeza = 1 - 0.8 * k; p.giroCabeza = -12 + 3 * k2; p.ladeo = 0.4 * k2;
+    // (menos agachado y con la cara arriba: con la cadera a 4 y el torso a 8 se leía un hombre en cuclillas mirando el piso)
+    p.bajar = 2.7 - 0.6 * rb; p.torso = 5 - k; p.respira = 0.2 + 0.8 * k; p.hombros = [0.3 + 0.3 * k, 0.3 + 0.3 * k];
+    p.lateral = 0.15; p.giroTorso = 14 + k; p.giroCadera = 8; p.cabeza = -4 - 0.8 * k; p.giroCabeza = -12 + 3 * k2; p.ladeo = 0.4 * k2;
     p.manoD = [9, 4.6, 39.5 + 0.6 * rb]; p.manoI = [13, -3, 42 + 0.6 * rb]; p.codoD = abajo(1); p.codoI = abajo(-1);
     p.capa = [0.6 + 0.3 * rb, 0.2 * k2]; p.pelo = [0, 0];
   } else if (acc === 'caminar' || acc === 'correr') {

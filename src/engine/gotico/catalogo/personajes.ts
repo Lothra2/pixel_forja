@@ -46,7 +46,7 @@ export const HEROES: Heroe[] = [
   },
   {
     id: 'cazadora', nombre: ['Cazadora', 'Huntress'], descripcion: ['Arquera de los bosques: flechas, lanzas y trampas.', 'Forest archer: arrows, spears and traps.'],
-    cuerpo: { presentacion: 'apunta', genero: 'm', alto: 1.02, ancho: 0.9, musculo: 0.3, piel: 'cu_piel_morena', pelo: 'cu_pelo_rubio', peinado: 'cola' },
+    cuerpo: { presentacion: 'apunta', genero: 'm', alto: 1.02, ancho: 0.9, musculo: 0.3, piel: 'cu_piel', pelo: 'cu_pelo_rubio', peinado: 'cola' },
     niveles: [
       // (el jubón de cuero claro sobre la piel morena se leía como torso desnudo: va de cuero oscuro, con calzas musgo)
       { torso: { tipo: 'cuero', mat: 'cu_cuero_oscuro' }, piernas: { tipo: 'calzas', mat: 'cu_tela_musgo' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, cinturon: { mat: 'cu_cuero' }, capa: { mat: 'cu_tela_musgo', largo: 0.5 }, prendas: [{ tipo: 'mangas', mat: 'cu_lino', mat2: 'cu_cuero' }, { tipo: 'brazal_arco', mat: 'cu_cuero_oscuro' }, { tipo: 'carcaj', mat: 'cu_cuero' }], arma: { tipo: 'arco', mango: madera } },

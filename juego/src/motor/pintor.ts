@@ -6,7 +6,7 @@ import { accionesClase } from '../juego/anim';
 /** Sin datos de la clase: los cuadros de siempre. Cada clase trae los suyos (ver juego/anim.ts). */
 const ACCS_BASE: [string, number][] = [['quieto', 4], ['caminar', 8], ['correr', 8], ['atacar', 8], ['lanzar', 8], ['herido', 4], ['morir', 8]];
 /** Versión de la caché de cuadros pintados: sube cuando cambian las animaciones de la Forja. */
-const VER = 'v16';
+const VER = 'v17';
 const DIRS = ['s', 'so', 'o', 'no', 'n', 'ne', 'e', 'se'];
 let vivos: Map<string, Cuadro[]> | null = null;
 /** Lo nuevo que ya está listo: cada animación se cambia cuando está pintada en las 8 direcciones (antes se mezclaban). */
