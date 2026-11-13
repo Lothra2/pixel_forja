@@ -57,26 +57,28 @@ function guion(p: Pose, arma: ArmaPose, estilo?: Presentacion, mano?: ManoPose):
  */
 function berserker(p: Pose, arma: ArmaPose): Guion {
   plantar(p, [-3.2, 3.4], [2.8, 2.4], [24, 14]);
-  const hombro: Vals = { hombroD: [13, 10, 106, 0], armaRel: [121, 30] };
-  const libre: Vals = { hombroI: [8, 15, 24, 10], pegaI: 0, agarreI: -7 };
+  // el mango descansa SOBRE el hombro derecho: el puño delante del pecho, la cabeza del hacha atrás y arriba (como
+  // camina en el juego, un poco más apoyada); la izquierda en la cadera
+  const hombro: Vals = { hombroD: [10, 8, 118, 0], armaRel: [128, 28] };
+  const libre: Vals = { manoI: [0.2, -8.4, 30.5], codoI: [-0.7, -1, 0.1], pegaI: 0, agarreI: -7 };
   void arma;
   const bucle: Clave[] = [
     K(0, { bajar: 2.4, torso: 7, avanza: 0, lateral: 0.7, ladeoCadera: 2.2, ladeo: -1.6, giroTorso: 10, giroCadera: -4, respira: 0.1, hombros: [1, 0.9], cabeza: -3, giroCabeza: 10, ladeoCabeza: 1, ...hombro, ...libre }),
     K(0.11, { respira: 1, hombros: [2.3, 2.1], torso: 5, bajar: 1.8 }),
-    K(0.24, { respira: 0.15, hombros: [1, 0.9], torso: 7.5, bajar: 2.5, lateral: 0.8, hombroI: [9, 15, 28, 10] }, true),
+    K(0.24, { respira: 0.15, hombros: [1, 0.9], torso: 7.5, bajar: 2.5, lateral: 0.8, manoI: [0.4, -8.5, 30.2] }, true),
     // rota el cuello: inclina a la derecha, baja la barbilla, pasa a la izquierda y vuelve
     K(0.36, { respira: 0.55, cabeza: 1, ladeoCabeza: 13, giroCabeza: 24, hombros: [1.6, 1.2] }),
     K(0.46, { cabeza: 9, ladeoCabeza: 0, giroCabeza: 16, respira: 1, hombros: [2.4, 2.2] }),
     K(0.56, { cabeza: 2, ladeoCabeza: -13, giroCabeza: 6, respira: 0.6 }),
-    K(0.66, { cabeza: -4, ladeoCabeza: 0, giroCabeza: 10, respira: 0.15, hombros: [1, 0.9], lateral: 0.55, ladeoCadera: 1.8, hombroD: [14, 10, 109, 0], hombroI: [7, 15, 22, 10] }, true),
+    K(0.66, { cabeza: -4, ladeoCabeza: 0, giroCabeza: 10, respira: 0.15, hombros: [1, 0.9], lateral: 0.55, ladeoCadera: 1.8, hombroD: [11, 8, 120, 0], manoI: [0, -8.3, 30.8] }, true),
     K(0.8, { respira: 1, hombros: [2.2, 2], torso: 5.5, bajar: 1.9, lateral: 0.6 }),
     K(0.92, { respira: 0.3, hombros: [1.2, 1.1], torso: 6.8, bajar: 2.3 }),
   ];
   const entrada: Clave[] = [
     // se hunde y junta fuerza
-    K(0.16, { bajar: 4.2, torso: 13, cabeza: 3, hombros: [0.4, 0.4], respira: 0, hombroD: [22, 12, 118, 0], armaRel: [126, 30], hombroI: [14, 16, 40, 10], pegaI: 1 }, true),
+    K(0.16, { bajar: 4.2, torso: 13, cabeza: 3, hombros: [0.4, 0.4], respira: 0, hombroD: [22, 12, 118, 0], armaRel: [126, 30], hombroI: [14, 16, 40, 10], pegaI: 0.2 }, true),
     // alza el hacha por encima del hombro, el pecho inflado
-    K(0.36, { bajar: 0.4, torso: -7, cabeza: -18, respira: 1, hombros: [2.8, 2.6], hombroD: [84, 26, 38, 0], armaRel: [112, 16], hombroI: [24, 26, 50, 10] }),
+    K(0.36, { bajar: 0.4, torso: -7, cabeza: -18, respira: 1, hombros: [2.8, 2.6], hombroD: [84, 26, 38, 0], armaRel: [112, 16], hombroI: [24, 26, 50, 10], pegaI: 1 }),
     // la descarga adelante contra el piso (el contacto, sostenido)
     K(0.54, { bajar: 5.2, torso: 22, giroTorso: -8, cabeza: -6, respira: 0.3, hombros: [0.6, 0.6], hombroD: [56, -14, 34, 0], armaRel: [30, 6], hombroI: [34, 30, 50, 10], agarreI: -3, pegaI: 0 }, true),
     K(0.62, { bajar: 5.0, torso: 21, giroTorso: -8, hombroD: [55, -14, 36, 0], armaRel: [32, 6], agarreI: -3 }, true),
@@ -95,7 +97,9 @@ function berserker(p: Pose, arma: ArmaPose): Guion {
 function templario(p: Pose, arma: ArmaPose, mano?: ManoPose): Guion {
   plantar(p, [-1.6, 2.4], [1.6, 1.8], [16, 10]);
   void arma; void mano;
-  const pomo: Vals = { manoD: [13, 1, 33], armaD: [152, -2], pisoArma: 0, codoD: [-0.2, 1, -0.3] };
+  // la espada vertical con la punta clavada en el piso delante del pie, la mano sobre el pomo cerca del cuerpo y el codo
+  // doblado y afuera (antes: brazo estirado hacia adelante y la hoja en diagonal sin tocar el piso, como si se le cayera)
+  const pomo: Vals = { manoD: [8.5, 3.5, 27.5], armaD: [178, 4], pisoArma: 1, codoD: [-0.3, 1, -0.2] };
   const escudo: Vals = { hombroI: [-2, 26, 12, 0] };
   const bucle: Clave[] = [
     K(0, { bajar: 1.2, torso: 3, lateral: 0.45, ladeoCadera: 1.8, ladeo: -0.8, giroTorso: 6, giroCadera: -3, respira: 0.1, hombros: [0.3, 0.3], cabeza: -2, giroCabeza: 6, ladeoCabeza: 1, ...pomo, ...escudo }),
@@ -109,8 +113,8 @@ function templario(p: Pose, arma: ArmaPose, mano?: ManoPose): Guion {
     // el saludo: la guarnición junto al mentón, al costado derecho, la hoja vertical
     K(0.36, { bajar: 0.4, torso: -3, cabeza: -6, giroCabeza: 16, respira: 1, hombros: [0.8, 0.7], manoD: [3, 13, 45], armaD: [-6, 22] }, true),
     // la clava al frente de un golpe
-    K(0.56, { bajar: 2.6, torso: 9, cabeza: 2, respira: 0.3, hombros: [0.2, 0.2], manoD: [14, 1, 31], armaD: [150, -2], pisoArma: 0 }, true),
-    K(0.72, { bajar: 1.8, torso: 5, manoD: [13.5, 1, 32.5] }),
+    K(0.56, { bajar: 2.6, torso: 7, cabeza: 2, respira: 0.3, hombros: [0.2, 0.2], manoD: [9, 3.5, 27], armaD: [178, 4], pisoArma: 1 }, true),
+    K(0.72, { bajar: 1.8, torso: 4, manoD: [8.5, 3.5, 27.5] }),
   ];
   return { bucle, entrada, o: { lagCab: 0.04, capa: 0.8 } };
 }
