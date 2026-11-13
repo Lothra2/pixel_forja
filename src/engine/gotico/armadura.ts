@@ -475,3 +475,48 @@ export function jubon(e: Esqueleto, cu: Cuerpo, to: NonNullable<Equipo['torso']>
   }
   return ps;
 }
+
+// ------------------------------------------------------------------ codal y brazal (torsos de placa)
+/**
+ * Para que el brazo de placa lea como armadura aun cuando viene casi recto a la cámara (el de la espada del templario):
+ * - el codal: una lámina curva sobre la punta del codo, con la aleta en abanico hacia afuera;
+ * - el brazal: una lámina en anillo justo bajo el codo, con su canto.
+ * El mismo criterio que las hombreras del juego: el filo claro arriba (hacia el hombro) y la junta oscura abajo.
+ * Facetado (poliedros por anillos), sin bolas ni tubos lisos. Va encima de la manga de placas del juego.
+ */
+export function codalBrazal(e: Esqueleto, to: NonNullable<Equipo['torso']>): Pieza[] {
+  const { S, A } = e, m = to.mat, ps: Pieza[] = [];
+  const nor = (v: V3): V3 => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+  const add = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
+  const mez = (a: V3, b: V3, t: number): V3 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  const cruz = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  for (const b of e.brazos) {
+    const d1 = nor(b.d1), d2 = nor(b.d2);
+    // la punta del codo: del lado contrario al doblez (si el brazo va recto, hacia atrás y afuera)
+    let punta = nor(add(d1, d2, -1));
+    if (Math.hypot(...add(d1, d2, -1)) < 0.25) punta = nor(add(cruz(d1, [0, 0, 1]), [0, 0, -0.3], 1));
+    const lado = nor(cruz(d1, [0, 0, 1])), fuera: V3 = [lado[0] * b.s, lado[1] * b.s, lado[2] * b.s];
+    // codal: un casquete de dos anillos alrededor de la punta del codo
+    const ex = nor(cruz(punta, d1)), ey = cruz(punta, ex);
+    const anillo2 = (c: V3, r: number, n = 8): V3[] => Array.from({ length: n }, (_, k) => { const a = (k / n) * Math.PI * 2; return add(add(c, ex, Math.cos(a) * r), ey, Math.sin(a) * r); });
+    const c0 = add(b.codo, punta, 1.55 * A), c1 = add(b.codo, punta, 2.35 * A);
+    ps.push(poliedro([...anillo2(c0, 2.25 * A), ...anillo2(c1, 1.25 * A)], { mat: m, tono: 0.02 }));
+    // la aleta en abanico hacia afuera, con el filo claro arriba
+    const al = add(b.codo, fuera, 2.2 * A);
+    ps.push(poliedro([add(al, d1, -1.6 * S), add(al, d2, 1.5 * S), add(add(al, fuera, 1.3 * A), punta, 0.6 * A), add(al, fuera, -0.5 * A), add(add(add(al, d1, -1.6 * S), fuera, 0.4), [0, 0, 0], 1)], { mat: m, tono: -0.04 }));
+    ps.push(poliedro([add(add(al, d1, -1.7 * S), fuera, 0.2), add(add(al, d1, -1.7 * S), fuera, 0.75), add(add(add(al, fuera, 1.35 * A), punta, 0.6 * A), d1, -0.25 * S), add(add(al, fuera, 1.3 * A), punta, 0.6 * A)], { mat: m, tono: claro }));
+    // brazal: la lámina en anillo bajo el codo; filo claro arriba y junta oscura abajo
+    const a0 = mez(b.codo, b.mun, 0.14), a1 = mez(b.codo, b.mun, 0.34), r = 1.95 * A + 0.55;
+    ps.push(poliedro([...tramoAnillo(a0, d2, r + 0.1), ...tramoAnillo(a1, d2, r)], { mat: m }));
+    ps.push(poliedro([...tramoAnillo(add(a0, d2, -0.15 * S), d2, r + 0.22), ...tramoAnillo(add(a0, d2, 0.25 * S), d2, r + 0.22)], { mat: m, tono: claro }));
+    ps.push(poliedro([...tramoAnillo(add(a1, d2, -0.2 * S), d2, r - 0.05), ...tramoAnillo(add(a1, d2, 0.3 * S), d2, r - 0.25)], { mat: m, tono: oscuro }));
+  }
+  return ps;
+}
+/** Un anillo de 10 puntos alrededor del eje `d` en `c`. */
+function tramoAnillo(c: V3, d: V3, r: number, n = 10): V3[] {
+  let u: V3 = [d[1], -d[0], 0]; if (Math.hypot(u[0], u[1]) < 0.2) u = [0, d[2], -d[1]];
+  const lu = Math.hypot(...u); u = [u[0] / lu, u[1] / lu, u[2] / lu];
+  const v: V3 = [d[1] * u[2] - d[2] * u[1], d[2] * u[0] - d[0] * u[2], d[0] * u[1] - d[1] * u[0]];
+  return Array.from({ length: n }, (_, k) => { const a = (k / n) * Math.PI * 2; return [c[0] + (u[0] * Math.cos(a) + v[0] * Math.sin(a)) * r, c[1] + (u[1] * Math.cos(a) + v[1] * Math.sin(a)) * r, c[2] + (u[2] * Math.cos(a) + v[2] * Math.sin(a)) * r] as V3; });
+}

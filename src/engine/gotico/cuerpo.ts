@@ -5,6 +5,7 @@ import { MATERIALES } from './materiales';
 import { ruido } from './render';
 import { rasgos, mechones, hebras, type MarcoCab } from './rostro';
 import { prendas, type Prenda } from './vestuario';
+import { codalBrazal } from './armadura';
 import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado, tunica as tunicaForjada, colgantes, tabardoFaldon, jubon } from './armadura';
 import { pose, CUADROS, cuadrosDe, SEL_CUADROS, SEL_ENTRADA, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
@@ -884,6 +885,8 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
         ps.push(masa([bulto(b.codo, [2.2 * A, 2.2 * A, 2.0 * S], { eje: b.d1, mat: to.mat, tono: 0.06 }), bulto(add(add(b.codo, lado, b.s * 1.2 * A), b.d1, -0.4 * S), [0.8 * A, 2.0 * A, 1.7 * S], { eje: b.d1, mat: to.mat, tono: 0.1 })], { mat: to.mat, suave: 0.6 }));
         ps.push(esfera(...add(b.codo, lado, b.s * 2.1 * A), 0.45, { mat: acentoDe(to.linea) }));
       }
+      // el codal con aleta y el brazal con su canto (armadura.ts)
+      if (!to.linea) ps.push(...codalBrazal(e, to));
     }
     if (to.tipo === 'cuero') ps.push(palo(T(4.2 * A, 4.5 * A, e.zc + 17 * S), T(4.4 * A, -4 * A, e.zc + 3 * S), 0.55 * S, { mat: 'cu_cuero_negro' }));
     if (to.tipo === 'cuero' || to.tipo === 'cuero_tachonado') {

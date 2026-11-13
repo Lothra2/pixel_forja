@@ -34,7 +34,7 @@ export function retrato(escala = 1): Iluminacion {
     borde: { dir: [-0.8, -0.2, 0.6] as V3, fuerza: 0.55, color: '#4a6894', ancho: 2.6, mezcla: 0.85, contorno: 1.3, alto: [26 * k, 52 * k] },
     sombra: { color: '#04050b', fuerza: 0.78, hasta: 0.3 },
     techo: { desde: 100, k: 0.45, color: '#c8b496', mezcla: 0.3 },
-    metal: { brillo: 0.6, esp: 3.2, exp: 12, filo: 0.18, borde: 1.3, ancho: 1.4, piso: 0.03, difuso: 0.4, suave: 0.04, tope: 0.4 },
+    metal: { brillo: 0.6, esp: 3.2, exp: 12, filo: 0.18, borde: 1.3, ancho: 1.4, piso: 0.03, difuso: 0.4, suave: 0.04, tope: 0.25 },
     ao: { radio: 3 * k, fuerza: 0.6, muestras: 8 },
     piel: { sombra: '#1e0806', satura: 0.7 },
   };

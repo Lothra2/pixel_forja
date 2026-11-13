@@ -736,7 +736,8 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
           // retrato: el filo del metal del lado de la contraluz se tiñe de su frío (el del lado de la antorcha, de su calor)
           if (prin && sbm > 0) bb = Math.min(1.5, bb + sbm * 0.6);
         }
-        if (resp) { const dd = Math.hypot(p[0] - resp.c[0], p[1] - resp.c[1], p[2] - resp.c[2]); s += Math.max(0, 1 - dd / resp.r) * 0.25; }
+        // (retrato: el resplandor del encantamiento casi no aclara el metal: la placa del arma sigue siendo hierro oscuro)
+        if (resp) { const dd = Math.hypot(p[0] - resp.c[0], p[1] - resp.c[1], p[2] - resp.c[2]); s += Math.max(0, 1 - dd / resp.r) * (prin && esMetalBajo ? 0.06 : 0.25); }
       }
       sm.push({ mat: matId, s, p, b: bb, cp, cr, n: hit.n, t: hit.t });
     }
@@ -762,7 +763,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     const kk = Math.max(0, Math.min((R.length - 1) * SUB, Math.round(pos))), k0 = Math.floor(kk / SUB), fr = (kk - k0 * SUB) / SUB;
     const ca = R[k0], cb = R[Math.min(R.length - 1, k0 + 1)];
     let r = ca[0] + (cb[0] - ca[0]) * fr, g = ca[1] + (cb[1] - ca[1]) * fr, b = ca[2] + (cb[2] - ca[2]) * fr;
-    if (resp && !m.emite) { const dd = Math.hypot(p[0] - resp.c[0], p[1] - resp.c[1], p[2] - resp.c[2]); const f = Math.max(0, 1 - dd / resp.r) * 0.35; r += (resp.rgb[0] - r) * f; g += (resp.rgb[1] - g) * f; b += (resp.rgb[2] - b) * f; }
+    if (resp && !m.emite) { const dd = Math.hypot(p[0] - resp.c[0], p[1] - resp.c[1], p[2] - resp.c[2]); const f = Math.max(0, 1 - dd / resp.r) * (prin && lMetal && (m.brillo ?? 0) >= lMetal.brillo ? 0.12 : 0.35); r += (resp.rgb[0] - r) * f; g += (resp.rgb[1] - g) * f; b += (resp.rgb[2] - b) * f; }
     if (L && !m.emite) {
       // clave baja: lo claro se comprime (salvo los metales), lo oscuro cae a su color y el borde tiñe la silueta
       if (techo && !((m.brillo ?? 0) >= lEspMin && lEspMin > 0)) {
