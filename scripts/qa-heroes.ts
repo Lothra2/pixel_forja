@@ -430,8 +430,13 @@ export function costuraSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {})
  */
 export const RANGO_AGARRE: Record<'puno' | 'pomo' | 'vara' | 'culata', [number, number]> = { puno: [50, 130], pomo: [0, 70], vara: [30, 150], culata: [0, 50] };
 export interface FilaContacto { clase: string; nivel: string; agarre: string; angulo: [number, number]; contacto: string; peor: number; cara: number }
-/** El arma no tapa más que esta fracción de la cabeza (en pantalla, 'so') en ningún cuadro del bucle. */
-export const LIMITE_CARA = 0.15;
+/**
+ * El arma no tapa más que esta fracción de la cabeza (en pantalla, 'so') en ningún cuadro de la selección (entrada y
+ * bucle); un golpe rápido que cruza puede llegar a LIMITE_CARA_RAPIDO durante hasta 2 cuadros seguidos (se anotan en
+ * TOLERANCIAS_CARA).
+ */
+export const LIMITE_CARA = 0.15, LIMITE_CARA_RAPIDO = 0.25;
+export const TOLERANCIAS_CARA: { clase: string; nivel: string; cuadros: number[]; valor: number }[] = [];
 export function contactoSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {}): { filas: FilaContacto[]; fallas: Falla[] } {
   const filas: FilaContacto[] = [], fallas: Falla[] = [];
   const distSeg = (p: V3, a: V3, b: V3) => { const ab: V3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], t = Math.max(0, Math.min(1, ((p[0] - a[0]) * ab[0] + (p[1] - a[1]) * ab[1] + (p[2] - a[2]) * ab[2]) / Math.max(1e-9, ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2))); return len([p[0] - a[0] - ab[0] * t, p[1] - a[1] - ab[1] * t, p[2] - a[2] - ab[2] * t]); };
@@ -441,24 +446,28 @@ export function contactoSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {}
     if (!h.acciones.includes('seleccion')) continue;
     for (const [nivel, eq] of h.niveles) {
       const tipo = eq.arma?.tipo ?? 'nada';
-      if (tipo === 'nada' || tipo === 'puno' || tipo === 'garras' || tipo === 'katar' || tipo === 'cestus' || tipo === 'frasco') continue;
-      let amin = 999, amax = -999, peor = 0, agarre = '', donde = new Set<string>(), caraMax = 0;
-      for (let f = SEL_ENTRADA; f < SEL_CUADROS; f++) {
+      if (tipo === 'nada' || tipo === 'puno' || tipo === 'frasco') continue;
+      // (garras, katar y cesto van en el puño: solo cuenta la cara libre)
+      const enPuno = tipo === 'garras' || tipo === 'katar' || tipo === 'cestus';
+      let amin = 999, amax = -999, peor = 0, agarre = enPuno ? '-' : '', donde = new Set<string>(), caraMax = 0;
+      const caras: number[] = [];
+      for (let f = 0; f < SEL_CUADROS; f++) {
         const g = geometriaQA(h.cuerpo, eq, 'so', 'seleccion', f);
-        if (!g.arma) continue;
+        if (!g.arma) { caras.push(0); continue; }
         const e = g.e, arco = /arco/.test(tipo), vara = !!g.mango && !g.cabo && g.arma.r <= 0.9 * e.S && tipo.includes('baculo');
         const b = arco ? e.brazos[1] : e.brazos[0], otra = arco ? e.brazos[0] : e.brazos[1];
         const eje: V3 = [g.arma.b[0] - g.arma.a[0], g.arma.b[1] - g.arma.a[1], g.arma.b[2] - g.arma.a[2]];
         const ante: V3 = [b.mano[0] - b.codo[0], b.mano[1] - b.codo[1], b.mano[2] - b.codo[2]];
         const pomo = (e.pose?.pisoArma ?? 0) >= 0.99 && g.arma.b[2] < g.arma.a[2];
+        const enBucle = f >= SEL_ENTRADA && !enPuno;
         agarre = vara || tipo.includes('baculo') || tipo === 'cetro' ? 'vara' : pomo ? 'pomo' : tipo === 'ballesta' ? 'culata' : 'puno';
         // (el ángulo del puño se mide sin sentido: el arma sale del puño hacia un lado o el otro)
         // (puño: la hoja sale hacia un lado o el otro, se mide el desvío del ángulo recto; culata: la caja sigue al
         // antebrazo hacia adelante o hacia atrás)
         let a = ang(ante, eje); if (agarre === 'puno') a = 90 + Math.abs(90 - a); else if (agarre === 'culata') a = Math.min(a, 180 - a);
-        amin = Math.min(amin, a); amax = Math.max(amax, a);
-        const [lo, hi] = RANGO_AGARRE[agarre as 'puno'];
-        if (a < lo || a > hi) fallas.push({ chequeo: 'agarre natural', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(a) });
+        if (enBucle) { amin = Math.min(amin, a); amax = Math.max(amax, a); }
+        const [lo, hi] = RANGO_AGARRE[agarre as 'puno'] ?? [0, 180];
+        if (enBucle && (a < lo || a > hi)) fallas.push({ chequeo: 'agarre natural', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(a) });
         // contacto: piso, hombro (la superficie: 2,6 A desde la articulación) u otra mano
         const r = g.arma.r, S = e.S, A = e.A;
         const piso = Math.min(g.arma.a[2], g.arma.b[2], ...(g.arma.cabeza ? [g.arma.cabeza[0][2], g.arma.cabeza[1][2]] : [])) - r;
@@ -466,8 +475,7 @@ export function contactoSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {}
         const dHombro = Math.min(...e.brazos.map((x) => Math.min(...segs.map(([p, q]) => distSeg(x.hom, p, q))) - r - 2.6 * A));
         const dMano = Math.min(...segs.map(([p, q]) => distSeg(otra.mano, p, q))) - r - 0.9 * S;
         const d = Math.min(piso, dHombro, dMano);
-        if (d === piso) donde.add('piso'); else if (d === dHombro) donde.add('hombro'); else donde.add('mano');
-        peor = Math.max(peor, d);
+        if (enBucle) { if (d === piso) donde.add('piso'); else if (d === dHombro) donde.add('hombro'); else donde.add('mano'); peor = Math.max(peor, d); }
         // la cara libre: los pixeles del círculo de la cabeza en pantalla que el arma tapa (más cerca de la cámara)
         {
           const c = g.craneo.c, rc = 3.9 * g.craneo.r[1] / 3.55, [cx, cy] = aPantalla(c), dc = c[0] * VISTA[0] + c[1] * VISTA[1] + c[2] * VISTA[2];
@@ -484,10 +492,20 @@ export function contactoSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {}
               if (w[0] * VISTA[0] + w[1] * VISTA[1] + w[2] * VISTA[2] < dc) { tap++; break; }
             }
           }
-          const fr = tap / Math.max(1, tot); caraMax = Math.max(caraMax, fr);
-          if (fr > LIMITE_CARA) fallas.push({ chequeo: 'arma tapa la cara', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(fr * 100) / 100 });
+          const fr = tap / Math.max(1, tot); caraMax = Math.max(caraMax, fr); caras.push(fr);
         }
-        if (d > 1 && !arco) fallas.push({ chequeo: 'arma sin apoyo', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(d * 100) / 100 });
+        if (enBucle && d > 1 && !arco) fallas.push({ chequeo: 'arma sin apoyo', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(d * 100) / 100 });
+      }
+      // la cara, en los 48 cuadros: hasta 15 %; se toleran hasta 2 cuadros seguidos con hasta 25 % (un golpe rápido
+      // que cruza), y se anotan
+      for (let f = 0; f < caras.length; f++) {
+        const fr = caras[f];
+        if (fr <= LIMITE_CARA) continue;
+        let ini = f; while (ini > 0 && caras[ini - 1] > LIMITE_CARA) ini--;
+        let fin = f; while (fin + 1 < caras.length && caras[fin + 1] > LIMITE_CARA) fin++;
+        const tolera = fr <= LIMITE_CARA_RAPIDO && fin - ini + 1 <= 2;
+        if (tolera) { if (f === ini) TOLERANCIAS_CARA.push({ clase: h.id, nivel, cuadros: Array.from({ length: fin - ini + 1 }, (_, k) => ini + k), valor: Math.round(Math.max(...caras.slice(ini, fin + 1)) * 100) / 100 }); }
+        else fallas.push({ chequeo: 'arma tapa la cara', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(fr * 100) / 100 });
       }
       filas.push({ clase: h.id, nivel, agarre, angulo: [Math.round(amin), Math.round(amax)], contacto: [...donde].join('+'), peor: Math.round(peor * 100) / 100, cara: Math.round(caraMax * 100) / 100 });
     }
@@ -548,6 +566,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log(`  ${'costura de la selección'.padEnd(26)} ${costura.fallas.length} fallas (el salto 47→12 y 11→12 ≤ ${LIMITE_COSTURA} × el mayor paso entre vecinos; el 0 igual al 12)`);
     for (const f of costura.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} paso ${String(f.paso).padEnd(6)} costura ${String(f.costura).padEnd(6)} entrada ${String(f.entrada).padEnd(6)} inicio ${f.inicio}`);
     console.log(`  ${'agarre y apoyo (selección)'.padEnd(26)} ${contacto.fallas.length} fallas (ángulo antebrazo-arma: puño 50°–130°, pomo 0°–70°, vara 30°–150°, culata 0°–50°; el arma a ≤ 1 del piso, el hombro o la otra mano en todo el bucle)`);
+    for (const t of TOLERANCIAS_CARA) console.log(`    tolerancia de la cara: ${t.clase} ${t.nivel} cuadros ${t.cuadros.join(', ')} (hasta ${Math.round(t.valor * 100)} %)`);
     for (const f of contacto.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} ${f.agarre.padEnd(5)} ángulo ${f.angulo[0]}°–${f.angulo[1]}°  apoyo ${f.contacto.padEnd(12)} peor ${f.peor}  cara tapada ${Math.round(f.cara * 100)} %`);
   }
   console.log(`TOTAL: ${fallas.length} fallas`);
