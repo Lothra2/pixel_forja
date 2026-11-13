@@ -96,7 +96,8 @@ M.cu_filigrana = { rampa: ['#261c0b', '#463514', '#6a521f', '#8f7230', '#b29346'
 M.cu_hoja_elfica = { rampa: ['#0a120c', '#142017', '#1f3124', '#2b4332', '#3a5842', '#4c6f55', '#62886b', '#7ea386', '#a2c0a7'], ruido: 0.08, escala: 0.6, brillo: 0.4, patron: (p) => (Math.abs(Math.sin(p[0] * 1.9 - p[1] * 1.9 + p[2] * 2.6)) < 0.12 ? 0.1 : 0) };
 M.cu_placa_demonio = { rampa: ['#030203', '#080606', '#0e0b0b', '#151111', '#1d1817', '#26201f', '#322a28', '#3a2a28', '#4a2e2a'], ruido: 0.05, escala: 0.6, brillo: 0.32, patron: (p) => (Math.abs(ruido(p[0] * 0.55, p[1] * 0.55, p[2] * 0.55) - 0.5) < 0.025 ? -0.22 : 0) };
 M.cu_hueso_demonio = { rampa: ['#110c07', '#21180e', '#352717', '#4b3921', '#634c2d', '#7d623c', '#977a50', '#b09466', '#c8b082'], ruido: 0.2, escala: 0.9, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 2.2) - 0.5) * 0.16 };
-M.cu_oro_blanco = { rampa: ['#28241e', '#433e36', '#605950', '#80786c', '#a0978a', '#beb5a6', '#d8d0c0', '#ebe5d6', '#f7f3e8', '#fffdf6'], ruido: 0.03, escala: 0.6, brillo: 0.8 };
+// (plata vieja en la cara de la lámina y el blanco solo en filos y brillos: con la rampa casi blanca la armadura celestial se leía de yeso)
+M.cu_oro_blanco = { rampa: ['#1a1816', '#2c2926', '#423e39', '#59544d', '#736d63', '#8e877a', '#aba393', '#cbc3b1', '#ebe4d3', '#fffdf6'], ruido: 0.03, escala: 0.6, brillo: 0.8 };
 M.cu_pluma = { rampa: ['#363432', '#55524e', '#76726c', '#96918a', '#b4afa7', '#cec9c1', '#e3dfd8', '#f3f0ea'], ruido: 0.1, escala: 0.8, patron: (p) => (Math.sin((p[0] + p[1]) * 3.4 + p[2] * 1.2) > 0.7 ? -0.06 : 0) };
 M.cu_halo = { rampa: ['#6a5530', '#94784a', '#bca064', '#dcc48a', '#f2e2b8'], ruido: 0.15, escala: 0.6, emite: true };
 M.cu_bronce_ahogado = { rampa: ['#061010', '#0c1b19', '#152824', '#1f382f', '#2b493a', '#3b5a43', '#536a49', '#6f7a51', '#8c8a5c', '#a89c6c'], ruido: 0.1, escala: 0.5, brillo: 0.35, patron: (p) => (ruido(p[0] * 0.45, p[1] * 0.45, p[2] * 0.45) - 0.5) * 0.4 };

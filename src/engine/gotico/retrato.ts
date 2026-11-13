@@ -20,10 +20,10 @@ import type { Iluminacion, V3 } from './render';
 export function retrato(escala = 1): Iluminacion {
   const k = escala;
   // horizontal: la derecha del héroe con algo de su frente; vertical: 25° desde abajo
-  const hz: V3 = [0.91, 0.41, 0], b = (25 * Math.PI) / 180;
+  const hz: V3 = [0.91, 0.41, 0], b = (10 * Math.PI) / 180; // (era 25° y apuntada al pecho: la cara quedaba en el borde del foco, sombreada por el pelo y la frente)
   const d: V3 = [hz[0] * Math.cos(b), hz[1] * Math.cos(b), -Math.sin(b)];
   // la fogata: a 75 unidades (de un cuerpo de alto 1) del pecho, cerca del piso
-  const pecho: V3 = [0, 0, 42 * k], pos: V3 = [pecho[0] + d[0] * 75 * k, pecho[1] + d[1] * 75 * k, Math.max(4 * k, pecho[2] + d[2] * 75 * k)];
+  const pecho: V3 = [0, 0, 52 * k], pos: V3 = [pecho[0] + d[0] * 75 * k, pecho[1] + d[1] * 75 * k, Math.max(4 * k, pecho[2] + d[2] * 75 * k)];
   const al = [pos[0] - pecho[0], pos[1] - pecho[1], pos[2] - pecho[2]], la = Math.hypot(al[0], al[1], al[2]);
   return {
     amb: 0.025, dif: 1.0, cielo: 0.015, rebote: 0,
@@ -36,7 +36,7 @@ export function retrato(escala = 1): Iluminacion {
     techo: { desde: 100, k: 0.45, color: '#c8b496', mezcla: 0.3 },
     metal: { brillo: 0.6, esp: 3.2, exp: 12, filo: 0.18, borde: 1.3, ancho: 1.4, piso: 0.03, difuso: 0.4, suave: 0.04, tope: 0.25 },
     ao: { radio: 3 * k, fuerza: 0.6, muestras: 8 },
-    piel: { sombra: '#1e0806', satura: 0.7 },
+    piel: { sombra: '#1e0806', satura: 0.7, luz: 0.05, ao: 0.45 },
   };
 }
 /** La de la selección, a la escala del grupo 'sel' (2,5: el héroe a ~195 px, que el juego dibuja a ×1). */

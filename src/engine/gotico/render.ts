@@ -424,7 +424,7 @@ export interface Iluminacion {
   /** Saturación final de todo lo que no emite (1 = igual). */
   satura?: number;
   /** La piel (materiales cu_piel*): su sombra tira a este color (sangre bajo la piel) y su color se satura `satura`. */
-  piel?: { sombra: string; satura: number; /** luz de más para la piel (la cara se lee aunque mire hacia abajo) */ luz?: number };
+  piel?: { sombra: string; satura: number; /** luz de más para la piel (la cara se lee aunque mire hacia abajo) */ luz?: number; /** cuánta oclusión recibe la piel (1 = como todo; 0,5 en el retrato: el pelo y la capucha no ennegrecen la cara) */ ao?: number };
 }
 export interface Render { img: Raster; ancla: [number, number] }
 export interface Ambiente { tinte?: [number, number, number]; luz?: number }
@@ -665,6 +665,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   // y del relleno (para teñir con sus colores)
   const sm: { mat: string; s: number; p: V3; b: number; cp: number; cr: number; n: V3; t: number }[] = [];
   const luzPropia = borde?.contorno || L?.metal || L?.linea || L?.satura !== undefined ? new Uint8Array(W * H) : null;
+  const pielPx = L?.piel?.ao !== undefined && L.ao ? new Uint8Array(W * H) : null;
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
     const cand = grilla[Math.floor(py / G) * gw + Math.floor(px / G)];
     const i = (py * W + px) * 4;
@@ -800,9 +801,10 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
       if (borde && bb > 0) { const f = Math.min(1, bb * (borde.mezcla ?? 0.6)); r += (borde.rgb[0] - r) * f; g += (borde.rgb[1] - g) * f; b += (borde.rgb[2] - b) * f; }
     }
     if (!m.emite) { r *= tin[0]; g *= tin[1]; b *= tin[2]; } else if (luzPropia) luzPropia[py * W + px] = 1;
+    if (pielPx && matId.startsWith('cu_piel')) pielPx[py * W + px] = 1;
     img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = 255;
   }
-  if (ao && prof) oclusionPantalla(img, prof, nrm!, pun!, luzPropia, W, H, ax, ay, z0, ao);
+  if (ao && prof) oclusionPantalla(img, prof, nrm!, pun!, luzPropia, W, H, ax, ay, z0, ao, pielPx, L?.piel?.ao ?? 1);
   if (borde?.contorno && luzPropia) contornoBorde(img, luzPropia, borde.d, borde.rgb, borde.contorno, !!borde.alto, L?.principal ? norm(L.principal.dir) : undefined);
   if (lMetal && luzPropia) sinSal(img, luzPropia);
   if (L?.satura !== undefined && L.satura !== 1) for (let q = 0; q < W * H; q++) { const o = q * 4; if (img.data[o + 3] !== 255 || luzPropia?.[q]) continue; const y = 0.2126 * img.data[o] + 0.7152 * img.data[o + 1] + 0.0722 * img.data[o + 2]; for (let t = 0; t < 3; t++) img.data[o + t] = Math.max(0, Math.min(255, y + (img.data[o + t] - y) * L.satura)); }
@@ -833,7 +835,7 @@ function sinSal(img: Raster, luzPropia: Uint8Array) {
  * pixel con la trama); una muestra está tapada si lo pintado en su pixel queda delante de ella (más cerca de la cámara)
  * y no demasiado lejos (si no, la silueta de adelante oscurecería el fondo). Oscurece el color, salvo lo que emite.
  */
-function oclusionPantalla(img: Raster, prof: Float32Array, nrm: Float32Array, pun: Float32Array, luzPropia: Uint8Array | null, W: number, H: number, ax: number, ay: number, z0: number, o: { radio: number; fuerza: number; muestras?: number }) {
+function oclusionPantalla(img: Raster, prof: Float32Array, nrm: Float32Array, pun: Float32Array, luzPropia: Uint8Array | null, W: number, H: number, ax: number, ay: number, z0: number, o: { radio: number; fuerza: number; muestras?: number }, pielPx: Uint8Array | null = null, kPiel = 1) {
   const N = o.muestras ?? 8, R = o.radio, d = img.data, k = new Float32Array(W * H);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const j = y * W + x;
@@ -855,7 +857,7 @@ function oclusionPantalla(img: Raster, prof: Float32Array, nrm: Float32Array, pu
     }
     k[j] = Math.min(1, occ / (N * 1.15));
   }
-  for (let j = 0; j < W * H; j++) if (k[j] > 0) { const f = 1 - o.fuerza * k[j]; d[j * 4] *= f; d[j * 4 + 1] *= f; d[j * 4 + 2] *= f; }
+  for (let j = 0; j < W * H; j++) if (k[j] > 0) { const f = 1 - o.fuerza * k[j] * (pielPx?.[j] ? kPiel : 1); d[j * 4] *= f; d[j * 4 + 1] *= f; d[j * 4 + 2] *= f; }
 }
 
 /** La línea de la silueta y la de adentro (ver Iluminacion.linea). Lo que emite no se toca. */
