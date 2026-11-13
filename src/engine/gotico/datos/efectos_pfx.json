@@ -13,7 +13,7 @@
   "e",
   "se"
  ],
- "notas": "Atlas PNG con paleta y alfa directa, a 1x: dibujar con escala (2 en el mundo) y vecino más cercano. Cada cuadro es [página, x, y, ancho, alto, dx, dy]: el rectángulo en paginas[página] y su esquina respecto del ancla (en px a 1x; multiplicar por escala). Ancho 0 = cuadro vacío. Direcciones en el orden de DIRS_PODER (s, so, o, no, n, ne, e, se); las que tienen espejo: true se dibujan con los cuadros de `de` volteados en horizontal alrededor del ancla (esquina x = -(dx + ancho)). Animación: cuadro = floor(segundos * 25 / t) (bucle: % cuadros; si no, el último y se termina). Ancla: el punto del piso (los proyectiles: el piso bajo la bola; el juego los mueve). peso: Mpx decodificados de las páginas: cargar al usarse y descargar lo que no se use. capa 'pantalla': ancla = esquina de la pantalla de 320x180, estirar entero (x3 a 960x540). mezcla 'aditiva': color * alfa sumado; 'normal': alfa común. cuerpo.tinte: teñir el sprite del afectado; cuerpo.alfa: visibilidad del sprite por cuadro. detrasEn: direcciones en que va detrás del lanzador. soloCinematica: capa de cinemática (no va en el mundo ni prende luz dinámica).",
+ "notas": "Atlas PNG con paleta y alfa directa, a 1x: dibujar con escala (2 en el mundo) y vecino más cercano. Cada cuadro es [página, x, y, ancho, alto, dx, dy]: el rectángulo en paginas[página] y su esquina respecto del ancla (en px a 1x; multiplicar por escala). Ancho 0 = cuadro vacío. Direcciones en el orden de DIRS_PODER (s, so, o, no, n, ne, e, se); las que tienen espejo: true se dibujan con los cuadros de `de` volteados en horizontal alrededor del ancla (esquina x = -(dx + ancho)). Animación: cuadro = floor(segundos * 25 / t) (bucle: % cuadros; si no, el último y se termina). Ancla: el punto del piso (los proyectiles: el piso bajo la bola; el juego los mueve). peso: Mpx decodificados de las páginas: cargar al usarse y descargar lo que no se use. capa 'pantalla': ancla = esquina de la pantalla de 320x180, estirar entero (x3 a 960x540). mezcla 'aditiva': color * alfa sumado; 'normal': alfa común. cuerpo.tinte: teñir el sprite del afectado; cuerpo.alfa: visibilidad del sprite por cuadro. detrasEn: direcciones en que va detrás del lanzador. soloCinematica: capa de cinemática (no va en el mundo ni prende luz dinámica). paquete: dónde conviene empacarlo (si falta, por el uso). uso.rol (en los poderes): proyectil, impacto, area, lanzador o blanco; uso 'evento': subir_nivel, mision_cumplida, critico o aviso.",
  "creditos": "Efectos adaptados de pixelfx (https://github.com/patch-gg/pixelfx), MIT, Copyright (c) 2026 Patch y Copyright (c) 2026 Hugo Duprez (Sprite Fusion, https://www.spritefusion.com/pixel-art-vfx); partes de Hollow Crown (rehan-remade), MIT. Ver LICENSE-pixelfx.txt y NOTICE-pixelfx.md.",
  "efectos": [
   {
@@ -820,6 +820,16 @@
       "cultista"
      ],
      "nota": "bola de fuego de los lanzadores"
+    },
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "brasas_saltarinas",
+      "lanza_magma"
+     ],
+     "rol": "proyectil",
+     "nota": "las brasas que buscan solas; la lanza de magma que atraviesa"
     }
    ]
   },
@@ -2352,6 +2362,15 @@
       "abadesa"
      ],
      "nota": "el pisotón de fuego de la Abadesa en El Pozo de la Brasa"
+    },
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "aura_llama"
+     ],
+     "rol": "lanzador",
+     "nota": "el aura de brasa a sus pies; los quemados, fx_ardiendo"
     }
    ]
   },
@@ -8954,8 +8973,7 @@
      "clase": "alquimista",
      "habilidades": [
       "bomba_ignea",
-      "virote_explosivo",
-      "bomba_cluster"
+      "virote_explosivo"
      ]
     },
     {
@@ -8964,6 +8982,15 @@
      "habilidades": [
       "explosion_cadaver"
      ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "flecha_ignea"
+     ],
+     "rol": "impacto",
+     "nota": "la flecha de brasa que estalla"
     }
    ]
   },
@@ -22809,13 +22836,6 @@
      "nota": "la esfera que avanza chisporroteando"
     },
     {
-     "tipo": "poder",
-     "clase": "alquimista",
-     "habilidades": [
-      "frasco_rayo"
-     ]
-    },
-    {
      "tipo": "ambiente",
      "zonas": [
       "a7_cielo",
@@ -28305,6 +28325,15 @@
       "bandido"
      ],
      "nota": "tajo de los espadachines"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "navaja_viento"
+     ],
+     "rol": "proyectil",
+     "nota": "el filo de aire: el arco del tajo que viaja recto (moverlo como proyectil)"
     }
    ]
   },
@@ -31408,6 +31437,15 @@
       "verdugo",
       "caballero_espectral"
      ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "torrente_sangre"
+     ],
+     "rol": "impacto",
+     "nota": "el tajo al final de la carga; los alcanzados, fx_sangrando"
     }
    ]
   },
@@ -38184,6 +38222,15 @@
      "habilidades": [
       "golpe_escudo"
      ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "nigromante",
+     "habilidades": [
+      "lanza_hueso"
+     ],
+     "rol": "impacto",
+     "nota": "hueso contra hueso"
     }
    ]
   },
@@ -39674,6 +39721,16 @@
       "gigante_helado"
      ],
      "nota": "pisotón de los grandes"
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "rugido",
+      "alarido"
+     ],
+     "rol": "lanzador",
+     "nota": "el grito sacude el piso alrededor del berserker; los que huyen llevan fx_confundido y los aturdidos fx_aturdido"
     }
    ]
   },
@@ -40601,6 +40658,16 @@
     {
      "tipo": "golpe",
      "nota": "acero contra armadura o hueso: chispas en el punto de impacto (orientar con el golpe)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "brasas_saltarinas",
+      "lanza_magma"
+     ],
+     "rol": "impacto",
+     "nota": "sobre cada enemigo que tocan"
     }
    ]
   },
@@ -40846,6 +40913,15 @@
       "aura_firmeza"
      ],
      "nota": "al desviar un golpe"
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "piel_hierro"
+     ],
+     "rol": "lanzador",
+     "nota": "el chasquido de yunque cuando la piel se endurece"
     }
    ]
   },
@@ -43648,6 +43724,27 @@
       "esqueleto_arquero",
       "ballestero_oscuro"
      ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "flecha_ignea",
+      "flecha_racimo"
+     ],
+     "rol": "proyectil"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "virote_perforante",
+      "rafaga_virotes",
+      "tormenta_virotes",
+      "torreta"
+     ],
+     "rol": "proyectil",
+     "nota": "los virotes"
     }
    ]
   },
@@ -44776,6 +44873,24 @@
       "sacerdote_caido"
      ],
      "nota": "saeta de los hechiceros"
+    },
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "saeta_fe"
+     ],
+     "rol": "proyectil",
+     "nota": "la saeta de luz (lo más cercano que hay: repintarla en sagrado si se quiere más fiel)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "nigromante",
+     "habilidades": [
+      "lanza_hueso"
+     ],
+     "rol": "proyectil",
+     "nota": "la pica de hueso en vuelo"
     }
    ]
   },
@@ -48436,6 +48551,15 @@
       "bomba_humo"
      ],
      "nota": "versión chica"
+    },
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "invocar_lobo"
+     ],
+     "rol": "area",
+     "nota": "cada lobo llega en una humareda"
     }
    ],
    "notas": "Sin las líneas de velocidad ni las estrellitas del original: solo el humo."
@@ -50801,6 +50925,16 @@
       "golem_de_piedra"
      ],
      "nota": "entrada de jefe que sale del piso"
+    },
+    {
+     "tipo": "poder",
+     "clase": "nigromante",
+     "habilidades": [
+      "sabueso_osario",
+      "mago_hueso"
+     ],
+     "rol": "area",
+     "nota": "el sabueso o el arquero de hueso se arma saliendo del piso"
     }
    ],
    "notas": "Sin la bestia del original: queda el círculo de runas, el piso que revienta, el polvo y los escombros. El juego levanta su propio monstruo desde el ancla."
@@ -53371,6 +53505,15 @@
       "sin_rostro"
      ],
      "nota": "el que se teletransporta"
+    },
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "oso_espiritu"
+     ],
+     "rol": "area",
+     "nota": "el oso espíritu se condensa donde aparece"
     }
    ]
   },
@@ -57633,6 +57776,15 @@
     {
      "tipo": "estado",
      "estado": "invulnerable"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "tonico_hierro"
+     ],
+     "rol": "lanzador",
+     "nota": "el tónico que endurece"
     }
    ]
   },
@@ -58023,6 +58175,15 @@
     {
      "tipo": "cinematica",
      "nota": "plumas en el Jardín de los que Intentaron (acto 7)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "picada"
+     ],
+     "rol": "area",
+     "nota": "el halcón que cae en picada; los alcanzados, fx_presa_marcada"
     }
    ]
   },
@@ -59214,6 +59375,15 @@
       "a2_oasis"
      ],
      "nota": "el pozo o la fuente que cura"
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "canto_remero"
+     ],
+     "rol": "lanzador",
+     "nota": "el canto que cierra heridas"
     }
    ],
    "notas": "Las motas terminan en cruces de luz en vez de corazones."
@@ -60641,6 +60811,15 @@
       "martillo_bendito"
      ],
      "nota": "al pegar"
+    },
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "filo_alba"
+     ],
+     "rol": "impacto",
+     "nota": "la hoja que arde con luz al pegar"
     }
    ]
   },
@@ -69925,6 +70104,14 @@
       "cepo_dientes",
       "marca_presa"
      ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "torrente_sangre"
+     ],
+     "rol": "blanco"
     }
    ]
   },
@@ -72065,6 +72252,14 @@
       "rapido"
      ],
      "nota": "el modificador de élite rápido"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "grulla"
+     ],
+     "rol": "lanzador"
     }
    ]
   },
@@ -73037,6 +73232,15 @@
       "fuerte"
      ],
      "nota": "el modificador de élite fuerte"
+    },
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "aura_fuerza"
+     ],
+     "rol": "lanzador",
+     "nota": "en bucle sobre el templario mientras el aura está encendida"
     }
    ]
   },
@@ -74349,6 +74553,14 @@
       "puno_dios",
       "codo_piedra"
      ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "alarido"
+     ],
+     "rol": "blanco"
     }
    ],
    "notas": "Los pajaritos son cuervos y las estrellas, chispas de acero apagado."
@@ -77473,6 +77685,15 @@
      "habilidades": [
       "ojo_tifon"
      ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "forma_oso"
+     ],
+     "rol": "lanzador",
+     "nota": "las hojas envuelven al druida mientras se vuelve oso"
     }
    ]
   },
@@ -101994,6 +102215,8005 @@
      "nota": "bajo el agua en la catedral ahogada"
     }
    ]
+  },
+  {
+   "id": "fx_tempestad_arcos",
+   "origen": "lightning/tesla-coil",
+   "nombre": [
+    "Arcos de tempestad",
+    "Storm arcs"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "cuadros": 30,
+   "t": 2,
+   "bucle": true,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -91,
+    -75,
+    96,
+    28
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_tempestad_arcos.png",
+     "w": 537,
+     "h": 600,
+     "bytes": 64587
+    }
+   ],
+   "peso": 0.32,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       268,
+       547,
+       119,
+       53,
+       -64,
+       -43
+      ],
+      [
+       0,
+       0,
+       417,
+       121,
+       67,
+       -64,
+       -50
+      ],
+      [
+       0,
+       88,
+       264,
+       100,
+       76,
+       -65,
+       -59
+      ],
+      [
+       0,
+       387,
+       0,
+       102,
+       84,
+       -65,
+       -66
+      ],
+      [
+       0,
+       276,
+       100,
+       105,
+       79,
+       -66,
+       -65
+      ],
+      [
+       0,
+       274,
+       0,
+       112,
+       85,
+       -66,
+       -65
+      ],
+      [
+       0,
+       137,
+       0,
+       136,
+       91,
+       -62,
+       -63
+      ],
+      [
+       0,
+       0,
+       0,
+       136,
+       99,
+       -62,
+       -75
+      ],
+      [
+       0,
+       141,
+       100,
+       134,
+       82,
+       -61,
+       -62
+      ],
+      [
+       0,
+       147,
+       485,
+       142,
+       60,
+       -61,
+       -45
+      ],
+      [
+       0,
+       88,
+       184,
+       149,
+       78,
+       -61,
+       -58
+      ],
+      [
+       0,
+       238,
+       184,
+       153,
+       77,
+       -61,
+       -59
+      ],
+      [
+       0,
+       0,
+       342,
+       155,
+       74,
+       -61,
+       -57
+      ],
+      [
+       0,
+       189,
+       264,
+       156,
+       75,
+       -60,
+       -57
+      ],
+      [
+       0,
+       290,
+       485,
+       115,
+       58,
+       -60,
+       -44
+      ],
+      [
+       0,
+       156,
+       342,
+       109,
+       73,
+       -54,
+       -56
+      ],
+      [
+       0,
+       0,
+       184,
+       87,
+       79,
+       -31,
+       -58
+      ],
+      [
+       0,
+       382,
+       100,
+       93,
+       79,
+       -37,
+       -56
+      ],
+      [
+       0,
+       346,
+       264,
+       86,
+       75,
+       -29,
+       -57
+      ],
+      [
+       0,
+       0,
+       264,
+       87,
+       77,
+       -30,
+       -57
+      ],
+      [
+       0,
+       0,
+       100,
+       140,
+       83,
+       -82,
+       -57
+      ],
+      [
+       0,
+       392,
+       184,
+       145,
+       77,
+       -80,
+       -57
+      ],
+      [
+       0,
+       266,
+       342,
+       147,
+       68,
+       -78,
+       -48
+      ],
+      [
+       0,
+       0,
+       547,
+       142,
+       53,
+       -83,
+       -43
+      ],
+      [
+       0,
+       0,
+       485,
+       146,
+       61,
+       -88,
+       -46
+      ],
+      [
+       0,
+       239,
+       417,
+       143,
+       63,
+       -91,
+       -46
+      ],
+      [
+       0,
+       143,
+       547,
+       124,
+       53,
+       -72,
+       -43
+      ],
+      [
+       0,
+       383,
+       417,
+       119,
+       63,
+       -67,
+       -46
+      ],
+      [
+       0,
+       122,
+       417,
+       116,
+       65,
+       -63,
+       -47
+      ],
+      [
+       0,
+       414,
+       342,
+       116,
+       68,
+       -64,
+       -48
+      ]
+     ]
+    }
+   ],
+   "mezcla": "aditiva",
+   "enLanzador": true,
+   "luz": {
+    "color": "#8188f2",
+    "radio": 182,
+    "intensidad": 0.72,
+    "curva": [
+     0.1,
+     0.21,
+     0.2,
+     0.25,
+     0.18,
+     0.31,
+     1,
+     0.71,
+     0.34,
+     0.19,
+     0.28,
+     0.24,
+     0.21,
+     0.24,
+     0.16,
+     0.2,
+     0.3,
+     0.39,
+     0.26,
+     0.32,
+     0.74,
+     0.42,
+     0.34,
+     0.11,
+     0.21,
+     0.22,
+     0.1,
+     0.19,
+     0.26,
+     0.33
+    ],
+    "altura": 36,
+    "parpadeo": 0.51,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "aditiva"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "tempestad"
+     ],
+     "rol": "lanzador",
+     "nota": "en bucle sobre la arcanista mientras dura; los rayos que caen sobre cada enemigo, fx_relampago"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "electrico"
+     ],
+     "nota": "el modificador de élite eléctrico, en bucle sobre el monstruo"
+    }
+   ],
+   "notas": "La bobina de Tesla sin la máquina (tesla-coil.js de la Forja): los arcos restallan desde el pecho de la arcanista y cada tanto uno baja al piso, a su alrededor, en profundidad 2:1."
+  },
+  {
+   "id": "fx_latido_galvanico",
+   "origen": "lightning/plasma-ball",
+   "nombre": [
+    "Latido galvánico",
+    "Galvanic heartbeat"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "cuadros": 38,
+   "t": 2,
+   "bucle": true,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -29,
+    -51,
+    29,
+    19
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_latido_galvanico.png",
+     "w": 382,
+     "h": 392,
+     "bytes": 51968
+    }
+   ],
+   "peso": 0.15,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       56,
+       204,
+       52,
+       64,
+       -26,
+       -47
+      ],
+      [
+       0,
+       111,
+       137,
+       54,
+       65,
+       -27,
+       -48
+      ],
+      [
+       0,
+       57,
+       69,
+       54,
+       67,
+       -27,
+       -49
+      ],
+      [
+       0,
+       167,
+       69,
+       53,
+       67,
+       -27,
+       -50
+      ],
+      [
+       0,
+       0,
+       204,
+       55,
+       64,
+       -29,
+       -50
+      ],
+      [
+       0,
+       267,
+       269,
+       57,
+       60,
+       -29,
+       -48
+      ],
+      [
+       0,
+       325,
+       269,
+       57,
+       60,
+       -28,
+       -46
+      ],
+      [
+       0,
+       266,
+       204,
+       56,
+       62,
+       -28,
+       -46
+      ],
+      [
+       0,
+       221,
+       69,
+       55,
+       66,
+       -27,
+       -47
+      ],
+      [
+       0,
+       109,
+       204,
+       53,
+       63,
+       -27,
+       -46
+      ],
+      [
+       0,
+       0,
+       332,
+       52,
+       60,
+       -26,
+       -46
+      ],
+      [
+       0,
+       53,
+       332,
+       52,
+       60,
+       -26,
+       -46
+      ],
+      [
+       0,
+       158,
+       332,
+       54,
+       59,
+       -27,
+       -46
+      ],
+      [
+       0,
+       323,
+       204,
+       56,
+       62,
+       -29,
+       -46
+      ],
+      [
+       0,
+       0,
+       0,
+       56,
+       68,
+       -28,
+       -50
+      ],
+      [
+       0,
+       114,
+       0,
+       55,
+       68,
+       -27,
+       -50
+      ],
+      [
+       0,
+       112,
+       69,
+       54,
+       67,
+       -26,
+       -50
+      ],
+      [
+       0,
+       107,
+       269,
+       53,
+       61,
+       -26,
+       -49
+      ],
+      [
+       0,
+       161,
+       269,
+       53,
+       61,
+       -26,
+       -48
+      ],
+      [
+       0,
+       0,
+       269,
+       54,
+       62,
+       -27,
+       -47
+      ],
+      [
+       0,
+       277,
+       69,
+       54,
+       66,
+       -27,
+       -48
+      ],
+      [
+       0,
+       57,
+       0,
+       56,
+       68,
+       -28,
+       -49
+      ],
+      [
+       0,
+       281,
+       0,
+       58,
+       67,
+       -29,
+       -50
+      ],
+      [
+       0,
+       273,
+       137,
+       58,
+       64,
+       -29,
+       -50
+      ],
+      [
+       0,
+       163,
+       204,
+       51,
+       63,
+       -26,
+       -49
+      ],
+      [
+       0,
+       221,
+       137,
+       51,
+       65,
+       -26,
+       -50
+      ],
+      [
+       0,
+       226,
+       0,
+       54,
+       68,
+       -27,
+       -51
+      ],
+      [
+       0,
+       0,
+       137,
+       54,
+       66,
+       -27,
+       -48
+      ],
+      [
+       0,
+       166,
+       137,
+       54,
+       65,
+       -27,
+       -48
+      ],
+      [
+       0,
+       215,
+       204,
+       50,
+       63,
+       -25,
+       -48
+      ],
+      [
+       0,
+       264,
+       332,
+       49,
+       59,
+       -25,
+       -47
+      ],
+      [
+       0,
+       213,
+       332,
+       50,
+       59,
+       -25,
+       -46
+      ],
+      [
+       0,
+       55,
+       269,
+       51,
+       62,
+       -26,
+       -47
+      ],
+      [
+       0,
+       170,
+       0,
+       55,
+       68,
+       -28,
+       -50
+      ],
+      [
+       0,
+       0,
+       69,
+       56,
+       67,
+       -29,
+       -50
+      ],
+      [
+       0,
+       55,
+       137,
+       55,
+       65,
+       -29,
+       -49
+      ],
+      [
+       0,
+       215,
+       269,
+       51,
+       61,
+       -26,
+       -47
+      ],
+      [
+       0,
+       106,
+       332,
+       51,
+       60,
+       -26,
+       -47
+      ]
+     ]
+    }
+   ],
+   "mezcla": "aditiva",
+   "enLanzador": true,
+   "luz": {
+    "color": "#8a92f3",
+    "radio": 168,
+    "intensidad": 0.66,
+    "curva": [
+     0.75,
+     0.77,
+     0.79,
+     0.86,
+     0.78,
+     0.73,
+     0.74,
+     0.81,
+     0.92,
+     0.83,
+     0.74,
+     0.76,
+     0.74,
+     0.88,
+     1,
+     0.99,
+     0.88,
+     0.76,
+     0.79,
+     0.87,
+     0.97,
+     1,
+     0.92,
+     0.8,
+     0.64,
+     0.68,
+     0.81,
+     0.8,
+     0.78,
+     0.68,
+     0.58,
+     0.6,
+     0.69,
+     0.88,
+     0.86,
+     0.81,
+     0.64,
+     0.61
+    ],
+    "altura": 38,
+    "parpadeo": 0.41,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "aditiva"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "latido_galvanico"
+     ],
+     "rol": "lanzador",
+     "nota": "el pulso alrededor de la arcanista; una vuelta por lanzamiento (o en bucle mientras carga)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "furia_firmamento"
+     ],
+     "rol": "lanzador",
+     "nota": "la arcanista cargada mientras el cielo se rompe (los rayos: fx_relampago)"
+    }
+   ],
+   "notas": "El globo de plasma sin el pie de lámpara ni el velo del vidrio (plasma-ball.js de la Forja), sumado a la luz: un núcleo que late en el pecho y filamentos que buscan la cáscara alrededor del cuerpo."
+  },
+  {
+   "id": "fx_estallido_galvanico",
+   "origen": "explosions/plasma-explosion",
+   "nombre": [
+    "Estallido galvánico",
+    "Galvanic burst"
+   ],
+   "categoria": "explosiones",
+   "capa": "mundo",
+   "cuadros": 21,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -106,
+    -114,
+    91,
+    73
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_estallido_galvanico.png",
+     "w": 511,
+     "h": 692,
+     "bytes": 31037
+    }
+   ],
+   "peso": 0.35,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       0,
+       182,
+       152,
+       152,
+       -76,
+       -98
+      ],
+      [
+       0,
+       351,
+       182,
+       144,
+       144,
+       -72,
+       -94
+      ],
+      [
+       0,
+       125,
+       335,
+       136,
+       136,
+       -68,
+       -90
+      ],
+      [
+       0,
+       262,
+       335,
+       128,
+       128,
+       -64,
+       -86
+      ],
+      [
+       0,
+       391,
+       335,
+       120,
+       120,
+       -60,
+       -82
+      ],
+      [
+       0,
+       0,
+       335,
+       124,
+       143,
+       -66,
+       -93
+      ],
+      [
+       0,
+       347,
+       0,
+       144,
+       166,
+       -77,
+       -104
+      ],
+      [
+       0,
+       183,
+       0,
+       163,
+       180,
+       -87,
+       -107
+      ],
+      [
+       0,
+       0,
+       0,
+       182,
+       181,
+       -97,
+       -109
+      ],
+      [
+       0,
+       153,
+       182,
+       197,
+       151,
+       -106,
+       -114
+      ],
+      [
+       0,
+       0,
+       479,
+       126,
+       115,
+       -63,
+       -80
+      ],
+      [
+       0,
+       256,
+       595,
+       128,
+       90,
+       -64,
+       -64
+      ],
+      [
+       0,
+       128,
+       595,
+       127,
+       94,
+       -64,
+       -65
+      ],
+      [
+       0,
+       0,
+       595,
+       127,
+       97,
+       -64,
+       -66
+      ],
+      [
+       0,
+       0,
+       595,
+       127,
+       97,
+       -64,
+       -66
+      ],
+      [
+       0,
+       412,
+       479,
+       87,
+       101,
+       -46,
+       -68
+      ],
+      [
+       0,
+       412,
+       479,
+       87,
+       101,
+       -46,
+       -68
+      ],
+      [
+       0,
+       319,
+       479,
+       92,
+       103,
+       -48,
+       -66
+      ],
+      [
+       0,
+       319,
+       479,
+       92,
+       103,
+       -48,
+       -66
+      ],
+      [
+       0,
+       127,
+       479,
+       95,
+       108,
+       -49,
+       -67
+      ],
+      [
+       0,
+       223,
+       479,
+       95,
+       108,
+       -49,
+       -67
+      ]
+     ]
+    }
+   ],
+   "mezcla": "aditiva",
+   "luz": {
+    "color": "#abadf6",
+    "radio": 238,
+    "intensidad": 0.89,
+    "curva": [
+     1,
+     0.81,
+     0.7,
+     0.62,
+     0.55,
+     0.49,
+     0.42,
+     0.35,
+     0.28,
+     0.21,
+     0.15,
+     0.1,
+     0.06,
+     0.03,
+     0.03,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 45,
+    "parpadeo": 0.38,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "aditiva"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "descarga_prismatica"
+     ],
+     "rol": "impacto",
+     "nota": "donde revienta la descarga"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "frasco_rayo"
+     ],
+     "rol": "impacto",
+     "nota": "el frasco con la tormenta adentro que revienta en chispas"
+    }
+   ]
+  },
+  {
+   "id": "fx_bomba_metralla",
+   "origen": "explosions/grenade",
+   "nombre": [
+    "Bomba de metralla",
+    "Shrapnel bomb"
+   ],
+   "categoria": "explosiones",
+   "capa": "mundo",
+   "cuadros": 66,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -150,
+    -106,
+    92,
+    49
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_bomba_metralla.png",
+     "w": 776,
+     "h": 883,
+     "bytes": 67644
+    }
+   ],
+   "peso": 0.69,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       388,
+       794,
+       14,
+       22,
+       -7,
+       -22
+      ],
+      [
+       0,
+       388,
+       794,
+       14,
+       22,
+       -7,
+       -22
+      ],
+      [
+       0,
+       372,
+       794,
+       15,
+       24,
+       -8,
+       -23
+      ],
+      [
+       0,
+       372,
+       794,
+       15,
+       24,
+       -8,
+       -23
+      ],
+      [
+       0,
+       324,
+       794,
+       15,
+       25,
+       -8,
+       -24
+      ],
+      [
+       0,
+       324,
+       794,
+       15,
+       25,
+       -8,
+       -24
+      ],
+      [
+       0,
+       340,
+       794,
+       15,
+       25,
+       -7,
+       -24
+      ],
+      [
+       0,
+       340,
+       794,
+       15,
+       25,
+       -7,
+       -24
+      ],
+      [
+       0,
+       356,
+       794,
+       15,
+       25,
+       -7,
+       -24
+      ],
+      [
+       0,
+       162,
+       693,
+       106,
+       100,
+       -53,
+       -65
+      ],
+      [
+       0,
+       621,
+       693,
+       102,
+       92,
+       -51,
+       -61
+      ],
+      [
+       0,
+       579,
+       481,
+       124,
+       104,
+       -65,
+       -76
+      ],
+      [
+       0,
+       224,
+       133,
+       155,
+       118,
+       -85,
+       -94
+      ],
+      [
+       0,
+       0,
+       0,
+       189,
+       132,
+       -104,
+       -106
+      ],
+      [
+       0,
+       380,
+       133,
+       132,
+       118,
+       -66,
+       -98
+      ],
+      [
+       0,
+       475,
+       693,
+       145,
+       95,
+       -73,
+       -70
+      ],
+      [
+       0,
+       0,
+       693,
+       161,
+       100,
+       -82,
+       -74
+      ],
+      [
+       0,
+       0,
+       589,
+       168,
+       103,
+       -92,
+       -76
+      ],
+      [
+       0,
+       0,
+       371,
+       171,
+       109,
+       -100,
+       -78
+      ],
+      [
+       0,
+       356,
+       371,
+       181,
+       108,
+       -107,
+       -79
+      ],
+      [
+       0,
+       0,
+       794,
+       191,
+       89,
+       -113,
+       -60
+      ],
+      [
+       0,
+       0,
+       794,
+       191,
+       89,
+       -113,
+       -60
+      ],
+      [
+       0,
+       269,
+       693,
+       205,
+       99,
+       -125,
+       -66
+      ],
+      [
+       0,
+       269,
+       693,
+       205,
+       99,
+       -125,
+       -66
+      ],
+      [
+       0,
+       0,
+       254,
+       216,
+       116,
+       -136,
+       -72
+      ],
+      [
+       0,
+       0,
+       254,
+       216,
+       116,
+       -136,
+       -72
+      ],
+      [
+       0,
+       0,
+       133,
+       223,
+       120,
+       -143,
+       -77
+      ],
+      [
+       0,
+       0,
+       133,
+       223,
+       120,
+       -143,
+       -77
+      ],
+      [
+       0,
+       190,
+       0,
+       232,
+       131,
+       -150,
+       -82
+      ],
+      [
+       0,
+       190,
+       0,
+       232,
+       131,
+       -150,
+       -82
+      ],
+      [
+       0,
+       217,
+       254,
+       189,
+       113,
+       -103,
+       -86
+      ],
+      [
+       0,
+       217,
+       254,
+       189,
+       113,
+       -103,
+       -86
+      ],
+      [
+       0,
+       513,
+       133,
+       192,
+       117,
+       -103,
+       -90
+      ],
+      [
+       0,
+       513,
+       133,
+       192,
+       117,
+       -103,
+       -90
+      ],
+      [
+       0,
+       422,
+       589,
+       194,
+       101,
+       -103,
+       -74
+      ],
+      [
+       0,
+       422,
+       589,
+       194,
+       101,
+       -103,
+       -74
+      ],
+      [
+       0,
+       423,
+       0,
+       193,
+       125,
+       -103,
+       -98
+      ],
+      [
+       0,
+       423,
+       0,
+       193,
+       125,
+       -103,
+       -98
+      ],
+      [
+       0,
+       383,
+       481,
+       195,
+       105,
+       -103,
+       -78
+      ],
+      [
+       0,
+       383,
+       481,
+       195,
+       105,
+       -103,
+       -78
+      ],
+      [
+       0,
+       0,
+       481,
+       195,
+       107,
+       -103,
+       -80
+      ],
+      [
+       0,
+       0,
+       481,
+       195,
+       107,
+       -103,
+       -80
+      ],
+      [
+       0,
+       593,
+       254,
+       183,
+       109,
+       -103,
+       -82
+      ],
+      [
+       0,
+       593,
+       254,
+       183,
+       109,
+       -103,
+       -82
+      ],
+      [
+       0,
+       407,
+       254,
+       185,
+       109,
+       -103,
+       -82
+      ],
+      [
+       0,
+       407,
+       254,
+       185,
+       109,
+       -103,
+       -82
+      ],
+      [
+       0,
+       196,
+       481,
+       186,
+       106,
+       -103,
+       -79
+      ],
+      [
+       0,
+       196,
+       481,
+       186,
+       106,
+       -103,
+       -79
+      ],
+      [
+       0,
+       172,
+       371,
+       183,
+       108,
+       -103,
+       -81
+      ],
+      [
+       0,
+       172,
+       371,
+       183,
+       108,
+       -103,
+       -81
+      ],
+      [
+       0,
+       538,
+       371,
+       153,
+       108,
+       -103,
+       -81
+      ],
+      [
+       0,
+       538,
+       371,
+       153,
+       108,
+       -103,
+       -81
+      ],
+      [
+       0,
+       617,
+       589,
+       138,
+       101,
+       -103,
+       -75
+      ],
+      [
+       0,
+       617,
+       589,
+       138,
+       101,
+       -103,
+       -75
+      ],
+      [
+       0,
+       290,
+       589,
+       131,
+       102,
+       -103,
+       -77
+      ],
+      [
+       0,
+       290,
+       589,
+       131,
+       102,
+       -103,
+       -77
+      ],
+      [
+       0,
+       169,
+       589,
+       120,
+       103,
+       -98,
+       -78
+      ],
+      [
+       0,
+       169,
+       589,
+       120,
+       103,
+       -98,
+       -78
+      ],
+      [
+       0,
+       192,
+       794,
+       46,
+       88,
+       -25,
+       -80
+      ],
+      [
+       0,
+       192,
+       794,
+       46,
+       88,
+       -25,
+       -80
+      ],
+      [
+       0,
+       239,
+       794,
+       43,
+       88,
+       -25,
+       -80
+      ],
+      [
+       0,
+       239,
+       794,
+       43,
+       88,
+       -25,
+       -80
+      ],
+      [
+       0,
+       283,
+       794,
+       40,
+       75,
+       -22,
+       -67
+      ],
+      [
+       0,
+       283,
+       794,
+       40,
+       75,
+       -22,
+       -67
+      ],
+      [
+       0,
+       403,
+       794,
+       35,
+       13,
+       -18,
+       -6
+      ],
+      [
+       0,
+       439,
+       794,
+       35,
+       13,
+       -18,
+       -6
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f1975c",
+    "radio": 266,
+    "intensidad": 0.95,
+    "curva": [
+     0,
+     0,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     1,
+     0.86,
+     0.69,
+     0.53,
+     0.4,
+     0.3,
+     0.22,
+     0.16,
+     0.12,
+     0.09,
+     0.07,
+     0.06,
+     0.06,
+     0.04,
+     0.04,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 26,
+    "parpadeo": 0.17,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "bomba_cluster"
+     ],
+     "rol": "impacto",
+     "nota": "cada bomba que cae: la madre y las cinco hijas"
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "flecha_racimo"
+     ],
+     "rol": "impacto",
+     "nota": "la punta llena de esquirlas que revienta al tocar (sin la bola: arrancar en el cuadro del estallido)"
+    }
+   ],
+   "notas": "La granada de pixelfx como bomba de hierro redonda con mecha (grenade.js de la Forja), sin el tiro: tiembla, revienta en metralla, chispas y una bola de fuego chica, y deja la quemadura."
+  },
+  {
+   "id": "fx_ardiendo",
+   "origen": "status/burning",
+   "nombre": [
+    "Ardiendo",
+    "Burning"
+   ],
+   "categoria": "estado",
+   "capa": "mundo",
+   "cuadros": 30,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -22,
+    -63,
+    25,
+    3
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_ardiendo.png",
+     "w": 263,
+     "h": 297,
+     "bytes": 15227
+    }
+   ],
+   "peso": 0.08,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       217,
+       187,
+       38,
+       53,
+       -17,
+       -50
+      ],
+      [
+       0,
+       0,
+       244,
+       35,
+       53,
+       -15,
+       -50
+      ],
+      [
+       0,
+       150,
+       187,
+       33,
+       54,
+       -14,
+       -51
+      ],
+      [
+       0,
+       184,
+       187,
+       32,
+       54,
+       -14,
+       -51
+      ],
+      [
+       0,
+       115,
+       187,
+       34,
+       56,
+       -14,
+       -53
+      ],
+      [
+       0,
+       78,
+       187,
+       36,
+       56,
+       -15,
+       -54
+      ],
+      [
+       0,
+       180,
+       128,
+       37,
+       57,
+       -14,
+       -55
+      ],
+      [
+       0,
+       225,
+       66,
+       38,
+       58,
+       -14,
+       -56
+      ],
+      [
+       0,
+       163,
+       66,
+       30,
+       59,
+       -14,
+       -57
+      ],
+      [
+       0,
+       33,
+       66,
+       31,
+       61,
+       -15,
+       -59
+      ],
+      [
+       0,
+       180,
+       0,
+       31,
+       62,
+       -15,
+       -60
+      ],
+      [
+       0,
+       100,
+       0,
+       31,
+       63,
+       -15,
+       -61
+      ],
+      [
+       0,
+       67,
+       0,
+       32,
+       63,
+       -16,
+       -61
+      ],
+      [
+       0,
+       33,
+       0,
+       33,
+       64,
+       -17,
+       -62
+      ],
+      [
+       0,
+       0,
+       0,
+       32,
+       65,
+       -16,
+       -63
+      ],
+      [
+       0,
+       0,
+       187,
+       38,
+       56,
+       -17,
+       -53
+      ],
+      [
+       0,
+       218,
+       128,
+       37,
+       57,
+       -17,
+       -54
+      ],
+      [
+       0,
+       0,
+       128,
+       36,
+       58,
+       -17,
+       -55
+      ],
+      [
+       0,
+       37,
+       128,
+       36,
+       58,
+       -18,
+       -55
+      ],
+      [
+       0,
+       39,
+       187,
+       38,
+       56,
+       -18,
+       -53
+      ],
+      [
+       0,
+       138,
+       128,
+       41,
+       57,
+       -19,
+       -54
+      ],
+      [
+       0,
+       212,
+       0,
+       45,
+       61,
+       -21,
+       -58
+      ],
+      [
+       0,
+       132,
+       0,
+       47,
+       62,
+       -22,
+       -59
+      ],
+      [
+       0,
+       194,
+       66,
+       30,
+       59,
+       -14,
+       -56
+      ],
+      [
+       0,
+       74,
+       128,
+       31,
+       58,
+       -15,
+       -55
+      ],
+      [
+       0,
+       106,
+       128,
+       31,
+       58,
+       -15,
+       -55
+      ],
+      [
+       0,
+       98,
+       66,
+       31,
+       60,
+       -15,
+       -58
+      ],
+      [
+       0,
+       0,
+       66,
+       32,
+       61,
+       -16,
+       -59
+      ],
+      [
+       0,
+       130,
+       66,
+       32,
+       59,
+       -16,
+       -57
+      ],
+      [
+       0,
+       65,
+       66,
+       32,
+       60,
+       -16,
+       -58
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "cuerpo": {
+    "tinte": {
+     "color": "#c63c0e",
+     "fuerza": 0.3,
+     "nota": "brasa que late en el sprite con cada llamarada (cada 0.6 s)"
+    }
+   },
+   "luz": {
+    "color": "#eb5f28",
+    "radio": 68,
+    "intensidad": 0.24,
+    "curva": [
+     1,
+     0.68,
+     0.49,
+     0.37,
+     0.31,
+     0.26,
+     0.24,
+     0.22,
+     0.22,
+     0.2,
+     0.2,
+     0.19,
+     0.17,
+     0.19,
+     0.19,
+     1,
+     0.7,
+     0.53,
+     0.41,
+     0.34,
+     0.29,
+     0.27,
+     0.25,
+     0.24,
+     0.21,
+     0.2,
+     0.19,
+     0.19,
+     0.19,
+     0.19
+    ],
+    "altura": 42,
+    "parpadeo": 0.25,
+    "sombra": false,
+    "prioridad": 3,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "estado",
+     "estado": "quema",
+     "nota": "en bucle mientras arde (quema > 0, héroe o monstruo)"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "ardiente"
+     ],
+     "nota": "el modificador de élite encantado de fuego"
+    },
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "aura_llama"
+     ],
+     "rol": "blanco",
+     "nota": "sobre los que el aura quema"
+    }
+   ],
+   "notas": "Sin el destello blanco ni las quemaduras sobre el muñeco (siguen su silueta, no la del que arde): lenguas de fuego en cuatro puntos del borde, chispas y humo fino."
+  },
+  {
+   "id": "fx_presa_marcada",
+   "origen": "status/charmed",
+   "nombre": [
+    "Presa marcada",
+    "Marked prey"
+   ],
+   "categoria": "estado",
+   "capa": "mundo",
+   "cuadros": 30,
+   "t": 2,
+   "bucle": true,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -20,
+    -65,
+    21,
+    -9
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_presa_marcada.png",
+     "w": 221,
+     "h": 232,
+     "bytes": 8997
+    }
+   ],
+   "peso": 0.05,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       0,
+       103,
+       33,
+       45,
+       -18,
+       -64
+      ],
+      [
+       0,
+       143,
+       103,
+       33,
+       44,
+       -18,
+       -64
+      ],
+      [
+       0,
+       72,
+       193,
+       33,
+       38,
+       -18,
+       -60
+      ],
+      [
+       0,
+       0,
+       193,
+       33,
+       39,
+       -18,
+       -63
+      ],
+      [
+       0,
+       106,
+       193,
+       31,
+       36,
+       -17,
+       -61
+      ],
+      [
+       0,
+       176,
+       193,
+       31,
+       34,
+       -17,
+       -61
+      ],
+      [
+       0,
+       177,
+       103,
+       33,
+       44,
+       -16,
+       -63
+      ],
+      [
+       0,
+       36,
+       0,
+       34,
+       54,
+       -17,
+       -65
+      ],
+      [
+       0,
+       0,
+       0,
+       35,
+       54,
+       -19,
+       -65
+      ],
+      [
+       0,
+       107,
+       0,
+       35,
+       50,
+       -19,
+       -63
+      ],
+      [
+       0,
+       185,
+       55,
+       36,
+       45,
+       -20,
+       -58
+      ],
+      [
+       0,
+       0,
+       55,
+       37,
+       47,
+       -20,
+       -58
+      ],
+      [
+       0,
+       38,
+       55,
+       37,
+       47,
+       -20,
+       -58
+      ],
+      [
+       0,
+       112,
+       55,
+       37,
+       46,
+       -20,
+       -58
+      ],
+      [
+       0,
+       106,
+       103,
+       36,
+       44,
+       -19,
+       -58
+      ],
+      [
+       0,
+       143,
+       0,
+       37,
+       49,
+       -19,
+       -64
+      ],
+      [
+       0,
+       181,
+       0,
+       36,
+       48,
+       -18,
+       -64
+      ],
+      [
+       0,
+       32,
+       149,
+       36,
+       42,
+       -17,
+       -60
+      ],
+      [
+       0,
+       68,
+       103,
+       37,
+       44,
+       -17,
+       -63
+      ],
+      [
+       0,
+       69,
+       149,
+       36,
+       41,
+       -16,
+       -61
+      ],
+      [
+       0,
+       139,
+       149,
+       37,
+       40,
+       -16,
+       -61
+      ],
+      [
+       0,
+       177,
+       149,
+       37,
+       39,
+       -16,
+       -62
+      ],
+      [
+       0,
+       34,
+       193,
+       37,
+       38,
+       -16,
+       -62
+      ],
+      [
+       0,
+       138,
+       193,
+       37,
+       35,
+       -16,
+       -60
+      ],
+      [
+       0,
+       71,
+       0,
+       35,
+       51,
+       -14,
+       -60
+      ],
+      [
+       0,
+       76,
+       55,
+       35,
+       47,
+       -15,
+       -58
+      ],
+      [
+       0,
+       150,
+       55,
+       34,
+       46,
+       -15,
+       -58
+      ],
+      [
+       0,
+       34,
+       103,
+       33,
+       45,
+       -16,
+       -58
+      ],
+      [
+       0,
+       0,
+       149,
+       31,
+       43,
+       -17,
+       -58
+      ],
+      [
+       0,
+       106,
+       149,
+       32,
+       41,
+       -17,
+       -58
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "luz": {
+    "color": "#e9342e",
+    "radio": 64,
+    "intensidad": 0.22,
+    "curva": [
+     0.97,
+     0.94,
+     0.34,
+     0.72,
+     0.44,
+     0.28,
+     0.34,
+     0.36,
+     0.33,
+     0.29,
+     0.27,
+     0.29,
+     0.39,
+     0.33,
+     0.29,
+     0.98,
+     1,
+     0.37,
+     0.73,
+     0.46,
+     0.3,
+     0.33,
+     0.33,
+     0.3,
+     0.26,
+     0.32,
+     0.3,
+     0.34,
+     0.3,
+     0.29
+    ],
+    "altura": 97,
+    "parpadeo": 0.26,
+    "sombra": false,
+    "prioridad": 3,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "estado",
+     "estado": "marca",
+     "nota": "en bucle sobre la presa marcada (marca > 0)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "marca_presa",
+      "picada",
+      "caceria_salvaje",
+      "flecha_rastro"
+     ],
+     "rol": "blanco"
+    }
+   ],
+   "notas": "El hechizo de amor de pixelfx, al revés: un corazón oscuro late sobre la cabeza de la presa (la cazadora lo oye) y suelta corazoncitos que se apagan."
+  },
+  {
+   "id": "fx_astros_caen",
+   "origen": "weather/shooting-stars",
+   "nombre": [
+    "Astros que caen",
+    "Falling stars"
+   ],
+   "categoria": "clima",
+   "capa": "pantalla",
+   "cuadros": 83,
+   "t": 3,
+   "bucle": true,
+   "direccional": false,
+   "escala": 1,
+   "caja": [
+    3,
+    0,
+    317,
+    180
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_astros_caen.png",
+     "w": 1356,
+     "h": 1422,
+     "bytes": 23035
+    }
+   ],
+   "peso": 1.93,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       1227,
+       524,
+       123,
+       139,
+       26,
+       6
+      ],
+      [
+       0,
+       418,
+       524,
+       135,
+       157,
+       16,
+       2
+      ],
+      [
+       0,
+       0,
+       354,
+       148,
+       169,
+       3,
+       4
+      ],
+      [
+       0,
+       0,
+       688,
+       117,
+       139,
+       34,
+       4
+      ],
+      [
+       0,
+       798,
+       688,
+       115,
+       135,
+       36,
+       6
+      ],
+      [
+       0,
+       681,
+       524,
+       183,
+       141,
+       34,
+       4
+      ],
+      [
+       0,
+       1047,
+       524,
+       179,
+       139,
+       38,
+       2
+      ],
+      [
+       0,
+       118,
+       688,
+       179,
+       137,
+       38,
+       6
+      ],
+      [
+       0,
+       865,
+       524,
+       181,
+       141,
+       36,
+       4
+      ],
+      [
+       0,
+       616,
+       688,
+       181,
+       135,
+       38,
+       8
+      ],
+      [
+       0,
+       914,
+       688,
+       181,
+       133,
+       38,
+       10
+      ],
+      [
+       0,
+       432,
+       688,
+       183,
+       135,
+       38,
+       8
+      ],
+      [
+       0,
+       1096,
+       688,
+       179,
+       131,
+       40,
+       10
+      ],
+      [
+       0,
+       714,
+       960,
+       155,
+       113,
+       60,
+       8
+      ],
+      [
+       0,
+       168,
+       828,
+       171,
+       129,
+       44,
+       8
+      ],
+      [
+       0,
+       340,
+       828,
+       183,
+       127,
+       36,
+       14
+      ],
+      [
+       0,
+       0,
+       828,
+       167,
+       131,
+       48,
+       2
+      ],
+      [
+       0,
+       1117,
+       1187,
+       135,
+       87,
+       90,
+       6
+      ],
+      [
+       0,
+       983,
+       1187,
+       133,
+       89,
+       74,
+       4
+      ],
+      [
+       0,
+       96,
+       1281,
+       134,
+       85,
+       59,
+       4
+      ],
+      [
+       0,
+       563,
+       1078,
+       178,
+       102,
+       43,
+       4
+      ],
+      [
+       0,
+       1160,
+       828,
+       155,
+       118,
+       30,
+       6
+      ],
+      [
+       0,
+       431,
+       1078,
+       77,
+       105,
+       44,
+       4
+      ],
+      [
+       0,
+       618,
+       828,
+       89,
+       121,
+       32,
+       4
+      ],
+      [
+       0,
+       1072,
+       828,
+       87,
+       119,
+       32,
+       6
+      ],
+      [
+       0,
+       708,
+       828,
+       89,
+       121,
+       32,
+       4
+      ],
+      [
+       0,
+       524,
+       828,
+       93,
+       125,
+       30,
+       2
+      ],
+      [
+       0,
+       0,
+       960,
+       89,
+       117,
+       32,
+       8
+      ],
+      [
+       0,
+       90,
+       960,
+       89,
+       117,
+       34,
+       6
+      ],
+      [
+       0,
+       798,
+       828,
+       273,
+       119,
+       34,
+       4
+      ],
+      [
+       0,
+       180,
+       960,
+       267,
+       113,
+       36,
+       8
+      ],
+      [
+       0,
+       1066,
+       1078,
+       263,
+       99,
+       42,
+       12
+      ],
+      [
+       0,
+       448,
+       960,
+       265,
+       113,
+       40,
+       4
+      ],
+      [
+       0,
+       870,
+       960,
+       265,
+       109,
+       40,
+       8
+      ],
+      [
+       0,
+       817,
+       1281,
+       249,
+       65,
+       56,
+       32
+      ],
+      [
+       0,
+       1067,
+       1281,
+       109,
+       65,
+       196,
+       32
+      ],
+      [
+       0,
+       1177,
+       1281,
+       101,
+       61,
+       204,
+       32
+      ],
+      [
+       0,
+       0,
+       1369,
+       97,
+       53,
+       198,
+       42
+      ],
+      [
+       0,
+       98,
+       1369,
+       85,
+       45,
+       204,
+       48
+      ],
+      [
+       0,
+       1253,
+       1187,
+       103,
+       87,
+       210,
+       4
+      ],
+      [
+       0,
+       0,
+       1281,
+       95,
+       87,
+       200,
+       6
+      ],
+      [
+       0,
+       797,
+       1187,
+       91,
+       91,
+       200,
+       2
+      ],
+      [
+       0,
+       570,
+       1187,
+       120,
+       92,
+       197,
+       4
+      ],
+      [
+       0,
+       0,
+       1078,
+       112,
+       108,
+       177,
+       8
+      ],
+      [
+       0,
+       298,
+       688,
+       133,
+       136,
+       157,
+       1
+      ],
+      [
+       0,
+       263,
+       524,
+       154,
+       157,
+       137,
+       0
+      ],
+      [
+       0,
+       363,
+       0,
+       175,
+       175,
+       113,
+       5
+      ],
+      [
+       0,
+       0,
+       0,
+       185,
+       178,
+       106,
+       2
+      ],
+      [
+       0,
+       964,
+       179,
+       171,
+       171,
+       120,
+       2
+      ],
+      [
+       0,
+       0,
+       179,
+       172,
+       174,
+       121,
+       0
+      ],
+      [
+       0,
+       186,
+       0,
+       176,
+       178,
+       118,
+       1
+      ],
+      [
+       0,
+       715,
+       0,
+       173,
+       175,
+       122,
+       0
+      ],
+      [
+       0,
+       1063,
+       0,
+       174,
+       174,
+       120,
+       5
+      ],
+      [
+       0,
+       1136,
+       179,
+       169,
+       169,
+       128,
+       2
+      ],
+      [
+       0,
+       539,
+       0,
+       175,
+       175,
+       122,
+       4
+      ],
+      [
+       0,
+       889,
+       0,
+       173,
+       175,
+       126,
+       2
+      ],
+      [
+       0,
+       721,
+       179,
+       242,
+       171,
+       57,
+       6
+      ],
+      [
+       0,
+       463,
+       179,
+       257,
+       173,
+       44,
+       4
+      ],
+      [
+       0,
+       0,
+       524,
+       262,
+       163,
+       33,
+       12
+      ],
+      [
+       0,
+       980,
+       354,
+       267,
+       163,
+       22,
+       12
+      ],
+      [
+       0,
+       149,
+       354,
+       278,
+       167,
+       13,
+       12
+      ],
+      [
+       0,
+       428,
+       354,
+       277,
+       165,
+       24,
+       8
+      ],
+      [
+       0,
+       173,
+       179,
+       289,
+       173,
+       16,
+       4
+      ],
+      [
+       0,
+       706,
+       354,
+       273,
+       165,
+       20,
+       12
+      ],
+      [
+       0,
+       520,
+       1187,
+       49,
+       93,
+       18,
+       24
+      ],
+      [
+       0,
+       509,
+       1078,
+       53,
+       105,
+       18,
+       14
+      ],
+      [
+       0,
+       742,
+       1078,
+       161,
+       101,
+       18,
+       18
+      ],
+      [
+       0,
+       273,
+       1078,
+       157,
+       105,
+       20,
+       12
+      ],
+      [
+       0,
+       904,
+       1078,
+       161,
+       101,
+       20,
+       16
+      ],
+      [
+       0,
+       0,
+       1187,
+       151,
+       93,
+       20,
+       24
+      ],
+      [
+       0,
+       113,
+       1078,
+       159,
+       105,
+       20,
+       12
+      ],
+      [
+       0,
+       152,
+       1187,
+       151,
+       93,
+       28,
+       16
+      ],
+      [
+       0,
+       231,
+       1281,
+       135,
+       83,
+       36,
+       20
+      ],
+      [
+       0,
+       477,
+       1281,
+       131,
+       79,
+       44,
+       24
+      ],
+      [
+       0,
+       715,
+       1281,
+       101,
+       73,
+       70,
+       30
+      ],
+      [
+       0,
+       609,
+       1281,
+       105,
+       77,
+       72,
+       24
+      ],
+      [
+       0,
+       367,
+       1281,
+       109,
+       81,
+       72,
+       20
+      ],
+      [
+       0,
+       889,
+       1187,
+       93,
+       90,
+       82,
+       5
+      ],
+      [
+       0,
+       691,
+       1187,
+       105,
+       91,
+       76,
+       6
+      ],
+      [
+       0,
+       304,
+       1187,
+       109,
+       93,
+       76,
+       4
+      ],
+      [
+       0,
+       414,
+       1187,
+       105,
+       93,
+       72,
+       4
+      ],
+      [
+       0,
+       1136,
+       960,
+       123,
+       109,
+       54,
+       5
+      ],
+      [
+       0,
+       554,
+       524,
+       126,
+       142,
+       21,
+       8
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "luz": {
+    "color": "#d86a24",
+    "radio": 0,
+    "intensidad": 0,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 92,
+    "parpadeo": 0,
+    "sombra": false,
+    "prioridad": 3,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "clima",
+     "actos": [
+      7
+     ],
+     "zonas": [
+      "a7_cielo",
+      "a7_boveda",
+      "a7_islas1",
+      "a7_islas2"
+     ],
+     "nota": "el Cielo Roto: astros que caen sobre las islas"
+    }
+   ],
+   "notas": "Sin el cielo estrellado (shooting-stars.js de la Forja): solo los astros que cruzan la pantalla como brasas y su estela de ceniza."
+  },
+  {
+   "id": "fx_ceniza_cae",
+   "origen": "weather/cherry-blossoms",
+   "nombre": [
+    "Ceniza que cae",
+    "Falling ash"
+   ],
+   "categoria": "clima",
+   "capa": "pantalla",
+   "cuadros": 83,
+   "t": 3,
+   "bucle": true,
+   "direccional": false,
+   "escala": 1,
+   "caja": [
+    0,
+    0,
+    320,
+    172
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_ceniza_cae.png",
+     "w": 2165,
+     "h": 1691,
+     "bytes": 108637
+    },
+    {
+     "archivo": "fx_ceniza_cae_2.png",
+     "w": 1919,
+     "h": 637,
+     "bytes": 42481
+    }
+   ],
+   "peso": 4.88,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       0,
+       517,
+       314,
+       170,
+       6,
+       0
+      ],
+      [
+       0,
+       959,
+       688,
+       311,
+       169,
+       9,
+       0
+      ],
+      [
+       0,
+       0,
+       688,
+       320,
+       169,
+       0,
+       0
+      ],
+      [
+       0,
+       321,
+       688,
+       320,
+       169,
+       0,
+       0
+      ],
+      [
+       0,
+       629,
+       1195,
+       320,
+       165,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       1362,
+       318,
+       165,
+       2,
+       0
+      ],
+      [
+       0,
+       950,
+       1195,
+       320,
+       165,
+       0,
+       0
+      ],
+      [
+       1,
+       321,
+       326,
+       320,
+       158,
+       0,
+       0
+      ],
+      [
+       1,
+       948,
+       164,
+       317,
+       160,
+       3,
+       0
+      ],
+      [
+       0,
+       1592,
+       1528,
+       314,
+       163,
+       6,
+       0
+      ],
+      [
+       0,
+       313,
+       1027,
+       308,
+       167,
+       9,
+       0
+      ],
+      [
+       0,
+       622,
+       1027,
+       306,
+       167,
+       13,
+       0
+      ],
+      [
+       0,
+       955,
+       858,
+       319,
+       167,
+       0,
+       0
+      ],
+      [
+       0,
+       929,
+       1027,
+       319,
+       166,
+       0,
+       0
+      ],
+      [
+       0,
+       1249,
+       1027,
+       319,
+       166,
+       0,
+       0
+      ],
+      [
+       0,
+       1569,
+       1027,
+       319,
+       166,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       1528,
+       318,
+       163,
+       2,
+       0
+      ],
+      [
+       0,
+       1276,
+       1528,
+       315,
+       163,
+       5,
+       0
+      ],
+      [
+       0,
+       319,
+       1528,
+       318,
+       163,
+       0,
+       0
+      ],
+      [
+       0,
+       638,
+       1528,
+       318,
+       163,
+       0,
+       0
+      ],
+      [
+       0,
+       319,
+       1362,
+       318,
+       165,
+       0,
+       0
+      ],
+      [
+       0,
+       957,
+       1528,
+       318,
+       163,
+       0,
+       0
+      ],
+      [
+       0,
+       1273,
+       1362,
+       316,
+       164,
+       2,
+       0
+      ],
+      [
+       0,
+       1590,
+       1362,
+       311,
+       164,
+       3,
+       0
+      ],
+      [
+       1,
+       0,
+       0,
+       309,
+       163,
+       5,
+       0
+      ],
+      [
+       0,
+       316,
+       1195,
+       312,
+       166,
+       2,
+       0
+      ],
+      [
+       0,
+       315,
+       517,
+       314,
+       170,
+       0,
+       0
+      ],
+      [
+       0,
+       1261,
+       0,
+       314,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       625,
+       173,
+       308,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       934,
+       173,
+       308,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       1243,
+       173,
+       307,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       1859,
+       173,
+       306,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       345,
+       306,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       307,
+       345,
+       306,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       614,
+       345,
+       306,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       1551,
+       173,
+       307,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       1258,
+       517,
+       309,
+       170,
+       0,
+       0
+      ],
+      [
+       0,
+       945,
+       517,
+       312,
+       170,
+       0,
+       0
+      ],
+      [
+       0,
+       630,
+       517,
+       314,
+       170,
+       0,
+       0
+      ],
+      [
+       0,
+       957,
+       1362,
+       315,
+       165,
+       0,
+       0
+      ],
+      [
+       0,
+       642,
+       688,
+       316,
+       169,
+       0,
+       0
+      ],
+      [
+       0,
+       1271,
+       688,
+       317,
+       168,
+       0,
+       0
+      ],
+      [
+       0,
+       1589,
+       688,
+       317,
+       168,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       858,
+       316,
+       168,
+       0,
+       0
+      ],
+      [
+       0,
+       317,
+       858,
+       316,
+       168,
+       0,
+       0
+      ],
+      [
+       0,
+       921,
+       345,
+       318,
+       170,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       320,
+       172,
+       0,
+       0
+      ],
+      [
+       0,
+       321,
+       0,
+       319,
+       172,
+       1,
+       0
+      ],
+      [
+       0,
+       952,
+       0,
+       308,
+       172,
+       0,
+       0
+      ],
+      [
+       0,
+       641,
+       0,
+       310,
+       172,
+       0,
+       0
+      ],
+      [
+       0,
+       313,
+       173,
+       311,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       1576,
+       0,
+       312,
+       171,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       173,
+       312,
+       171,
+       1,
+       0
+      ],
+      [
+       0,
+       1568,
+       517,
+       309,
+       170,
+       3,
+       0
+      ],
+      [
+       0,
+       1275,
+       858,
+       312,
+       167,
+       0,
+       0
+      ],
+      [
+       0,
+       1588,
+       858,
+       312,
+       167,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       1027,
+       312,
+       167,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       1195,
+       315,
+       166,
+       0,
+       0
+      ],
+      [
+       1,
+       310,
+       0,
+       320,
+       161,
+       0,
+       0
+      ],
+      [
+       1,
+       631,
+       0,
+       320,
+       161,
+       0,
+       0
+      ],
+      [
+       1,
+       952,
+       0,
+       319,
+       161,
+       1,
+       0
+      ],
+      [
+       1,
+       1272,
+       0,
+       317,
+       161,
+       3,
+       0
+      ],
+      [
+       1,
+       0,
+       164,
+       315,
+       161,
+       5,
+       0
+      ],
+      [
+       1,
+       1590,
+       0,
+       316,
+       161,
+       4,
+       0
+      ],
+      [
+       1,
+       316,
+       164,
+       315,
+       161,
+       4,
+       0
+      ],
+      [
+       1,
+       632,
+       164,
+       315,
+       161,
+       5,
+       0
+      ],
+      [
+       1,
+       1266,
+       164,
+       312,
+       160,
+       8,
+       0
+      ],
+      [
+       1,
+       1579,
+       164,
+       320,
+       159,
+       0,
+       0
+      ],
+      [
+       1,
+       963,
+       326,
+       320,
+       152,
+       0,
+       0
+      ],
+      [
+       1,
+       1284,
+       326,
+       314,
+       152,
+       0,
+       0
+      ],
+      [
+       1,
+       1599,
+       326,
+       320,
+       151,
+       0,
+       0
+      ],
+      [
+       1,
+       0,
+       486,
+       320,
+       151,
+       0,
+       0
+      ],
+      [
+       1,
+       321,
+       486,
+       320,
+       151,
+       0,
+       0
+      ],
+      [
+       1,
+       963,
+       486,
+       320,
+       144,
+       0,
+       0
+      ],
+      [
+       1,
+       642,
+       486,
+       320,
+       149,
+       0,
+       0
+      ],
+      [
+       1,
+       642,
+       326,
+       320,
+       153,
+       0,
+       0
+      ],
+      [
+       1,
+       0,
+       326,
+       320,
+       159,
+       0,
+       0
+      ],
+      [
+       0,
+       1271,
+       1195,
+       320,
+       165,
+       0,
+       0
+      ],
+      [
+       0,
+       638,
+       1362,
+       318,
+       165,
+       0,
+       0
+      ],
+      [
+       0,
+       1592,
+       1195,
+       320,
+       165,
+       0,
+       0
+      ],
+      [
+       0,
+       634,
+       858,
+       320,
+       167,
+       0,
+       0
+      ],
+      [
+       0,
+       1240,
+       345,
+       318,
+       170,
+       2,
+       0
+      ],
+      [
+       0,
+       1559,
+       345,
+       316,
+       170,
+       4,
+       0
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "luz": {
+    "color": "#564d4d",
+    "radio": 0,
+    "intensidad": 0,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 116,
+    "parpadeo": 0,
+    "sombra": false,
+    "prioridad": 3,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "clima",
+     "actos": [
+      5
+     ],
+     "zonas": [
+      "a5_llanuras",
+      "a5_rio",
+      "a5_bastion"
+     ],
+     "nota": "las Llanuras de Ceniza"
+    }
+   ],
+   "notas": "Los pétalos de cerezo como copos de ceniza (cherry-blossoms.js de la Forja): sin cielo, sin flores y sin la franja de pétalos caídos; cada copo se posa a su altura y, cuando gira de frente, muestra una brasa."
+  },
+  {
+   "id": "fx_polilla",
+   "origen": "critters/butterfly",
+   "nombre": [
+    "Polilla",
+    "Moth"
+   ],
+   "categoria": "criaturas",
+   "capa": "mundo",
+   "cuadros": 40,
+   "t": 2,
+   "bucle": true,
+   "direccional": false,
+   "escala": 1,
+   "caja": [
+    -44,
+    -61,
+    44,
+    -3
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_polilla.png",
+     "w": 312,
+     "h": 318,
+     "bytes": 15642
+    }
+   ],
+   "peso": 0.1,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       264,
+       256,
+       48,
+       31,
+       -30,
+       -45
+      ],
+      [
+       0,
+       0,
+       222,
+       46,
+       33,
+       -29,
+       -42
+      ],
+      [
+       0,
+       140,
+       256,
+       61,
+       31,
+       -29,
+       -41
+      ],
+      [
+       0,
+       76,
+       288,
+       59,
+       29,
+       -30,
+       -40
+      ],
+      [
+       0,
+       119,
+       222,
+       71,
+       31,
+       -30,
+       -40
+      ],
+      [
+       0,
+       203,
+       288,
+       63,
+       27,
+       -28,
+       -39
+      ],
+      [
+       0,
+       191,
+       222,
+       71,
+       31,
+       -27,
+       -43
+      ],
+      [
+       0,
+       136,
+       288,
+       66,
+       27,
+       -27,
+       -44
+      ],
+      [
+       0,
+       0,
+       256,
+       69,
+       31,
+       -26,
+       -49
+      ],
+      [
+       0,
+       202,
+       256,
+       61,
+       31,
+       -25,
+       -49
+      ],
+      [
+       0,
+       71,
+       145,
+       67,
+       39,
+       -25,
+       -55
+      ],
+      [
+       0,
+       239,
+       100,
+       59,
+       40,
+       -25,
+       -55
+      ],
+      [
+       0,
+       140,
+       53,
+       69,
+       45,
+       -26,
+       -60
+      ],
+      [
+       0,
+       218,
+       0,
+       70,
+       46,
+       -26,
+       -61
+      ],
+      [
+       0,
+       0,
+       53,
+       62,
+       46,
+       -18,
+       -61
+      ],
+      [
+       0,
+       0,
+       100,
+       61,
+       44,
+       -18,
+       -61
+      ],
+      [
+       0,
+       63,
+       53,
+       39,
+       46,
+       2,
+       -59
+      ],
+      [
+       0,
+       210,
+       53,
+       36,
+       45,
+       2,
+       -56
+      ],
+      [
+       0,
+       159,
+       100,
+       41,
+       42,
+       -4,
+       -52
+      ],
+      [
+       0,
+       139,
+       145,
+       45,
+       39,
+       -9,
+       -48
+      ],
+      [
+       0,
+       185,
+       145,
+       46,
+       38,
+       -11,
+       -47
+      ],
+      [
+       0,
+       237,
+       185,
+       54,
+       34,
+       -21,
+       -47
+      ],
+      [
+       0,
+       65,
+       185,
+       61,
+       36,
+       -27,
+       -48
+      ],
+      [
+       0,
+       170,
+       185,
+       66,
+       34,
+       -32,
+       -45
+      ],
+      [
+       0,
+       47,
+       222,
+       71,
+       32,
+       -37,
+       -43
+      ],
+      [
+       0,
+       0,
+       145,
+       70,
+       39,
+       -37,
+       -42
+      ],
+      [
+       0,
+       0,
+       288,
+       75,
+       30,
+       -42,
+       -43
+      ],
+      [
+       0,
+       70,
+       256,
+       69,
+       31,
+       -36,
+       -44
+      ],
+      [
+       0,
+       232,
+       145,
+       76,
+       36,
+       -43,
+       -49
+      ],
+      [
+       0,
+       0,
+       185,
+       64,
+       36,
+       -33,
+       -50
+      ],
+      [
+       0,
+       91,
+       100,
+       67,
+       42,
+       -42,
+       -55
+      ],
+      [
+       0,
+       62,
+       100,
+       28,
+       43,
+       -33,
+       -55
+      ],
+      [
+       0,
+       178,
+       0,
+       39,
+       49,
+       -43,
+       -60
+      ],
+      [
+       0,
+       41,
+       0,
+       69,
+       50,
+       -44,
+       -61
+      ],
+      [
+       0,
+       103,
+       53,
+       36,
+       46,
+       -44,
+       -61
+      ],
+      [
+       0,
+       0,
+       0,
+       40,
+       52,
+       -43,
+       -61
+      ],
+      [
+       0,
+       111,
+       0,
+       66,
+       50,
+       -41,
+       -59
+      ],
+      [
+       0,
+       247,
+       53,
+       36,
+       45,
+       -38,
+       -56
+      ],
+      [
+       0,
+       201,
+       100,
+       37,
+       41,
+       -33,
+       -52
+      ],
+      [
+       0,
+       127,
+       185,
+       42,
+       36,
+       -31,
+       -48
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f7cb94",
+    "radio": 74,
+    "intensidad": 0.31,
+    "curva": [
+     0.96,
+     0.53,
+     0.85,
+     0.53,
+     0.86,
+     0.53,
+     0.9,
+     0.57,
+     0.84,
+     0.51,
+     0.83,
+     0.52,
+     0.87,
+     0.89,
+     0.88,
+     0.95,
+     1,
+     0.93,
+     0.9,
+     0.85,
+     0.66,
+     0.79,
+     0.74,
+     0.67,
+     0.73,
+     0.61,
+     0.82,
+     0.59,
+     0.91,
+     0.56,
+     0.92,
+     0.53,
+     0.84,
+     0.89,
+     0.85,
+     0.84,
+     0.88,
+     0.89,
+     0.86,
+     0.9
+    ],
+    "altura": 36,
+    "parpadeo": 0.32,
+    "sombra": false,
+    "prioridad": 3,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a1_abadia1",
+      "a1_cripta",
+      "a2_tumbas1",
+      "a6_faro"
+     ],
+     "nota": "polillas que rondan velas, faroles y braseros"
+    }
+   ],
+   "notas": "La mariposa iridiscente repintada como polilla parda con ojos ocres en las alas traseras y polvo pálido. Va a escala 1 (un pixel de pixelfx por pixel de pantalla): a 2 abría las alas casi del alto del héroe."
+  },
+  {
+   "id": "fx_huevo_arana",
+   "origen": "spawn/egg-hatch",
+   "nombre": [
+    "Huevo de araña",
+    "Spider egg"
+   ],
+   "categoria": "aparicion",
+   "capa": "mundo",
+   "cuadros": 38,
+   "t": 2,
+   "bucle": false,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -34,
+    -52,
+    33,
+    11
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_huevo_arana.png",
+     "w": 226,
+     "h": 257,
+     "bytes": 13557
+    }
+   ],
+   "peso": 0.06,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       143,
+       210,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       143,
+       210,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       143,
+       210,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       143,
+       210,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       162,
+       210,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       43,
+       210,
+       19,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       181,
+       210,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       200,
+       210,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       0,
+       234,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       63,
+       210,
+       19,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       83,
+       210,
+       19,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       22,
+       210,
+       20,
+       23,
+       -10,
+       -21
+      ],
+      [
+       0,
+       103,
+       210,
+       19,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       123,
+       210,
+       19,
+       23,
+       -10,
+       -21
+      ],
+      [
+       0,
+       19,
+       234,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       38,
+       234,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       57,
+       234,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       76,
+       234,
+       18,
+       23,
+       -9,
+       -21
+      ],
+      [
+       0,
+       0,
+       210,
+       21,
+       23,
+       -10,
+       -21
+      ],
+      [
+       0,
+       153,
+       165,
+       19,
+       26,
+       -9,
+       -21
+      ],
+      [
+       0,
+       132,
+       165,
+       20,
+       26,
+       -10,
+       -21
+      ],
+      [
+       0,
+       173,
+       165,
+       18,
+       26,
+       -9,
+       -22
+      ],
+      [
+       0,
+       192,
+       165,
+       20,
+       24,
+       -10,
+       -21
+      ],
+      [
+       0,
+       88,
+       165,
+       21,
+       26,
+       -12,
+       -21
+      ],
+      [
+       0,
+       110,
+       165,
+       21,
+       26,
+       -12,
+       -21
+      ],
+      [
+       0,
+       0,
+       0,
+       58,
+       61,
+       -29,
+       -50
+      ],
+      [
+       0,
+       115,
+       0,
+       50,
+       55,
+       -25,
+       -47
+      ],
+      [
+       0,
+       0,
+       115,
+       48,
+       49,
+       -23,
+       -43
+      ],
+      [
+       0,
+       0,
+       165,
+       57,
+       44,
+       -25,
+       -41
+      ],
+      [
+       0,
+       49,
+       115,
+       60,
+       48,
+       -27,
+       -43
+      ],
+      [
+       0,
+       0,
+       62,
+       64,
+       52,
+       -31,
+       -45
+      ],
+      [
+       0,
+       65,
+       62,
+       67,
+       50,
+       -34,
+       -40
+      ],
+      [
+       0,
+       110,
+       115,
+       59,
+       48,
+       -28,
+       -43
+      ],
+      [
+       0,
+       170,
+       115,
+       56,
+       46,
+       -25,
+       -41
+      ],
+      [
+       0,
+       133,
+       62,
+       56,
+       49,
+       -25,
+       -45
+      ],
+      [
+       0,
+       166,
+       0,
+       56,
+       54,
+       -25,
+       -50
+      ],
+      [
+       0,
+       59,
+       0,
+       55,
+       56,
+       -24,
+       -52
+      ],
+      [
+       0,
+       58,
+       165,
+       29,
+       42,
+       -24,
+       -42
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "luz": {
+    "color": "#e8f9a9",
+    "radio": 100,
+    "intensidad": 0.4,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0.01,
+     0.01,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.05,
+     0.04,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     1,
+     0.65,
+     0.48,
+     0.36,
+     0.25,
+     0.14,
+     0.09,
+     0.04,
+     0.03,
+     0.02,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 37,
+    "parpadeo": 0.13,
+    "sombra": false,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "arana_reina"
+     ],
+     "nota": "la Madre del Pozo invoca: el huevo se abre y el juego hace aparecer la arana_cueva en el ancla"
+    },
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a1_guarida",
+      "a3_nido"
+     ],
+     "nota": "huevos que revientan al acercarse el héroe"
+    }
+   ]
+  },
+  {
+   "id": "fx_corazon",
+   "origen": "pickups/heart-pickup",
+   "nombre": [
+    "Corazón que late",
+    "Beating heart"
+   ],
+   "categoria": "botin",
+   "capa": "mundo",
+   "cuadros": 30,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -17,
+    -42,
+    18,
+    2
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_corazon.png",
+     "w": 177,
+     "h": 200,
+     "bytes": 6353
+    }
+   ],
+   "peso": 0.04,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       130,
+       164,
+       23,
+       34,
+       -13,
+       -32
+      ],
+      [
+       0,
+       80,
+       164,
+       24,
+       35,
+       -14,
+       -33
+      ],
+      [
+       0,
+       111,
+       125,
+       28,
+       36,
+       -14,
+       -34
+      ],
+      [
+       0,
+       52,
+       125,
+       30,
+       37,
+       -15,
+       -35
+      ],
+      [
+       0,
+       104,
+       45,
+       32,
+       38,
+       -16,
+       -36
+      ],
+      [
+       0,
+       69,
+       45,
+       34,
+       39,
+       -17,
+       -37
+      ],
+      [
+       0,
+       141,
+       0,
+       34,
+       40,
+       -17,
+       -38
+      ],
+      [
+       0,
+       0,
+       45,
+       34,
+       40,
+       -17,
+       -38
+      ],
+      [
+       0,
+       35,
+       45,
+       33,
+       40,
+       -16,
+       -38
+      ],
+      [
+       0,
+       54,
+       0,
+       33,
+       42,
+       -16,
+       -40
+      ],
+      [
+       0,
+       115,
+       0,
+       25,
+       41,
+       -15,
+       -39
+      ],
+      [
+       0,
+       27,
+       0,
+       26,
+       43,
+       -16,
+       -41
+      ],
+      [
+       0,
+       0,
+       0,
+       26,
+       44,
+       -16,
+       -42
+      ],
+      [
+       0,
+       88,
+       0,
+       26,
+       42,
+       -16,
+       -40
+      ],
+      [
+       0,
+       0,
+       125,
+       25,
+       38,
+       -14,
+       -36
+      ],
+      [
+       0,
+       87,
+       86,
+       26,
+       38,
+       -14,
+       -36
+      ],
+      [
+       0,
+       114,
+       86,
+       26,
+       38,
+       -14,
+       -36
+      ],
+      [
+       0,
+       154,
+       164,
+       23,
+       34,
+       -10,
+       -32
+      ],
+      [
+       0,
+       105,
+       164,
+       24,
+       35,
+       -10,
+       -33
+      ],
+      [
+       0,
+       54,
+       164,
+       25,
+       35,
+       -10,
+       -33
+      ],
+      [
+       0,
+       0,
+       164,
+       26,
+       36,
+       -10,
+       -34
+      ],
+      [
+       0,
+       27,
+       164,
+       26,
+       36,
+       -10,
+       -34
+      ],
+      [
+       0,
+       83,
+       125,
+       27,
+       37,
+       -10,
+       -35
+      ],
+      [
+       0,
+       140,
+       125,
+       27,
+       36,
+       -10,
+       -34
+      ],
+      [
+       0,
+       0,
+       86,
+       28,
+       38,
+       -10,
+       -36
+      ],
+      [
+       0,
+       29,
+       86,
+       28,
+       38,
+       -11,
+       -36
+      ],
+      [
+       0,
+       58,
+       86,
+       28,
+       38,
+       -11,
+       -36
+      ],
+      [
+       0,
+       137,
+       45,
+       29,
+       38,
+       -12,
+       -36
+      ],
+      [
+       0,
+       26,
+       125,
+       25,
+       38,
+       -12,
+       -36
+      ],
+      [
+       0,
+       141,
+       86,
+       26,
+       38,
+       -13,
+       -36
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f06f6e",
+    "radio": 70,
+    "intensidad": 0.3,
+    "curva": [
+     0.38,
+     0.38,
+     0.92,
+     0.62,
+     0.8,
+     1,
+     1,
+     0.59,
+     0.62,
+     0.42,
+     0.4,
+     0.4,
+     0.41,
+     0.4,
+     0.39,
+     0.38,
+     0.38,
+     0.38,
+     0.38,
+     0.58,
+     0.8,
+     0.8,
+     0.44,
+     0.38,
+     0.38,
+     0.38,
+     0.39,
+     0.39,
+     0.39,
+     0.39
+    ],
+    "altura": 40,
+    "parpadeo": 0.18,
+    "sombra": false,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "botin",
+     "nota": "orbe de vida que suelta un enemigo; el corazón del niño de la nieve (misión m4_nino) en el piso"
+    }
+   ]
+  },
+  {
+   "id": "fx_ascenso",
+   "origen": "ui/level-up",
+   "nombre": [
+    "Ascenso",
+    "Ascension"
+   ],
+   "categoria": "avisos",
+   "capa": "mundo",
+   "cuadros": 50,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -77,
+    -116,
+    77,
+    40
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_ascenso.png",
+     "w": 598,
+     "h": 630,
+     "bytes": 54418
+    }
+   ],
+   "peso": 0.38,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       505,
+       559,
+       8,
+       8,
+       -4,
+       -6
+      ],
+      [
+       0,
+       505,
+       559,
+       8,
+       8,
+       -4,
+       -6
+      ],
+      [
+       0,
+       265,
+       430,
+       110,
+       80,
+       -56,
+       -69
+      ],
+      [
+       0,
+       265,
+       430,
+       110,
+       80,
+       -56,
+       -69
+      ],
+      [
+       0,
+       0,
+       559,
+       123,
+       71,
+       -65,
+       -62
+      ],
+      [
+       0,
+       0,
+       559,
+       123,
+       71,
+       -65,
+       -62
+      ],
+      [
+       0,
+       376,
+       430,
+       116,
+       79,
+       -48,
+       -68
+      ],
+      [
+       0,
+       0,
+       430,
+       128,
+       128,
+       -64,
+       -88
+      ],
+      [
+       0,
+       334,
+       0,
+       122,
+       144,
+       -61,
+       -107
+      ],
+      [
+       0,
+       0,
+       0,
+       114,
+       148,
+       -57,
+       -115
+      ],
+      [
+       0,
+       115,
+       0,
+       110,
+       147,
+       -56,
+       -116
+      ],
+      [
+       0,
+       226,
+       0,
+       107,
+       145,
+       -52,
+       -115
+      ],
+      [
+       0,
+       457,
+       0,
+       118,
+       143,
+       -59,
+       -115
+      ],
+      [
+       0,
+       0,
+       149,
+       128,
+       141,
+       -64,
+       -115
+      ],
+      [
+       0,
+       129,
+       149,
+       138,
+       140,
+       -69,
+       -115
+      ],
+      [
+       0,
+       268,
+       149,
+       144,
+       139,
+       -72,
+       -115
+      ],
+      [
+       0,
+       274,
+       291,
+       148,
+       137,
+       -74,
+       -114
+      ],
+      [
+       0,
+       274,
+       291,
+       148,
+       137,
+       -74,
+       -114
+      ],
+      [
+       0,
+       413,
+       149,
+       154,
+       138,
+       -77,
+       -114
+      ],
+      [
+       0,
+       413,
+       149,
+       154,
+       138,
+       -77,
+       -114
+      ],
+      [
+       0,
+       120,
+       291,
+       153,
+       137,
+       -76,
+       -114
+      ],
+      [
+       0,
+       120,
+       291,
+       153,
+       137,
+       -76,
+       -114
+      ],
+      [
+       0,
+       0,
+       291,
+       119,
+       138,
+       -59,
+       -114
+      ],
+      [
+       0,
+       0,
+       291,
+       119,
+       138,
+       -59,
+       -114
+      ],
+      [
+       0,
+       423,
+       291,
+       87,
+       136,
+       -24,
+       -113
+      ],
+      [
+       0,
+       423,
+       291,
+       87,
+       136,
+       -24,
+       -113
+      ],
+      [
+       0,
+       511,
+       291,
+       87,
+       131,
+       -22,
+       -110
+      ],
+      [
+       0,
+       511,
+       291,
+       87,
+       131,
+       -22,
+       -110
+      ],
+      [
+       0,
+       129,
+       430,
+       41,
+       123,
+       -23,
+       -106
+      ],
+      [
+       0,
+       129,
+       430,
+       41,
+       123,
+       -23,
+       -106
+      ],
+      [
+       0,
+       171,
+       430,
+       45,
+       116,
+       -24,
+       -104
+      ],
+      [
+       0,
+       171,
+       430,
+       45,
+       116,
+       -24,
+       -104
+      ],
+      [
+       0,
+       217,
+       430,
+       47,
+       110,
+       -25,
+       -102
+      ],
+      [
+       0,
+       217,
+       430,
+       47,
+       110,
+       -25,
+       -102
+      ],
+      [
+       0,
+       493,
+       430,
+       47,
+       78,
+       -26,
+       -77
+      ],
+      [
+       0,
+       493,
+       430,
+       47,
+       78,
+       -26,
+       -77
+      ],
+      [
+       0,
+       219,
+       559,
+       47,
+       54,
+       -28,
+       -53
+      ],
+      [
+       0,
+       219,
+       559,
+       47,
+       54,
+       -28,
+       -53
+      ],
+      [
+       0,
+       170,
+       559,
+       48,
+       59,
+       -29,
+       -63
+      ],
+      [
+       0,
+       170,
+       559,
+       48,
+       59,
+       -29,
+       -63
+      ],
+      [
+       0,
+       364,
+       559,
+       48,
+       48,
+       -29,
+       -54
+      ],
+      [
+       0,
+       364,
+       559,
+       48,
+       48,
+       -29,
+       -54
+      ],
+      [
+       0,
+       124,
+       559,
+       45,
+       62,
+       -25,
+       -67
+      ],
+      [
+       0,
+       124,
+       559,
+       45,
+       62,
+       -25,
+       -67
+      ],
+      [
+       0,
+       267,
+       559,
+       50,
+       51,
+       -30,
+       -57
+      ],
+      [
+       0,
+       267,
+       559,
+       50,
+       51,
+       -30,
+       -57
+      ],
+      [
+       0,
+       318,
+       559,
+       45,
+       49,
+       -24,
+       -58
+      ],
+      [
+       0,
+       318,
+       559,
+       45,
+       49,
+       -24,
+       -58
+      ],
+      [
+       0,
+       413,
+       559,
+       45,
+       46,
+       -24,
+       -61
+      ],
+      [
+       0,
+       459,
+       559,
+       45,
+       46,
+       -24,
+       -61
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "enLanzador": true,
+   "paquete": "base",
+   "luz": {
+    "color": "#f29c68",
+    "radio": 188,
+    "intensidad": 0.75,
+    "curva": [
+     0,
+     0,
+     0.01,
+     0.01,
+     0.03,
+     0.03,
+     0.05,
+     1,
+     0.79,
+     0.63,
+     0.53,
+     0.43,
+     0.35,
+     0.3,
+     0.27,
+     0.24,
+     0.22,
+     0.22,
+     0.19,
+     0.19,
+     0.17,
+     0.17,
+     0.16,
+     0.16,
+     0.15,
+     0.15,
+     0.12,
+     0.12,
+     0.08,
+     0.08,
+     0.05,
+     0.05,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 61,
+    "parpadeo": 0.18,
+    "sombra": true,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "evento",
+     "evento": "subir_nivel",
+     "nota": "en los pies del héroe al subir de nivel"
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "cuerno_ancestros"
+     ],
+     "rol": "lanzador",
+     "nota": "los ancestros responden al cuerno"
+    }
+   ],
+   "notas": "Subir de nivel sin letras (el juego escribe el texto en su idioma) y sin pintar al muñeco: la brasa se junta a los pies y sube en columna alrededor del héroe."
+  },
+  {
+   "id": "fx_sello_lacre",
+   "origen": "ui/quest-complete",
+   "nombre": [
+    "Sello de lacre",
+    "Wax seal"
+   ],
+   "categoria": "avisos",
+   "capa": "mundo",
+   "cuadros": 57,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -30,
+    -95,
+    29,
+    -25
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_sello_lacre.png",
+     "w": 228,
+     "h": 295,
+     "bytes": 14749
+    }
+   ],
+   "peso": 0.07,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       159,
+       259,
+       14,
+       14,
+       -7,
+       -59
+      ],
+      [
+       0,
+       159,
+       259,
+       14,
+       14,
+       -7,
+       -59
+      ],
+      [
+       0,
+       138,
+       259,
+       20,
+       20,
+       -10,
+       -62
+      ],
+      [
+       0,
+       138,
+       259,
+       20,
+       20,
+       -10,
+       -62
+      ],
+      [
+       0,
+       115,
+       259,
+       22,
+       22,
+       -11,
+       -63
+      ],
+      [
+       0,
+       115,
+       259,
+       22,
+       22,
+       -11,
+       -63
+      ],
+      [
+       0,
+       115,
+       259,
+       22,
+       22,
+       -11,
+       -63
+      ],
+      [
+       0,
+       115,
+       259,
+       22,
+       22,
+       -11,
+       -63
+      ],
+      [
+       0,
+       115,
+       259,
+       22,
+       22,
+       -11,
+       -63
+      ],
+      [
+       0,
+       115,
+       259,
+       22,
+       22,
+       -11,
+       -63
+      ],
+      [
+       0,
+       115,
+       259,
+       22,
+       22,
+       -11,
+       -63
+      ],
+      [
+       0,
+       0,
+       0,
+       58,
+       58,
+       -29,
+       -95
+      ],
+      [
+       0,
+       114,
+       0,
+       54,
+       53,
+       -27,
+       -90
+      ],
+      [
+       0,
+       171,
+       212,
+       44,
+       43,
+       -22,
+       -80
+      ],
+      [
+       0,
+       59,
+       0,
+       54,
+       54,
+       -27,
+       -79
+      ],
+      [
+       0,
+       0,
+       163,
+       48,
+       48,
+       -24,
+       -76
+      ],
+      [
+       0,
+       122,
+       212,
+       48,
+       44,
+       -24,
+       -74
+      ],
+      [
+       0,
+       0,
+       212,
+       52,
+       46,
+       -26,
+       -75
+      ],
+      [
+       0,
+       147,
+       112,
+       56,
+       48,
+       -28,
+       -76
+      ],
+      [
+       0,
+       0,
+       112,
+       56,
+       50,
+       -28,
+       -77
+      ],
+      [
+       0,
+       93,
+       59,
+       58,
+       51,
+       -29,
+       -78
+      ],
+      [
+       0,
+       169,
+       0,
+       59,
+       52,
+       -30,
+       -79
+      ],
+      [
+       0,
+       152,
+       59,
+       49,
+       51,
+       -30,
+       -79
+      ],
+      [
+       0,
+       0,
+       59,
+       49,
+       52,
+       -30,
+       -79
+      ],
+      [
+       0,
+       0,
+       59,
+       49,
+       52,
+       -30,
+       -79
+      ],
+      [
+       0,
+       102,
+       112,
+       44,
+       49,
+       -28,
+       -76
+      ],
+      [
+       0,
+       102,
+       112,
+       44,
+       49,
+       -28,
+       -76
+      ],
+      [
+       0,
+       97,
+       163,
+       41,
+       47,
+       -25,
+       -74
+      ],
+      [
+       0,
+       97,
+       163,
+       41,
+       47,
+       -25,
+       -74
+      ],
+      [
+       0,
+       53,
+       212,
+       33,
+       46,
+       -17,
+       -73
+      ],
+      [
+       0,
+       53,
+       212,
+       33,
+       46,
+       -17,
+       -73
+      ],
+      [
+       0,
+       177,
+       163,
+       32,
+       47,
+       -16,
+       -74
+      ],
+      [
+       0,
+       177,
+       163,
+       32,
+       47,
+       -16,
+       -74
+      ],
+      [
+       0,
+       87,
+       212,
+       34,
+       45,
+       -16,
+       -75
+      ],
+      [
+       0,
+       87,
+       212,
+       34,
+       45,
+       -16,
+       -75
+      ],
+      [
+       0,
+       139,
+       163,
+       37,
+       47,
+       -16,
+       -75
+      ],
+      [
+       0,
+       139,
+       163,
+       37,
+       47,
+       -16,
+       -75
+      ],
+      [
+       0,
+       50,
+       59,
+       42,
+       52,
+       -16,
+       -79
+      ],
+      [
+       0,
+       50,
+       59,
+       42,
+       52,
+       -16,
+       -79
+      ],
+      [
+       0,
+       57,
+       112,
+       44,
+       50,
+       -16,
+       -80
+      ],
+      [
+       0,
+       57,
+       112,
+       44,
+       50,
+       -16,
+       -80
+      ],
+      [
+       0,
+       49,
+       163,
+       47,
+       47,
+       -19,
+       -81
+      ],
+      [
+       0,
+       49,
+       163,
+       47,
+       47,
+       -19,
+       -81
+      ],
+      [
+       0,
+       0,
+       259,
+       38,
+       36,
+       -13,
+       -77
+      ],
+      [
+       0,
+       0,
+       259,
+       38,
+       36,
+       -13,
+       -77
+      ],
+      [
+       0,
+       39,
+       259,
+       37,
+       27,
+       -17,
+       -73
+      ],
+      [
+       0,
+       77,
+       259,
+       37,
+       26,
+       -17,
+       -72
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "paquete": "base",
+   "luz": {
+    "color": "#ec5046",
+    "radio": 88,
+    "intensidad": 0.36,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.02,
+     0.02,
+     0.03,
+     0.03,
+     0.05,
+     0.05,
+     0.06,
+     0.06,
+     0.06,
+     0.06,
+     0.06,
+     0.06,
+     0.06,
+     0.12,
+     0.12,
+     0.12,
+     1,
+     0.54,
+     0.37,
+     0.29,
+     0.24,
+     0.21,
+     0.2,
+     0.22,
+     0.22,
+     0.23,
+     0.23,
+     0.22,
+     0.22,
+     0.24,
+     0.24,
+     0.21,
+     0.21,
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0.22,
+     0.22,
+     0.29,
+     0.29,
+     0.22,
+     0.22,
+     0.22,
+     0.22,
+     0.11,
+     0.11,
+     0.01,
+     0.01
+    ],
+    "altura": 108,
+    "parpadeo": 0.1,
+    "sombra": false,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "evento",
+     "evento": "mision_cumplida",
+     "nota": "sobre el héroe al cumplir una misión (el ancla va en sus pies)"
+    }
+   ],
+   "notas": "Sin la cinta ni las letras: un sello de lacre cae sobre la cabeza del héroe, estampa con un destello, se marca el visto y se deshace en motas."
+  },
+  {
+   "id": "fx_aviso",
+   "origen": "ui/exclamation",
+   "nombre": [
+    "Aviso",
+    "Alert"
+   ],
+   "categoria": "avisos",
+   "capa": "mundo",
+   "cuadros": 33,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "escala": 2,
+   "caja": [
+    -25,
+    -80,
+    25,
+    -26
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_aviso.png",
+     "w": 195,
+     "h": 215,
+     "bytes": 9636
+    }
+   ],
+   "peso": 0.04,
+   "direcciones": [
+    {
+     "dir": null,
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       131,
+       96,
+       30,
+       30,
+       -15,
+       -68
+      ],
+      [
+       0,
+       0,
+       0,
+       36,
+       54,
+       -18,
+       -80
+      ],
+      [
+       0,
+       37,
+       0,
+       38,
+       48,
+       -19,
+       -77
+      ],
+      [
+       0,
+       76,
+       0,
+       46,
+       46,
+       -23,
+       -78
+      ],
+      [
+       0,
+       123,
+       0,
+       50,
+       43,
+       -25,
+       -79
+      ],
+      [
+       0,
+       0,
+       55,
+       50,
+       40,
+       -25,
+       -80
+      ],
+      [
+       0,
+       45,
+       96,
+       46,
+       32,
+       -23,
+       -78
+      ],
+      [
+       0,
+       54,
+       161,
+       26,
+       26,
+       -13,
+       -72
+      ],
+      [
+       0,
+       81,
+       161,
+       26,
+       26,
+       -13,
+       -71
+      ],
+      [
+       0,
+       108,
+       161,
+       26,
+       26,
+       -13,
+       -70
+      ],
+      [
+       0,
+       135,
+       161,
+       26,
+       26,
+       -13,
+       -70
+      ],
+      [
+       0,
+       103,
+       130,
+       26,
+       27,
+       -13,
+       -71
+      ],
+      [
+       0,
+       162,
+       161,
+       26,
+       26,
+       -13,
+       -71
+      ],
+      [
+       0,
+       92,
+       96,
+       38,
+       30,
+       -19,
+       -74
+      ],
+      [
+       0,
+       0,
+       96,
+       44,
+       33,
+       -22,
+       -77
+      ],
+      [
+       0,
+       51,
+       55,
+       48,
+       35,
+       -24,
+       -79
+      ],
+      [
+       0,
+       100,
+       55,
+       48,
+       35,
+       -24,
+       -79
+      ],
+      [
+       0,
+       149,
+       55,
+       46,
+       34,
+       -23,
+       -78
+      ],
+      [
+       0,
+       162,
+       96,
+       26,
+       30,
+       -13,
+       -74
+      ],
+      [
+       0,
+       0,
+       130,
+       26,
+       30,
+       -13,
+       -74
+      ],
+      [
+       0,
+       27,
+       130,
+       26,
+       29,
+       -13,
+       -73
+      ],
+      [
+       0,
+       130,
+       130,
+       26,
+       27,
+       -13,
+       -71
+      ],
+      [
+       0,
+       157,
+       130,
+       26,
+       27,
+       -13,
+       -71
+      ],
+      [
+       0,
+       0,
+       161,
+       26,
+       27,
+       -13,
+       -71
+      ],
+      [
+       0,
+       27,
+       161,
+       26,
+       27,
+       -13,
+       -71
+      ],
+      [
+       0,
+       27,
+       189,
+       24,
+       26,
+       -12,
+       -70
+      ],
+      [
+       0,
+       52,
+       189,
+       24,
+       26,
+       -12,
+       -70
+      ],
+      [
+       0,
+       77,
+       189,
+       22,
+       26,
+       -11,
+       -70
+      ],
+      [
+       0,
+       54,
+       130,
+       26,
+       28,
+       -13,
+       -72
+      ],
+      [
+       0,
+       0,
+       189,
+       26,
+       26,
+       -13,
+       -71
+      ],
+      [
+       0,
+       100,
+       189,
+       19,
+       24,
+       -8,
+       -70
+      ],
+      [
+       0,
+       120,
+       189,
+       19,
+       24,
+       -8,
+       -69
+      ],
+      [
+       0,
+       81,
+       130,
+       21,
+       28,
+       -9,
+       -71
+      ]
+     ]
+    }
+   ],
+   "mezcla": "normal",
+   "enLanzador": true,
+   "paquete": "base",
+   "luz": {
+    "color": "#ee813f",
+    "radio": 84,
+    "intensidad": 0.35,
+    "curva": [
+     0.38,
+     1,
+     0.59,
+     0.42,
+     0.31,
+     0.24,
+     0.21,
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0.26,
+     0.3,
+     0.3,
+     0.3,
+     0.26,
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0.17,
+     0.15,
+     0.13,
+     0.21,
+     0.22,
+     0.09,
+     0.03,
+     0
+    ],
+    "altura": 114,
+    "parpadeo": 0.21,
+    "sombra": false,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "evento",
+     "evento": "aviso",
+     "nota": "sobre la cabeza del héroe: emboscada, algo que notar, un NPC que lo llama"
+    }
+   ]
+  },
+  {
+   "id": "fx_impacto_muro",
+   "origen": "impacts/bullet-impact",
+   "nombre": [
+    "Impacto contra el muro",
+    "Wall impact"
+   ],
+   "categoria": "impactos",
+   "capa": "mundo",
+   "cuadros": 14,
+   "t": 2,
+   "bucle": false,
+   "direccional": true,
+   "escala": 2,
+   "caja": [
+    -75,
+    -75,
+    75,
+    41
+   ],
+   "paginas": [
+    {
+     "archivo": "fx_impacto_muro.png",
+     "w": 423,
+     "h": 458,
+     "bytes": 18668
+    }
+   ],
+   "peso": 0.19,
+   "direcciones": [
+    {
+     "dir": "s",
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       233,
+       250,
+       52,
+       52,
+       -28,
+       -52
+      ],
+      [
+       0,
+       250,
+       357,
+       37,
+       40,
+       -22,
+       -49
+      ],
+      [
+       0,
+       126,
+       305,
+       54,
+       48,
+       -40,
+       -65
+      ],
+      [
+       0,
+       297,
+       133,
+       52,
+       57,
+       -46,
+       -75
+      ],
+      [
+       0,
+       251,
+       305,
+       58,
+       47,
+       -53,
+       -64
+      ],
+      [
+       0,
+       65,
+       305,
+       60,
+       49,
+       -55,
+       -67
+      ],
+      [
+       0,
+       69,
+       443,
+       64,
+       14,
+       -60,
+       -32
+      ],
+      [
+       0,
+       0,
+       443,
+       68,
+       15,
+       -64,
+       -33
+      ],
+      [
+       0,
+       350,
+       404,
+       69,
+       15,
+       -64,
+       -33
+      ],
+      [
+       0,
+       279,
+       404,
+       70,
+       16,
+       -65,
+       -34
+      ],
+      [
+       0,
+       192,
+       404,
+       70,
+       17,
+       -64,
+       -35
+      ],
+      [
+       0,
+       120,
+       404,
+       71,
+       17,
+       -64,
+       -35
+      ],
+      [
+       0,
+       109,
+       404,
+       10,
+       18,
+       -2,
+       -36
+      ],
+      [
+       0,
+       166,
+       443,
+       5,
+       7,
+       -2,
+       -25
+      ]
+     ]
+    },
+    {
+     "dir": "so",
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       370,
+       72,
+       53,
+       59,
+       -23,
+       -54
+      ],
+      [
+       0,
+       210,
+       357,
+       39,
+       40,
+       -14,
+       -45
+      ],
+      [
+       0,
+       339,
+       193,
+       48,
+       54,
+       -8,
+       -57
+      ],
+      [
+       0,
+       344,
+       0,
+       61,
+       62,
+       -7,
+       -65
+      ],
+      [
+       0,
+       68,
+       193,
+       68,
+       55,
+       -6,
+       -48
+      ],
+      [
+       0,
+       49,
+       250,
+       69,
+       53,
+       -6,
+       -48
+      ],
+      [
+       0,
+       288,
+       357,
+       65,
+       39,
+       -5,
+       -32
+      ],
+      [
+       0,
+       140,
+       357,
+       69,
+       43,
+       -5,
+       -33
+      ],
+      [
+       0,
+       70,
+       357,
+       69,
+       44,
+       -5,
+       -34
+      ],
+      [
+       0,
+       310,
+       305,
+       69,
+       46,
+       -5,
+       -35
+      ],
+      [
+       0,
+       0,
+       357,
+       69,
+       46,
+       -5,
+       -36
+      ],
+      [
+       0,
+       181,
+       305,
+       69,
+       47,
+       -5,
+       -37
+      ],
+      [
+       0,
+       85,
+       404,
+       9,
+       21,
+       -5,
+       -38
+      ],
+      [
+       0,
+       153,
+       443,
+       5,
+       8,
+       -5,
+       -26
+      ]
+     ]
+    },
+    {
+     "dir": "o",
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       54,
+       133,
+       58,
+       58,
+       -25,
+       -53
+      ],
+      [
+       0,
+       0,
+       404,
+       43,
+       38,
+       -15,
+       -43
+      ],
+      [
+       0,
+       282,
+       193,
+       56,
+       54,
+       -8,
+       -49
+      ],
+      [
+       0,
+       0,
+       72,
+       69,
+       60,
+       -7,
+       -53
+      ],
+      [
+       0,
+       204,
+       193,
+       77,
+       54,
+       -6,
+       -36
+      ],
+      [
+       0,
+       339,
+       250,
+       81,
+       51,
+       -6,
+       -34
+      ],
+      [
+       0,
+       0,
+       305,
+       64,
+       51,
+       -6,
+       -31
+      ],
+      [
+       0,
+       0,
+       193,
+       67,
+       56,
+       -6,
+       -32
+      ],
+      [
+       0,
+       161,
+       133,
+       67,
+       57,
+       -6,
+       -33
+      ],
+      [
+       0,
+       234,
+       72,
+       67,
+       59,
+       -6,
+       -34
+      ],
+      [
+       0,
+       302,
+       72,
+       67,
+       59,
+       -6,
+       -35
+      ],
+      [
+       0,
+       70,
+       72,
+       67,
+       60,
+       -6,
+       -36
+      ],
+      [
+       0,
+       95,
+       404,
+       13,
+       19,
+       -6,
+       -37
+      ],
+      [
+       0,
+       159,
+       443,
+       6,
+       7,
+       -6,
+       -26
+      ]
+     ]
+    },
+    {
+     "dir": "no",
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       0,
+       133,
+       53,
+       59,
+       -23,
+       -53
+      ],
+      [
+       0,
+       354,
+       357,
+       42,
+       39,
+       -14,
+       -43
+      ],
+      [
+       0,
+       119,
+       250,
+       55,
+       53,
+       -8,
+       -41
+      ],
+      [
+       0,
+       137,
+       193,
+       66,
+       55,
+       -7,
+       -40
+      ],
+      [
+       0,
+       229,
+       133,
+       67,
+       57,
+       -6,
+       -31
+      ],
+      [
+       0,
+       350,
+       133,
+       72,
+       56,
+       -6,
+       -29
+      ],
+      [
+       0,
+       188,
+       72,
+       45,
+       60,
+       -5,
+       -30
+      ],
+      [
+       0,
+       281,
+       0,
+       47,
+       66,
+       -5,
+       -31
+      ],
+      [
+       0,
+       232,
+       0,
+       48,
+       67,
+       -6,
+       -32
+      ],
+      [
+       0,
+       102,
+       0,
+       48,
+       69,
+       -6,
+       -33
+      ],
+      [
+       0,
+       151,
+       0,
+       48,
+       69,
+       -6,
+       -34
+      ],
+      [
+       0,
+       18,
+       0,
+       48,
+       70,
+       -6,
+       -35
+      ],
+      [
+       0,
+       263,
+       404,
+       15,
+       17,
+       -6,
+       -36
+      ],
+      [
+       0,
+       180,
+       443,
+       5,
+       5,
+       -5,
+       -25
+      ]
+     ]
+    },
+    {
+     "dir": "n",
+     "espejo": false,
+     "cuadros": [
+      [
+       0,
+       286,
+       250,
+       52,
+       52,
+       -28,
+       -48
+      ],
+      [
+       0,
+       44,
+       404,
+       40,
+       37,
+       -25,
+       -39
+      ],
+      [
+       0,
+       0,
+       250,
+       48,
+       54,
+       -41,
+       -38
+      ],
+      [
+       0,
+       175,
+       250,
+       57,
+       52,
+       -51,
+       -30
+      ],
+      [
+       0,
+       113,
+       133,
+       47,
+       58,
+       -40,
+       -29
+      ],
+      [
+       0,
+       138,
+       72,
+       49,
+       60,
+       -43,
+       -29
+      ],
+      [
+       0,
+       329,
+       0,
+       14,
+       64,
+       -8,
+       -28
+      ],
+      [
+       0,
+       216,
+       0,
+       15,
+       68,
+       -9,
+       -28
+      ],
+      [
+       0,
+       200,
+       0,
+       15,
+       69,
+       -9,
+       -29
+      ],
+      [
+       0,
+       85,
+       0,
+       16,
+       70,
+       -10,
+       -29
+      ],
+      [
+       0,
+       67,
+       0,
+       17,
+       70,
+       -11,
+       -30
+      ],
+      [
+       0,
+       0,
+       0,
+       17,
+       71,
+       -11,
+       -31
+      ],
+      [
+       0,
+       134,
+       443,
+       18,
+       10,
+       -12,
+       -32
+      ],
+      [
+       0,
+       172,
+       443,
+       7,
+       5,
+       -1,
+       -27
+      ]
+     ]
+    },
+    {
+     "dir": "ne",
+     "espejo": true,
+     "de": "no"
+    },
+    {
+     "dir": "e",
+     "espejo": true,
+     "de": "o"
+    },
+    {
+     "dir": "se",
+     "espejo": true,
+     "de": "so"
+    }
+   ],
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f2a16a",
+    "radio": 120,
+    "intensidad": 0.5,
+    "curva": [
+     1,
+     0.28,
+     0.06,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 49,
+    "parpadeo": 0.24,
+    "sombra": false,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "flechas y virotes que pegan en un muro o una roca (orientar con el tiro)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "virote_perforante",
+      "rafaga_virotes",
+      "tormenta_virotes",
+      "torreta"
+     ],
+     "rol": "impacto"
+    }
+   ],
+   "notas": "La bala contra el muro como punta de hierro: chispas que rebotan en cono, astillas de piedra que caen, polvo y la marca que se enfría."
   },
   {
    "id": "fx_trans_quemar",

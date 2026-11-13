@@ -4,7 +4,9 @@
 // Muestra cuadros repartidos en el tiempo, la costura del bucle (último | primero) y, en los direccionales, un cuadro
 // en las 8 direcciones. Marca en rojo la celda si algo toca el borde.
 // Uso: npx tsx scripts/gotico-efectos-pfx-lamina.ts salida.png
-// Variables: IDS (filtrar ids, separados por coma), CAT (categoría), F (cuadros por efecto, 7), ANCHO (ancho máximo, 2400)
+// Variables: IDS (filtrar ids, separados por coma), CAT (categoría), F (cuadros por efecto, 7), ANCHO (ancho máximo, 2400),
+// ANTES=1 (antes de cada efecto, el original de pixelfx: sus opciones y colores de fábrica, sin la gradación gótica,
+// con la misma geometría y orientación, rotulado <id>_antes)
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
@@ -19,7 +21,15 @@ const filtro = process.env.IDS?.split(',');
 const cat = process.env.CAT;
 const NF = +(process.env.F ?? 7);
 const MAXW = +(process.env.ANCHO ?? 2400);
-const lista = EFECTOS_PFX.filter((c) => (!filtro || filtro.includes(c.id)) && (!cat || c.categoria === cat));
+const { CATALOGO_PFX } = await import('../src/engine/gotico/efectos_pfx_catalogo.ts');
+type Cfg = (typeof CATALOGO_PFX)[number];
+/** el original: opciones de fábrica (sin paletas ni retoques de la Forja) y gradación neutra */
+const antesDe = (c: Cfg): Cfg => ({
+  ...c, id: `${c.id}_antes`, opciones: {}, gradacion: { sat: 1, violeta: 0, sombra: 1, tope: 0, brillo: 1 },
+  opacidad: undefined, relleno: undefined, ventana: undefined, rapido25: undefined, maxSeg: undefined,
+});
+let lista = EFECTOS_PFX.filter((c) => (!filtro || filtro.includes(c.id)) && (!cat || c.categoria === cat));
+if (process.env.ANTES === '1') lista = lista.flatMap((c) => { const a = antesDe(c); CATALOGO_PFX.push(a); return [a, c]; });
 
 type Img = { w: number; h: number; data: Uint8ClampedArray };
 const lienzo = (w: number, h: number): Img => ({ w, h, data: new Uint8ClampedArray(w * h * 4) });

@@ -1,4 +1,4 @@
-// Índice de los efectos de pixelfx que usa la Forja: los 169 elegidos para Réquiem de Ceniza.
+// Índice de los efectos de pixelfx que usa la Forja: los elegidos para Réquiem de Ceniza.
 // Archivo agregado por la Forja (no está en pixelfx). Los efectos siguen bajo la licencia MIT de LICENSE.
 
 import * as fire_fire_breath from "./fire/fire-breath.js";
@@ -171,6 +171,23 @@ import * as transitions_slash_wipe from "./transitions/slash-wipe.js";
 import * as transitions_pixel_dissolve from "./transitions/pixel-dissolve.js";
 import * as transitions_iris from "./transitions/iris.js";
 
+// Segunda tanda (pedido de Rick): rayo, bombas, estados, clima, criaturas, botín, avisos de mundo e impactos
+import * as lightning_plasma_ball from "./lightning/plasma-ball.js";
+import * as lightning_tesla_coil from "./lightning/tesla-coil.js";
+import * as explosions_plasma_explosion from "./explosions/plasma-explosion.js";
+import * as explosions_grenade from "./explosions/grenade.js";
+import * as status_burning from "./status/burning.js";
+import * as status_charmed from "./status/charmed.js";
+import * as weather_shooting_stars from "./weather/shooting-stars.js";
+import * as weather_cherry_blossoms from "./weather/cherry-blossoms.js";
+import * as critters_butterfly from "./critters/butterfly.js";
+import * as spawn_egg_hatch from "./spawn/egg-hatch.js";
+import * as pickups_heart_pickup from "./pickups/heart-pickup.js";
+import * as ui_level_up from "./ui/level-up.js";
+import * as ui_quest_complete from "./ui/quest-complete.js";
+import * as ui_exclamation from "./ui/exclamation.js";
+import * as impacts_bullet_impact from "./impacts/bullet-impact.js";
+
 export const EFECTOS = {
   "fire/fire-breath": fire_fire_breath,
   "fire/fire-ring": fire_fire_ring,
@@ -341,4 +358,19 @@ export const EFECTOS = {
   "transitions/slash-wipe": transitions_slash_wipe,
   "transitions/pixel-dissolve": transitions_pixel_dissolve,
   "transitions/iris": transitions_iris,
+  "lightning/plasma-ball": lightning_plasma_ball,
+  "lightning/tesla-coil": lightning_tesla_coil,
+  "explosions/plasma-explosion": explosions_plasma_explosion,
+  "explosions/grenade": explosions_grenade,
+  "status/burning": status_burning,
+  "status/charmed": status_charmed,
+  "weather/shooting-stars": weather_shooting_stars,
+  "weather/cherry-blossoms": weather_cherry_blossoms,
+  "critters/butterfly": critters_butterfly,
+  "spawn/egg-hatch": spawn_egg_hatch,
+  "pickups/heart-pickup": pickups_heart_pickup,
+  "ui/level-up": ui_level_up,
+  "ui/quest-complete": ui_quest_complete,
+  "ui/exclamation": ui_exclamation,
+  "impacts/bullet-impact": impacts_bullet_impact,
 };

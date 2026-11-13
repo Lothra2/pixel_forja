@@ -40,13 +40,26 @@ import { siluetaHeroe } from './efectos_pfx_silueta';
 
 export type CategoriaPfx =
   | 'fuego' | 'explosiones' | 'agua' | 'hielo' | 'rayo' | 'cuerpo_a_cuerpo' | 'impactos' | 'proyectiles' | 'aparicion'
-  | 'arcano' | 'sagrado' | 'sombra' | 'estado' | 'naturaleza' | 'clima' | 'botin' | 'criaturas' | 'transiciones';
+  | 'arcano' | 'sagrado' | 'sombra' | 'estado' | 'naturaleza' | 'clima' | 'botin' | 'criaturas' | 'transiciones'
+  /** avisos de mundo sobre el héroe: subir de nivel, misión cumplida, golpe crítico, aviso */
+  | 'avisos';
 
 export type ClaseHeroe = 'berserker' | 'templario' | 'arcanista' | 'cazadora' | 'nigromante' | 'monje' | 'druida' | 'alquimista';
 
+/**
+ * Qué papel hace el efecto en una habilidad: el que vuela (proyectil), lo que pasa donde pega (impacto), lo que cubre
+ * el área elegida (area), lo que pasa sobre el que lanza (lanzador) o sobre cada blanco alcanzado (blanco). Sin rol,
+ * el juego lo deduce (los que vuelan en bucle son proyectil; el resto, área).
+ */
+export type RolPfx = 'proyectil' | 'impacto' | 'area' | 'lanzador' | 'blanco';
+
+/** Momentos del juego que no son una habilidad ni un estado. */
+export type EventoPfx = 'subir_nivel' | 'mision_cumplida' | 'critico' | 'aviso';
+
 /** Para qué sirve cada efecto en el juego (sugerencias concretas para cablearlo). */
 export type UsoPfx =
-  | { tipo: 'poder'; clase: ClaseHeroe; habilidades: string[]; nota?: string }
+  | { tipo: 'poder'; clase: ClaseHeroe; habilidades: string[]; rol?: RolPfx; nota?: string }
+  | { tipo: 'evento'; evento: EventoPfx; nota?: string }
   | { tipo: 'monstruo'; monstruos: string[]; nota?: string }
   | { tipo: 'estado'; estado: string; nota?: string }
   | { tipo: 'clima'; actos: number[]; zonas?: string[]; nota?: string }
@@ -141,9 +154,17 @@ export interface CfgPfx {
   detrasEn?: (typeof DIRS_PODER)[number][];
   /** solo para cinemáticas (un astro del cielo, una toma de costado): no va en el mundo y no prende luz dinámica */
   soloCinematica?: boolean;
+  /**
+   * paquete del juego en que conviene que vaya (base: siempre a mano; poderes; clima; extra). Sin declarar, el
+   * empacador del juego lo elige por el uso
+   */
+  paquete?: PaquetePfx;
   uso: UsoPfx[];
   notas?: string;
 }
+
+/** Paquetes en que el juego reparte las hojas (juego/hornear/empacar_pfx.py). */
+export type PaquetePfx = 'base' | 'poderes' | 'clima' | 'extra';
 
 /**
  * Un cuadro en el atlas: [página, x, y, ancho, alto, dx, dy]. (x, y, ancho, alto) es el rectángulo en la página, a 1x;
@@ -194,6 +215,8 @@ export interface EfectoPfx {
   enLanzador?: boolean;
   /** solo para cinemáticas: el juego no lo pone en el mundo */
   soloCinematica?: true;
+  /** paquete declarado en el catálogo (si no, lo elige el empacador del juego) */
+  paquete?: PaquetePfx;
   cuerpo?: { alfa?: number[]; tinte?: { color: string; fuerza: number; nota?: string } };
   luz: LuzEfecto;
   uso: UsoPfx[];
@@ -724,7 +747,7 @@ function hacer(id: string): Hecho {
 const r2 = (x: number) => Math.round(Math.max(0, Math.min(1, x)) * 100) / 100;
 const PRIORIDAD: Record<CategoriaPfx, 0 | 1 | 2 | 3> = {
   fuego: 1, explosiones: 0, agua: 2, hielo: 1, rayo: 0, cuerpo_a_cuerpo: 1, impactos: 1, proyectiles: 1, aparicion: 1, arcano: 1,
-  sagrado: 1, sombra: 1, estado: 3, naturaleza: 2, clima: 3, botin: 2, criaturas: 3, transiciones: 3,
+  sagrado: 1, sombra: 1, estado: 3, naturaleza: 2, clima: 3, botin: 2, criaturas: 3, transiciones: 3, avisos: 2,
 };
 
 /**
@@ -763,7 +786,7 @@ export type ClaseLuz = keyof typeof CLASES_LUZ;
 const CLASE_CATEGORIA: Record<CategoriaPfx, ClaseLuz | null> = {
   fuego: 'hechizo', explosiones: 'explosion', agua: 'materia', hielo: 'hechizo', rayo: 'area', cuerpo_a_cuerpo: 'golpe', impactos: 'golpe',
   proyectiles: 'hechizo', aparicion: 'hechizo', arcano: 'hechizo', sagrado: 'hechizo', sombra: 'oscuro', estado: 'estado', naturaleza: 'materia',
-  clima: null, botin: 'objeto', criaturas: 'objeto', transiciones: null,
+  clima: null, botin: 'objeto', criaturas: 'objeto', transiciones: null, avisos: 'objeto',
 };
 /** Los que no van con la clase de su categoría. */
 const CLASE_EFECTO: Record<string, ClaseLuz | null> = {
@@ -783,6 +806,9 @@ const CLASE_EFECTO: Record<string, ClaseLuz | null> = {
   fx_agujero_negro: 'area', fx_drenar_almas: 'area', fx_sello_maleficio: 'area', fx_orbe_vacio: 'hechizo', fx_calaveras_orbitan: 'objeto', fx_robo_vida: 'hechizo',
   fx_salpicadura_acido: 'golpe', fx_nube_veneno: 'objeto', fx_charco_toxico: 'objeto', fx_esporas: 'objeto', fx_flor_curativa: 'objeto',
   fx_orbe_agua: 'hechizo', fx_columna_botin: 'objeto', fx_calavera_voladora: 'hechizo', fx_fuego_fatuo: 'objeto', fx_ojo_flotante: 'objeto',
+  // segunda tanda: las auras de rayo en bucle alumbran como un hechizo, no como una nova; el estallido galvánico es un
+  // área (no la gran explosión) y el huevo de araña, un objeto
+  fx_tempestad_arcos: 'hechizo', fx_latido_galvanico: 'hechizo', fx_estallido_galvanico: 'area', fx_huevo_arana: 'objeto', fx_ascenso: 'hechizo',
 };
 /** La clase de luz de un efecto (null: sin luz propia, salvo que el catálogo la pida). */
 export const claseLuz = (cfg: Pick<CfgPfx, 'id' | 'categoria'>): ClaseLuz | null => (cfg.id in CLASE_EFECTO ? CLASE_EFECTO[cfg.id] : CLASE_CATEGORIA[cfg.categoria]);
@@ -977,6 +1003,7 @@ export function efectoPfx(id: string): EfectoPfx {
     ...(c.detrasEn ? { detrasEn: c.detrasEn } : {}),
     ...(c.enLanzador ? { enLanzador: true } : {}),
     ...(c.soloCinematica ? { soloCinematica: true } : {}),
+    ...(c.paquete ? { paquete: c.paquete } : {}),
     ...(h.alfaCuerpo || c.cuerpo?.tinte ? { cuerpo: { ...(h.alfaCuerpo ? { alfa: h.alfaCuerpo } : {}), ...(c.cuerpo?.tinte ? { tinte: c.cuerpo.tinte } : {}) } } : {}),
     luz: h.luz, uso: c.uso, ...(c.notas ? { notas: c.notas } : {}),
   };
@@ -1032,7 +1059,8 @@ export const NOTAS_MANIFIESTO =
   "peso: Mpx decodificados de las páginas: cargar al usarse y descargar lo que no se use. capa 'pantalla': ancla = esquina de la pantalla " +
   "de 320x180, estirar entero (x3 a 960x540). mezcla 'aditiva': color * alfa sumado; 'normal': alfa común. cuerpo.tinte: teñir el sprite " +
   'del afectado; cuerpo.alfa: visibilidad del sprite por cuadro. detrasEn: direcciones en que va detrás del lanzador. ' +
-  'soloCinematica: capa de cinemática (no va en el mundo ni prende luz dinámica).';
+  'soloCinematica: capa de cinemática (no va en el mundo ni prende luz dinámica). paquete: dónde conviene empacarlo (si falta, por el uso). ' +
+  "uso.rol (en los poderes): proyectil, impacto, area, lanzador o blanco; uso 'evento': subir_nivel, mision_cumplida, critico o aviso.";
 
 export const CREDITOS_PFX =
   'Efectos adaptados de pixelfx (https://github.com/patch-gg/pixelfx), MIT, Copyright (c) 2026 Patch y Copyright (c) 2026 Hugo Duprez ' +
