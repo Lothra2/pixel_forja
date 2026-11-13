@@ -793,7 +793,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = 255;
   }
   if (ao && prof) oclusionPantalla(img, prof, nrm!, pun!, luzPropia, W, H, ax, ay, z0, ao);
-  if (borde?.contorno && luzPropia) contornoBorde(img, luzPropia, borde.d, borde.rgb, borde.contorno, !!borde.alto);
+  if (borde?.contorno && luzPropia) contornoBorde(img, luzPropia, borde.d, borde.rgb, borde.contorno, !!borde.alto, L?.principal ? norm(L.principal.dir) : undefined);
   if (lMetal && luzPropia) sinSal(img, luzPropia);
   return { img, ancla: [ax, ay] };
 }
@@ -847,7 +847,7 @@ function oclusionPantalla(img: Raster, prof: Float32Array, nrm: Float32Array, pu
 }
 
 /** El filo de la silueta que da hacia la luz de borde: el pixel cuyo vecino de ese lado está vacío se aclara a su color. */
-function contornoBorde(img: Raster, luzPropia: Uint8Array, dir: V3, c: [number, number, number], k: number, retrato = false) {
+function contornoBorde(img: Raster, luzPropia: Uint8Array, dir: V3, c: [number, number, number], k: number, retrato = false, evitar?: V3) {
   const [dx, dy] = aPantalla(dir), l = Math.hypot(dx, dy) || 1, W = img.w, H = img.h, d = img.data;
   const vec: [number, number, number][] = [];
   // (retrato: solo los vecinos que miran de lleno a la luz fría; con 0,3 entraban los costados y se volvía un contorno)
@@ -856,12 +856,16 @@ function contornoBorde(img: Raster, luzPropia: Uint8Array, dir: V3, c: [number, 
   // retrato: la caída en la altura de la silueta (fuerte en cabeza y hombros, nada en el cuarto de abajo)
   let y0 = H, y1 = -1;
   if (retrato) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] === 255) { if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  const lejos: [number, number][] = [];
+  if (evitar) { const [ex, ey] = aPantalla(evitar), el = Math.hypot(ex, ey) || 1; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { if (!i && !j) continue; if ((i * ex + j * ey) / el / Math.hypot(i, j) > 0.7) lejos.push([i, j]); } }
   const caida = (y: number) => { if (!retrato || y1 <= y0) return 1; const t = Math.max(0, Math.min(1, ((y1 - y) / (y1 - y0) - 0.3) / 0.45)); return t * t * (3 - 2 * t); };
   const lleno = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] === 255;
   const filo = new Float32Array(W * H);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (!lleno(x, y) || luzPropia[y * W + x]) continue;
     let f = 0; for (const [i, j, w] of vec) if (!lleno(x + i, y + j)) f = Math.max(f, w);
+    // (retrato: nunca del lado de la principal: un pixel que también da afuera hacia la fogata no lleva la línea fría)
+    if (f > 0 && evitar) for (const [i, j] of lejos) if (!lleno(x + i, y + j)) { f = 0; break; }
     filo[y * W + x] = f * caida(y);
   }
   for (let q = 0; q < W * H; q++) if (filo[q] > 0) { const o = q * 4, f = Math.min(1, filo[q] * k); for (let t = 0; t < 3; t++) d[o + t] += (Math.max(c[t], d[o + t]) - d[o + t]) * f; }
