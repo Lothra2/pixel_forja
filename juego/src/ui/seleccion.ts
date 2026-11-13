@@ -32,7 +32,7 @@ export function firmaRama(clase: string, rama: number): Habilidad | undefined {
 const parts: { x: number; y: number; vx: number; vy: number; t: number; d: number; c: string; s: number; atras?: boolean; ang?: number }[] = [];
 let ultima = -1, tCambio = 0, nivelVista = 0;
 /** La presentación 'sel' de la Forja: apagada hasta que llegue su luz de retrato definitiva (window.__sel = true la prueba). */
-const USAR_SEL = false || !!(globalThis as any).__sel;
+const USAR_SEL = true;
 /** Las partículas del aura en dos pasadas: `atras` se dibuja antes del héroe y la de adelante después. */
 function particulas(f: Ficha, cx: number, cy: number, dt: number, t: number, pasada: 'atras' | 'adelante') {
   if (pasada === 'atras') emitir(f, cx, cy, dt, t);
