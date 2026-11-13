@@ -797,7 +797,7 @@ function desgastar(j: Juego, cas: string) {
 export function recalc(j: Juego) {
   const h = j.heroe;
   const b: Record<string, number> = {};
-  for (const bf of Object.values(h.buffs)) for (const [k, v] of Object.entries(bf.bonos)) b[k] = (b[k] ?? 0) + v;
+  for (const bf of Object.values(h.buffs)) for (const [k, v] of Object.entries(bf.bonos ?? {})) b[k] = (b[k] ?? 0) + v;
   const vidaPct = h.vidaMax ? h.vida / h.vidaMax : 1;
   h.c = calcular(h.d, b);
   h.vidaMax = h.c.vidaMax;

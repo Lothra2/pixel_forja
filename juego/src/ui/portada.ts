@@ -6,6 +6,7 @@ import { ctx, W, H, E } from '../nucleo/lienzo';
 import { IDI, TITULO, texto, envolver } from './comun';
 import { BASE } from '../motor/assets';
 import { Sonido } from '../audio/sonido';
+import { fuegoTitulo } from './titulo_fuego';
 
 const RAIZ = BASE + 'portada/';
 let man: any = null;
@@ -146,8 +147,11 @@ function dibujarTitulo(tRel: number, vertical: boolean) {
   const hoja = (a: any, i: number) => { const n = Math.floor(i / a.por_hoja), j = i % a.por_hoja; const im = lista(a.hojas[n]); if (!im) return false; ctx.drawImage(im, (j % a.columnas) * a.w, Math.floor(j / a.columnas) * a.h, a.w, a.h, x, y, w, h); return true; };
   const rv = ti.revelar['800'], an = ti.anim['800'];
   const iRev = Math.floor(tRel * rv.fps);
+  // el fuego de Doom nace de las letras cuando terminan de forjarse y se queda ardiendo
+  const fArde = Math.min(1, Math.max(0, (tRel - rv.cuadros / rv.fps + 0.6) / 1.4)), fijoIm = lista(ti.fijo['800']);
+  fuegoTitulo(fijoIm, x, y, w, h, tRel, fArde, 'atras');
   if (iRev < rv.cuadros) { if (hoja(rv, iRev)) return; }
-  else if (hoja(an, Math.floor((tRel - rv.cuadros / rv.fps) * an.fps) % an.cuadros)) return;
+  else if (hoja(an, Math.floor((tRel - rv.cuadros / rv.fps) * an.fps) % an.cuadros)) { fuegoTitulo(fijoIm, x, y, w, h, tRel, fArde, 'adelante'); return; }
   // sin las hojas todavía: el título fijo, con un fundido
   const fijo = lista(ti.fijo['800']); if (fijo) { ctx.globalAlpha = Math.min(1, tRel / 1.2); ctx.drawImage(fijo, x, y, w, h); ctx.globalAlpha = 1; }
 }
