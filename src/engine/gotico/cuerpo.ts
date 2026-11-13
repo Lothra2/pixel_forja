@@ -315,12 +315,29 @@ const PIE_TALON = 1.6, PIE_PUNTA = 1.25;
 const CABEZA_HEROE = +((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CABEZA_HEROE ?? 0.86);
 const escCab = (cu: Cuerpo) => cu.cabeza ?? (cu.presentacion ? CABEZA_HEROE : 1);
 
-export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo, crudo = false): Esqueleto {
+export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo, crudo = false, ajusteMano?: number, ajusteRodilla?: number): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   // (las astas y el gran báculo nuevos van con la pose de vara aunque sean a dos manos: la izquierda baja por el asta)
   // (las armas de asta largas a dos manos, la lanza y el gran báculo van con la pose a dos manos: arco grande y agarre doble)
   const tipo = arma === 'ballesta' ? 'ballesta' : arma === 'lanza' || arma === 'alabarda' ? 'asta' : arma === 'guadana' && !cu.presentacion ? 'segur' : dos(arma) ? 'dos' : asta(arma) ? 'baculo' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' || arma === 'cestus' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
   let P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo), porteDe(cu));
+  // la selección: el arma clavada (pisoArma) apoya de verdad; la mano baja (o sube) hasta que lo más bajo del arma (la
+  // punta de la espada, la cabeza de la maza) toque el piso, sea cual sea el largo del arma. El cuerpo no se mueve.
+  // (el brazo no sigue la meta uno a uno: se mide con dos intentos y se corrige por la secante)
+  const clavada = acc === 'seleccion' && (P.pisoArma ?? 0) >= 0.99 && P.manoD && P.armaD && P.armaD[0] > 150 && !!LARGO_ARMA[arma];
+  if (clavada && ajusteMano !== undefined) P = { ...P, manoD: [P.manoD![0], P.manoD![1], P.manoD![2] + ajusteMano], bajar: P.bajar + (ajusteRodilla ?? 0) };
+  else if (clavada && !crudo) {
+    const sobra = (a: number) => {
+      const e0 = esqueleto(cu, dir, acc, f, arma, izqTipo, true, a), b0 = e0.brazos[0];
+      const [fa, fb] = filoDe(e0, arma, b0), punta = add(b0.mano, b0.eje, LARGO_ARMA[arma]! * S);
+      return Math.min(fa[2], fb[2], punta[2]) - 0.9 * S - 0.3 * S;
+    };
+    const s0 = sobra(0), a1 = -s0 / S, s1 = sobra(a1);
+    const a2 = Math.abs(s1 - s0) > 1e-4 ? a1 - (s1 * a1) / (s1 - s0) : a1;
+    // si el brazo ya no llega (un arma corta, la maza del épico), las rodillas se doblan lo que falta
+    const s2 = sobra(a2);
+    P = { ...P, manoD: [P.manoD![0], P.manoD![1], P.manoD![2] + a2 - Math.max(0, s2) / S], bajar: P.bajar + Math.max(0, s2) / S };
+  }
   // los héroes entran al ataque y al conjuro desde su reposo y vuelven a él: el primer cuadro es el reposo y el último
   // también (los dos de al lado van a mitad de camino), así no saltan de postura al empezar ni al terminar
   if (!crudo && cu.presentacion && (acc === 'atacar' || acc === 'lanzar')) {
@@ -1560,11 +1577,24 @@ function plegada(mat: string, abajo = false): string {
   }
   return id;
 }
-/** Lomos y valles alrededor del eje del tubo (z baja del cinto al ruedo); seis por vuelta, con una ondulación. */
+/**
+ * Lomos y valles alrededor del eje del tubo (z baja del cinto al ruedo), como tela que cae y no como rayas:
+ * - la separación entre pliegues es despareja (el ángulo se deforma con dos ondas);
+ * - cada pliegue nace bajo el cinto y muere a su propia altura (unos llegan al ruedo, otros se cortan antes);
+ * - el lomo es ancho y suave, el valle estrecho y algo más oscuro, con poco contraste de valor entre los dos;
+ * - siguen el tubo: juntos arriba (el tubo es angosto en el cinto) y abiertos abajo.
+ */
 function pliegueTela(p: V3, z0: number): number {
-  const a = Math.atan2(p[1], p[0]), z = p[2] + z0, fondo = Math.min(1, Math.max(0, z - 1) / 7);
-  const c = Math.cos(a * 6 + Math.sin(z * 0.17) * 0.7);
-  return fondo * (c > 0.55 ? 0.13 : c < -0.1 ? -0.34 * Math.min(1, (-c - 0.1) * 2.2) : 0);
+  const z = p[2] + z0, a0 = Math.atan2(p[1], p[0]);
+  const a = a0 + 0.34 * Math.sin(a0 * 2 + 1.3) + 0.2 * Math.sin(a0 * 3 + 0.4) + Math.sin(z * 0.12) * 0.25;
+  const t = ((a / (Math.PI * 2)) * 6 % 6 + 6) % 6, i = Math.floor(t), fr = t - i;
+  const h = (k: number) => { const x = Math.sin((i + 1) * 91.7 + k * 37.3) * 43758.5453; return x - Math.floor(x); };
+  const nace = 1 + 4 * h(1), muere = 12 + 26 * h(2), fuerza = 0.6 + 0.4 * h(3);
+  const ss = (e0: number, e1: number, x: number) => { const q = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return q * q * (3 - 2 * q); };
+  const vida = ss(nace, nace + 6, z) * (1 - ss(muere - 5, muere, z));
+  const c = Math.cos(fr * Math.PI * 2);
+  const lomo = 0.065 * ss(-0.1, 0.8, c), valle = -0.15 * ss(0.62, 0.95, -c);
+  return vida * fuerza * (lomo + valle);
 }
 /**
  * El ruedo de una falda con peso: un dobladillo grueso alrededor del borde de abajo (luz arriba, sombra abajo), del

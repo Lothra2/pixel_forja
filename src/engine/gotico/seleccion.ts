@@ -109,7 +109,9 @@ function templario(p: Pose, arma: ArmaPose, mano?: ManoPose): Guion {
   void arma; void mano;
   // la espada vertical con la punta clavada en el piso delante del pie, la mano sobre el pomo cerca del cuerpo y el codo
   // doblado y afuera (antes: brazo estirado hacia adelante y la hoja en diagonal sin tocar el piso, como si se le cayera)
-  const pomo: Vals = { manoD: [8.5, 3.5, 27.5], armaD: [178, 4], pisoArma: 1, codoD: [-0.3, 1, -0.2] };
+  // (la mano un poco más cerca del cuerpo que en beb8955, 6 en vez de 8,5: con el brazo estirado no llegaba a apoyar la punta;
+  // la altura la ajusta esqueleto() para que la punta o la cabeza del arma toquen el piso con cualquier largo)
+  const pomo: Vals = { manoD: [6.5, 6.5, 26], armaD: [178, 4], pisoArma: 1, codoD: [-0.3, 1, -0.2] };
   const escudo: Vals = { hombroI: [-2, 26, 12, 0] };
   const bucle: Clave[] = [
     K(0, { bajar: 1.2, torso: 3, lateral: 0.45, ladeoCadera: 1.8, ladeo: -0.8, giroTorso: 6, giroCadera: -3, respira: 0.1, hombros: [0.3, 0.3], cabeza: -2, giroCabeza: 6, ladeoCabeza: 1, ...pomo, ...escudo }),
@@ -199,7 +201,8 @@ function nigromante(p: Pose, arma: ArmaPose): Guion {
 function arcanista(p: Pose, arma: ArmaPose): Guion {
   plantar(p, [-0.8, 1.8], [0.6, 0.9], [12, 14]);
   const vara = arma === 'baculo';
-  const reposo: Vals = vara ? { varaPie: [13, 12.5, 0.5], manoD: [8, 10, 40], manoI: [10, -8, 30], codoI: [-0.2, -1, -0.3] }
+  // (la vara al costado, el brazo abierto y la mano a la altura del hombro: delante quedaba justo sobre la cara)
+  const reposo: Vals = vara ? { varaPie: [7, 19, 0.5], manoD: [4, 14, 43], codoD: [-0.4, 1, -0.2], manoI: [10, -8, 30], codoI: [-0.2, -1, -0.3] }
     : { manoD: [12, 3, 33], armaD: [90, -84], codoD: [-1, 0.25, -0.4], manoI: [12.2, -4.8, 32.6], codoI: [-0.3, -1, -0.4] };
   const bucle: Clave[] = [
     K(0, { bajar: 0.6, torso: 1, ladeo: -1.2, lateral: 0.7, ladeoCadera: 2.4, giroTorso: 2, giroCadera: 0, respira: 0.1, puntillas: [0.35, 0.35], cabeza: -2, giroCabeza: 10, ladeoCabeza: 3, ...reposo }),
@@ -208,9 +211,9 @@ function arcanista(p: Pose, arma: ArmaPose): Guion {
     K(0.75, { respira: 0.9, bajar: 0.2, puntillas: [0.5, 0.5], giroCabeza: 12, ladeoCabeza: 4 }),
   ];
   const entrada: Clave[] = vara ? [
-    K(0.2, { bajar: 1.4, torso: 4, varaPie: [16, 12, 6], manoD: [10, 10, 44], respira: 0.4 }),
-    K(0.45, { bajar: -0.4, torso: -6, puntillas: [0.9, 0.9], varaPie: [18, 11, 12], manoD: [11, 10, 52], respira: 1, cabeza: -12 }, true),
-    K(0.7, { bajar: 1.0, torso: 3, puntillas: [0.2, 0.2], varaPie: [13, 12.5, 0.5], manoD: [8, 10, 40], respira: 0.3, cabeza: -2 }, true),
+    K(0.2, { bajar: 1.4, torso: 4, varaPie: [10, 18, 6], manoD: [6, 14, 46], respira: 0.4 }),
+    K(0.45, { bajar: -0.4, torso: -6, puntillas: [0.9, 0.9], varaPie: [12, 17, 12], manoD: [7, 14, 53], respira: 1, cabeza: -12 }, true),
+    K(0.7, { bajar: 1.0, torso: 3, puntillas: [0.2, 0.2], varaPie: [7, 19, 0.5], manoD: [4, 14, 43], respira: 0.3, cabeza: -2 }, true),
   ] : [
     K(0.25, { bajar: 0.2, torso: -4, puntillas: [0.8, 0.8], manoD: [12, 8, 46], armaD: [10, 20], manoI: [14, -6, 36], respira: 1, cabeza: -10 }, true),
     K(0.6, { bajar: 0.8, torso: 2, manoD: [11, 5, 38], armaD: [60, -20], respira: 0.4 }),
