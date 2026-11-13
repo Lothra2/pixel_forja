@@ -2,7 +2,7 @@
 
 ## pixelfx
 
-Los efectos de `src/engine/gotico/vendor/pixelfx/` (núcleo y 169 efectos) y todo lo que se exporta a partir de ellos
+Los efectos de `src/engine/gotico/vendor/pixelfx/` (núcleo y 184 efectos: 169 de la primera mudanza y 15 de la segunda, del commit 5294518 de pixelfx) y todo lo que se exporta a partir de ellos
 (las hojas `fx_*.png` de `scripts/gotico-efectos-pfx.ts`, `efectos_pfx.json`, `luz_efectos_pfx.json`) vienen de
 **pixelfx** (https://github.com/patch-gg/pixelfx), bajo licencia MIT:
 
@@ -17,5 +17,7 @@ El texto completo de la licencia está en `src/engine/gotico/vendor/pixelfx/LICE
 `gallery/fonts` de pixelfx no es MIT y no se copió.
 
 La Forja modificó la copia: paletas de fuego y humo del núcleo, vista isométrica 2:1 de los efectos de piso
-(`core/forja.js` y los archivos que lo importan), el clima sin franja de piso para usarlo sobre la pantalla, y el índice
+(`core/forja.js` y los archivos que lo importan), el clima sin franja de piso para usarlo sobre la pantalla, opciones para
+usar sin su máquina, su pedestal, su cinta o su muñeco algunos efectos de la segunda tanda (bobina de Tesla, globo de plasma,
+granada, ardiendo, subir de nivel, misión cumplida, estrellas fugaces, pétalos), y el índice
 `fx/indice.js` con sus tipos `.d.ts`. Cada cambio está marcado con un comentario `Forja` en el archivo.
