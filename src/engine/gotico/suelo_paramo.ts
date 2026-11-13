@@ -41,10 +41,14 @@ const hc = (i: number, j: number, n: number, s: number) => hash3(((i % n) + n) %
 
 // ------------------------------------------------------------------ paleta (tonos tierra apagados)
 const COL = {
-  tierra: hex('#3a2f22'), tierraOsc: hex('#2a2119'), grava: hex('#5a5347'), gravaOsc: hex('#2e2a24'),
-  secoBase: hex('#2a2318'), brizna: hex('#62583a'), briznaOsc: hex('#463d28'), briznaVerde: hex('#40432f'), briznaClara: hex('#7a6e4d'),
-  tierraFria: hex('#3a352c'), charco: hex('#141a1f'),
-  barro: hex('#1e1812'), barroOsc: hex('#130f0b'), cielo: hex('#565e64'), cieloAlto: hex('#272d32'),
+  // tres valores separados: pasto seco claro (ocre y paja), tierra pisada media, barro oscuro; verde apagado en lo húmedo
+  tierra: hex('#3c2e20'), tierraOsc: hex('#291f16'), grava: hex('#6c6558'), gravaOsc: hex('#38322a'),
+  // pasto seco de páramo frío: oliva grisáceo y pardo de brezo, no paja amarilla; las briznas apenas sobre su base
+  secoBase: hex('#454030'), secoOsc: hex('#393328'), paja: hex('#54503b'), pajaClara: hex('#5d5741'),
+  brizna: hex('#5a553f'), briznaOsc: hex('#4c3e33'), briznaVerde: hex('#4d5237'), briznaClara: hex('#6e664d'),
+  tierraFria: hex('#3b3630'), charco: hex('#1a222b'),
+  barro: hex('#1f170f'), barroOsc: hex('#0f0b07'), cielo: hex('#7d8890'), cieloAlto: hex('#3a444c'),
+  musgo: hex('#2e3b1a'), musgoClaro: hex('#4a5b2b'), pastoHumedo: hex('#5a6636'),
 };
 const VIS: V3 = [-VISTA[0], -VISTA[1], -VISTA[2]];
 
@@ -87,26 +91,47 @@ function matas(x: number, y: number, dens: number): [number, number, number, num
   }
   return [best, tono, alto, ao];
 }
+/**
+ * Colchón de paja: briznas muertas tumbadas por el viento (hacia +x+y, ±25°), en celdas de 2,5 unidades (32 por baldosa).
+ * Cubre casi toda la tierra del pasto seco, así la mancha se lee clara como masa y no como granito suelto.
+ */
+function colchon(x: number, y: number, dens: number): [number, number] {
+  const n = 32, cs = P / n, i0 = Math.floor(x / cs), j0 = Math.floor(y / cs);
+  let best = 0, tono = 0;
+  for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) for (let k = 0; k < 2; k++) {
+    const s = 500 + k * 7;
+    if (hc(i, j, n, s) > dens) continue;
+    const cx = (i + hc(i, j, n, s + 1)) * cs, cy = (j + hc(i, j, n, s + 2)) * cs;
+    const th = Math.PI / 4 + (hc(i, j, n, s + 3) - 0.5) * 0.9, L = 2 + hc(i, j, n, s + 4) * 2.4;
+    const ex = Math.cos(th) * L, ey = Math.sin(th) * L, dx0 = x - cx + ex * 0.5, dy0 = y - cy + ey * 0.5;
+    const t = cl((dx0 * ex + dy0 * ey) / (L * L)), dd = Math.hypot(ex * t - dx0, ey * t - dy0);
+    if (dd < 0.42) { const w = 1 - dd / 0.42; if (w > best) { best = w; tono = hc(i, j, n, s + 5); } }
+  }
+  return [best, tono];
+}
 function seco(x: number, y: number, dens: number): Muestra {
   const n = fb2(x, y, 10, 11), m = nper(x, y, 40, 13);
-  let c = mixC(COL.secoBase, COL.tierraOsc, n * 0.5 + (m - 0.5) * 0.3);
+  // la tierra seca entre la paja (ocre oscuro)
+  let c = mixC(COL.secoOsc, COL.secoBase, 0.3 + n * 0.55 + (m - 0.5) * 0.3);
   let h = n * 0.6;
+  const [pj, pt] = colchon(x, y, 0.35 + 0.6 * dens);
+  if (pj > 0) { c = mixC(c, mixC(COL.paja, COL.pajaClara, pt * 0.8), cl(pj * 1.5) * 0.85); h += pj * 0.35; }
   // hojarasca: briznas cortas caídas, más oscuras, en la tierra entre matas
   const ho = nper(x * 1.0 + y * 0.35, y * 1.0 - x * 0.35, 80, 14);
-  if (ho > 0.72) c = mixC(c, COL.briznaOsc, sm(0.72, 0.85, ho) * 0.55);
-  const [g, gt] = grava(x, y, 0.07, 21); if (g > 0) { c = mixC(COL.gravaOsc, COL.grava, 0.3 + gt * 0.4); h += g; }
-  const [b, bt, ba, ao] = matas(x, y, dens * (0.45 + 0.55 * nper(x, y, 8, 12)));
-  c = [c[0] * (1 - ao), c[1] * (1 - ao), c[2] * (1 - ao)];
-  if (b > 0) { const col = bt < 0.5 ? COL.brizna : bt < 0.82 ? COL.briznaOsc : COL.briznaVerde; c = mixC(c, mixC(col, COL.briznaClara, sm(1.5, 2.9, ba) * 0.6), cl(b * 1.6)); h += ba * cl(b * 2); }
+  if (ho > 0.74) c = mixC(c, COL.briznaOsc, sm(0.74, 0.86, ho) * 0.5);
+  const [g, gt] = grava(x, y, 0.05, 21); if (g > 0) { c = mixC(COL.gravaOsc, COL.grava, 0.3 + gt * 0.4); h += g; }
+  const [b, bt, ba, ao] = matas(x, y, dens * (0.55 + 0.45 * nper(x, y, 8, 12)));
+  c = [c[0] * (1 - ao * 0.45), c[1] * (1 - ao * 0.45), c[2] * (1 - ao * 0.45)];
+  if (b > 0) { const col = bt < 0.5 ? COL.brizna : bt < 0.76 ? COL.briznaOsc : COL.briznaVerde; c = mixC(c, mixC(col, COL.briznaClara, sm(1.4, 2.9, ba) * 0.65), cl(b * 1.6)); h += ba * cl(b * 2) * 0.55; }
   return { c, h, moja: 0 };
 }
 function tierra(x: number, y: number): Muestra {
   const n = fb2(x, y, 14, 31), m = nper(x, y, 40, 32), q = nper(x, y, 7, 37);
-  let c = mixC(COL.tierraOsc, COL.tierra, 0.3 + n * 0.55 + (m - 0.5) * 0.25);
+  let c = mixC(COL.tierraOsc, COL.tierra, 0.35 + n * 0.55 + (m - 0.5) * 0.3);
   // tierra pisada: algo más fría y lisa en manchas, más cálida y suelta en otras
   c = mixC(c, COL.tierraFria, sm(0.5, 0.8, q) * 0.35);
   let h = n * 0.9 + m * 0.25;
-  const [g, gt] = grava(x, y, 0.12 + 0.18 * nper(x, y, 9, 38), 33); if (g > 0) { c = mixC(COL.gravaOsc, COL.grava, 0.25 + gt * 0.6); h += g; }
+  const [g, gt] = grava(x, y, 0.08 + 0.14 * nper(x, y, 9, 38), 33); if (g > 0) { c = mixC(COL.gravaOsc, COL.grava, 0.25 + gt * 0.6); h += g; }
   return { c, h, moja: 0 };
 }
 function barro(x: number, y: number): Muestra {
@@ -123,16 +148,18 @@ function barro(x: number, y: number): Muestra {
 }
 
 // ------------------------------------------------------------------ una baldosa de Wang
-function pesos(x: number, y: number, esq: [number, number, number, number]): [number, number, number] {
+function pesos(x: number, y: number, esq: [number, number, number, number]): [number, number, number, number] {
   const u = x / P, v = y / P, su = u * u * (3 - 2 * u), sv = v * v * (3 - 2 * v);
   const a = 0.5, uu = mix(u, su, a), vv = mix(v, sv, a);
   const w = [(1 - uu) * (1 - vv), uu * (1 - vv), (1 - uu) * vv, uu * vv];
   const S = [0, 0, 0];
   for (let i = 0; i < 4; i++) S[esq[i]] += w[i];
   // cada estado empuja su borde con su propio ruido (el mismo en todas las baldosas: pega en los bordes)
-  for (let k = 0; k < 3; k++) S[k] += (fb2(x, y, 4, 51 + k) - 0.5) * 0.9 + (nper(x, y, 16, 61 + k) - 0.5) * 0.2;
+  for (let k = 0; k < 3; k++) S[k] += (fb2(x, y, 4, 51 + k) - 0.5) * 1.1 + (nper(x, y, 16, 61 + k) - 0.5) * 0.3;
+  // cuánto barro hay cerca, sin ruido ni filo (de las esquinas): para el halo húmedo y verde alrededor del barro
+  let sb = 0; for (let i = 0; i < 4; i++) if (esq[i] === 2) sb += w[i];
   const e = S.map((q) => Math.exp(q * 16)), t = e[0] + e[1] + e[2];
-  return [e[0] / t, e[1] / t, e[2] / t];
+  return [e[0] / t, e[1] / t, e[2] / t, sb];
 }
 function muestra(x: number, y: number, esq: [number, number, number, number]): Muestra {
   const W = pesos(x, y, esq);
@@ -144,6 +171,14 @@ function muestra(x: number, y: number, esq: [number, number, number, number]): M
   if (W[2] > 0.01) add(barro(x, y), W[2]);
   // la tierra y el pasto se oscurecen al lado del barro (humedad que sube)
   if (W[2] > 0.02 && W[2] < 0.98) { const k = 1 - 0.25 * sm(0, 0.6, W[2]) * (1 - W[2]); c = [c[0] * k, c[1] * k, c[2] * k]; }
+  // halo húmedo: alrededor del barro el pasto y la tierra se ponen verdes (musgo y pasto mojado), en manchas
+  const hum = sm(0.06, 0.4, W[3]) * (1 - sm(0.35, 0.8, W[2])) * sm(0.3, 0.6, fb2(x, y, 8, 71) + W[3] * 0.25);
+  if (hum > 0.01) {
+    // el verde guarda el dibujo de abajo: lo claro (matas, paja) pasa a pasto mojado, lo oscuro a musgo
+    const lum = c[0] * 0.3 + c[1] * 0.6 + c[2] * 0.1, mm = nper(x, y, 40, 72);
+    const v = mixC(mixC(COL.musgo, COL.musgoClaro, sm(0.3, 0.75, mm)), COL.pastoHumedo, sm(0.2, 0.45, lum));
+    c = mixC(c, v, hum * 0.85); moja += hum * 0.2;
+  }
   return { c, h, moja };
 }
 
@@ -209,8 +244,9 @@ export function esquinasParamo(tw: number, th: number, logico: (bx: number, by: 
     const a = nm(i / 2.6, j / 2.6, semilla + 1) * 0.65 + nm(i / 1.3, j / 1.3, semilla + 2) * 0.35;
     const b = nm(i / 2.2, j / 2.2, semilla + 3) * 0.6 + nm(i / 1.1, j / 1.1, semilla + 4) * 0.4;
     const humedad = (o.humedos ?? []).reduce((m, [hx, hy]) => Math.max(m, 1 - Math.hypot(i - hx, j - hy) / 3.5), 0);
-    if (e === 0 && a > 1 - (o.claros ?? 0.3)) e = 1;
-    if (e === 1 && b + humedad * 0.35 > 1 - (o.barro ?? 0.28)) e = 2;
+    if (e === 0 && a > 1 - (o.claros ?? 0.34)) e = 1;
+    // el barro va en manchas (no tapa el centro del campamento): la humedad empuja poco
+    if (e === 1 && b + humedad * 0.15 > 1 - (o.barro ?? 0.3)) e = 2;
     E[j * (tw + 1) + i] = e;
   }
   return E;

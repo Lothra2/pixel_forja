@@ -327,7 +327,7 @@ export function entradaAccion(o: { clase?: string; sujetos?: Sujeto[] } = {}): {
  */
 export const LIMITE_TELA = { atras: 0.3, area: 0.25, huecos: 0 };
 export interface FilaTela { clase: string; nivel: string; acc: string; atras: number; area: number; rango: number; huecos: number }
-export function telaAndar(o: { clase?: string; sujetos?: Sujeto[]; dirs?: string[] } = {}): { filas: FilaTela[]; fallas: Falla[] } {
+export function telaAndar(o: { clase?: string; sujetos?: Sujeto[]; dirs?: string[]; acciones?: Accion[] } = {}): { filas: FilaTela[]; fallas: Falla[] } {
   const filas: FilaTela[] = [], fallas: Falla[] = [];
   const W = 200, H = 200, AX = 100, AY = 150;
   for (const h of o.sujetos ?? SUJETOS_HEROES) {
@@ -336,7 +336,7 @@ export function telaAndar(o: { clase?: string; sujetos?: Sujeto[]; dirs?: string
     for (const [nivel, eq] of h.niveles) {
       const tela = eq.torso && ['tunica', 'harapos', 'vestido'].includes(eq.torso.tipo) || eq.piernas && ['taparrabo', 'faldon', 'tunica_larga'].includes(eq.piernas.tipo);
       if (!tela) continue;
-      for (const acc of ['caminar', 'correr'] as const) {
+      for (const acc of (o.acciones ?? ['caminar', 'correr']) as Accion[]) {
         if (!h.acciones.includes(acc)) continue;
         let peorAtras = 0, peorArea = 0, peorRango = 0, huecosT = 0;
         for (const dir of (o.dirs ?? DIRS) as typeof DIRS) {
@@ -419,6 +419,60 @@ export function costuraSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {})
   }
   return { filas, fallas };
 }
+/**
+ * El agarre y el contacto de la selección (lo que mira Rick), en el bucle (12 a 47), en 'so':
+ * - el ángulo entre el antebrazo y el arma en la mano está en el rango natural de su agarre: puño cerrado (hacha,
+ *   espada, maza, arco en la mano) 50° a 130° (la hoja sale del puño casi en ángulo recto, ±40° de muñeca); la culata
+ *   de la ballesta sigue al antebrazo (0° a 50°); mano sobre el pomo de la
+ *   espada clavada 0° a 70°; vara apoyada 30° a 150°;
+ * - el arma toca algo: el extremo de abajo a menos de 1 unidad del piso, o el arma a menos de 1 unidad de la superficie
+ *   del hombro, o de la otra mano. Nunca flota. (El arco se sostiene en la mano que lo empuña: solo cuenta el ángulo.)
+ */
+export const RANGO_AGARRE: Record<'puno' | 'pomo' | 'vara' | 'culata', [number, number]> = { puno: [50, 130], pomo: [0, 70], vara: [30, 150], culata: [0, 50] };
+export interface FilaContacto { clase: string; nivel: string; agarre: string; angulo: [number, number]; contacto: string; peor: number }
+export function contactoSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {}): { filas: FilaContacto[]; fallas: Falla[] } {
+  const filas: FilaContacto[] = [], fallas: Falla[] = [];
+  const distSeg = (p: V3, a: V3, b: V3) => { const ab: V3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], t = Math.max(0, Math.min(1, ((p[0] - a[0]) * ab[0] + (p[1] - a[1]) * ab[1] + (p[2] - a[2]) * ab[2]) / Math.max(1e-9, ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2))); return len([p[0] - a[0] - ab[0] * t, p[1] - a[1] - ab[1] * t, p[2] - a[2] - ab[2] * t]); };
+  const ang = (u: V3, v: V3) => (Math.acos(Math.max(-1, Math.min(1, (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / (len(u) * len(v) || 1)))) * 180) / Math.PI;
+  for (const h of o.sujetos ?? SUJETOS_HEROES) {
+    if (o.clase && h.id !== o.clase) continue;
+    if (!h.acciones.includes('seleccion')) continue;
+    for (const [nivel, eq] of h.niveles) {
+      const tipo = eq.arma?.tipo ?? 'nada';
+      if (tipo === 'nada' || tipo === 'puno' || tipo === 'garras' || tipo === 'katar' || tipo === 'cestus' || tipo === 'frasco') continue;
+      let amin = 999, amax = -999, peor = 0, agarre = '', donde = new Set<string>();
+      for (let f = SEL_ENTRADA; f < SEL_CUADROS; f++) {
+        const g = geometriaQA(h.cuerpo, eq, 'so', 'seleccion', f);
+        if (!g.arma) continue;
+        const e = g.e, arco = /arco/.test(tipo), vara = !!g.mango && !g.cabo && g.arma.r <= 0.9 * e.S && tipo.includes('baculo');
+        const b = arco ? e.brazos[1] : e.brazos[0], otra = arco ? e.brazos[0] : e.brazos[1];
+        const eje: V3 = [g.arma.b[0] - g.arma.a[0], g.arma.b[1] - g.arma.a[1], g.arma.b[2] - g.arma.a[2]];
+        const ante: V3 = [b.mano[0] - b.codo[0], b.mano[1] - b.codo[1], b.mano[2] - b.codo[2]];
+        const pomo = (e.pose?.pisoArma ?? 0) >= 0.99 && g.arma.b[2] < g.arma.a[2];
+        agarre = vara || tipo.includes('baculo') || tipo === 'cetro' ? 'vara' : pomo ? 'pomo' : tipo === 'ballesta' ? 'culata' : 'puno';
+        // (el ángulo del puño se mide sin sentido: el arma sale del puño hacia un lado o el otro)
+        // (puño: la hoja sale hacia un lado o el otro, se mide el desvío del ángulo recto; culata: la caja sigue al
+        // antebrazo hacia adelante o hacia atrás)
+        let a = ang(ante, eje); if (agarre === 'puno') a = 90 + Math.abs(90 - a); else if (agarre === 'culata') a = Math.min(a, 180 - a);
+        amin = Math.min(amin, a); amax = Math.max(amax, a);
+        const [lo, hi] = RANGO_AGARRE[agarre as 'puno'];
+        if (a < lo || a > hi) fallas.push({ chequeo: 'agarre natural', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(a) });
+        // contacto: piso, hombro (la superficie: 2,6 A desde la articulación) u otra mano
+        const r = g.arma.r, S = e.S, A = e.A;
+        const piso = Math.min(g.arma.a[2], g.arma.b[2], ...(g.arma.cabeza ? [g.arma.cabeza[0][2], g.arma.cabeza[1][2]] : [])) - r;
+        const segs: [V3, V3][] = [[g.arma.a, g.arma.b], ...(g.arma.cabeza ? [g.arma.cabeza] : [])];
+        const dHombro = Math.min(...e.brazos.map((x) => Math.min(...segs.map(([p, q]) => distSeg(x.hom, p, q))) - r - 2.6 * A));
+        const dMano = Math.min(...segs.map(([p, q]) => distSeg(otra.mano, p, q))) - r - 0.9 * S;
+        const d = Math.min(piso, dHombro, dMano);
+        if (d === piso) donde.add('piso'); else if (d === dHombro) donde.add('hombro'); else donde.add('mano');
+        peor = Math.max(peor, d);
+        if (d > 1 && !arco) fallas.push({ chequeo: 'arma sin apoyo', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f, valor: Math.round(d * 100) / 100 });
+      }
+      filas.push({ clase: h.id, nivel, agarre, angulo: [Math.round(amin), Math.round(amax)], contacto: [...donde].join('+'), peor: Math.round(peor * 100) / 100 });
+    }
+  }
+  return { filas, fallas };
+}
 const nor3 = (a: V3): V3 => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -441,8 +495,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   fallas.push(...entrada.fallas);
   const tela = telaAndar({ clase: SOLO_CLASE, sujetos });
   fallas.push(...tela.fallas);
+  // la tela también sobre la presentación de la selección (en 'so', la dirección del menú)
+  const telaSel = MON ? { filas: [], fallas: [] } : telaAndar({ clase: SOLO_CLASE, sujetos, dirs: ['so'], acciones: ['seleccion'] });
+  fallas.push(...telaSel.fallas);
   const costura = MON ? { filas: [], fallas: [] } : costuraSeleccion({ clase: SOLO_CLASE, sujetos });
   fallas.push(...costura.fallas);
+  const contacto = MON ? { filas: [], fallas: [] } : contactoSeleccion({ clase: SOLO_CLASE, sujetos });
+  fallas.push(...contacto.fallas);
   const por = new Map<string, number>();
   for (const x of fallas) { const k = `${x.chequeo} · ${x.clase} · ${x.acc}`; por.set(k, (por.get(k) ?? 0) + 1); }
   console.log(`QA de ${MON ? `${sujetos.length} monstruos humanoides` : "héroes"}: ${cuadros} cuadros (${MON ? "8 direcciones" : "clases × 4 niveles × 8 direcciones"} × cada cuadro de cada acción) en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
@@ -462,10 +521,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (const f of entrada.filas) if (f.nivel === 'veterano') console.log(`    ${f.clase.padEnd(11)} ${f.acc.padEnd(7)} arma ${String(f.angulo).padStart(5)}°  manos ${f.mano}`);
   }
   console.log(`  ${'tela al andar'.padEnd(26)} ${tela.fallas.length} fallas (detrás de la pelvis ≤ ${LIMITE_TELA.atras} del alto, área ≤ ${LIMITE_TELA.area * 100} % entre cuadros, sin huecos)`);
+  for (const f of telaSel.filas) tela.filas.push(f);
   for (const f of tela.filas) console.log(`    ${f.clase.padEnd(20)} ${f.nivel.padEnd(9)} ${f.acc.padEnd(8)} atrás ${String(f.atras).padEnd(6)} área ${String(f.area).padEnd(6)} (rango del ciclo ${String(f.rango).padEnd(5)}) huecos ${f.huecos}`);
   if (!MON) {
     console.log(`  ${'costura de la selección'.padEnd(26)} ${costura.fallas.length} fallas (el salto 47→12 y 11→12 ≤ ${LIMITE_COSTURA} × el mayor paso entre vecinos; el 0 igual al 12)`);
     for (const f of costura.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} paso ${String(f.paso).padEnd(6)} costura ${String(f.costura).padEnd(6)} entrada ${String(f.entrada).padEnd(6)} inicio ${f.inicio}`);
+    console.log(`  ${'agarre y apoyo (selección)'.padEnd(26)} ${contacto.fallas.length} fallas (ángulo antebrazo-arma: puño 50°–130°, pomo 0°–70°, vara 30°–150°, culata 0°–50°; el arma a ≤ 1 del piso, el hombro o la otra mano en todo el bucle)`);
+    for (const f of contacto.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} ${f.agarre.padEnd(5)} ángulo ${f.angulo[0]}°–${f.angulo[1]}°  apoyo ${f.contacto.padEnd(12)} peor ${f.peor}`);
   }
   console.log(`TOTAL: ${fallas.length} fallas`);
   for (const [k, n] of [...por].sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(5)}  ${k}`);

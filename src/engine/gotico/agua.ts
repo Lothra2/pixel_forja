@@ -33,9 +33,9 @@ const mixC = (a: C3, b: C3, t: number): C3 => [mix(a[0], b[0], t), mix(a[1], b[1
 // ------------------------------------------------------------------ paleta (valores bajos, un acento frío: el brillo del cielo)
 const COL = {
   hondo: hex('#04070a'), medio: hex('#0a1114'), lecho: hex('#2f2b1d'), lechoOsc: hex('#17150e'),
-  cieloAlto: hex('#2a343c'), cieloBajo: hex('#6c7a85'), brillo: hex('#a8b8c1'),
+  cieloAlto: hex('#34404a'), cieloBajo: hex('#8796a1'), brillo: hex('#b4c4cc'),
   orillaRef: hex('#0d0e0a'), piedraRef: hex('#1d1e1d'),
-  espuma: hex('#7c8580'), espumaClara: hex('#a2aaa5'),
+  espuma: hex('#a7afaa'), espumaClara: hex('#d6dcd8'), franja: hex('#a2b2bc'),
   barroMojado: hex('#17110b'), barro: hex('#2a2016'), barroSeco: hex('#33281b'),
   piedra: hex('#33312c'), piedraMojada: hex('#1f1e1b'), musgo: hex('#1f2716'), pasto: hex('#3a3420'), lenteja: hex('#1d2414'),
 };
@@ -106,6 +106,8 @@ export interface EstiloAgua {
   semilla: number;
   /** Anillos de lluvia por bucle (0 = sin lluvia). */
   lluvia: number;
+  /** Muros en el agua (estribos del puente), rectángulos [x0, x1, y0, y1] en el mundo de la baldosa: espuma contra ellos. */
+  muros?: [number, number, number, number][];
 }
 
 function piedrasDe(e: EstiloAgua, g: ReturnType<typeof geometria>): Piedra[] {
@@ -197,7 +199,7 @@ export function pintarAgua(e: EstiloAgua, f: number, L: LienzoAgua = LIENZO_TRAM
     let h = 0; const v = vel(k, w);
     for (const F of fases) {
       const ss = s - D * v * F.ph + F.o;
-      h += F.w * (nsk(ss, k + F.o, 6, 10, 41) * 0.72 + nsk(ss, k - F.o, 16, 7, 42) * 0.28);
+      h += F.w * (nsk(ss, k + F.o, 6, 10, 41) * 0.6 + nsk(ss, k - F.o, 12, 30, 42) * 0.4);
     }
     return h;
   };
@@ -287,7 +289,7 @@ function estatico(e: EstiloAgua, L: LienzoAgua, reflejo?: Reflejado): Estatico {
         const zHit = best * rv[2];
         // la cara de abajo del arco va en sombra; lo que mira a la luz, apenas más claro; más lejos, más tenue
         const dif = Math.max(0, nb[0] * LUZ[0] + nb[1] * LUZ[1] + nb[2] * LUZ[2]);
-        const k2 = 0.35 + 0.65 * dif - Math.max(0, -nb[2]) * 0.25;
+        const k2 = 0.55 + 0.45 * dif - Math.max(0, -nb[2]) * 0.2;
         c = [reflejo.color[0] * k2, reflejo.color[1] * k2, reflejo.color[2] * k2];
         void zHit;
       }
@@ -333,12 +335,13 @@ function colorAgua(est: Estatico, x: number, y: number, G0: Geo, borde: number, 
     const q = Math.exp(-(((d - rad) / 0.5) ** 2)) * (1 - u) * (1 - u);
     anillo += q; dhx += (dx / d) * q * 1.2; dhy += (dy / d) * q * 1.2;
   }
-  const amp = 3.0 * (0.45 + 0.55 * D); // en la orilla el agua está más quieta
+  const amp = 3.4 * (0.45 + 0.55 * D); // en la orilla el agua está más quieta
   const n: V3 = [-dhx * amp, -dhy * amp, 1]; const nl = Math.hypot(n[0], n[1], n[2]); n[0] /= nl; n[1] /= nl; n[2] /= nl;
   const rv = reflejar(n);
   // fresnel (sesgado para que en la penumbra del juego el reflejo se lea)
   const cosv = Math.max(0, n[0] * VIS[0] + n[1] * VIS[1] + n[2] * VIS[2]);
-  const F = cl(0.34 + 0.8 * Math.pow(1 - cosv, 3)) * (1 - 0.2 * prof);
+  // en el centro de la corriente refleja más (el agua es más clara que el barro); en los bordes, menos
+  const F = cl(0.26 + 0.8 * Math.pow(1 - cosv, 3) + 0.36 * sm(0.05, 0.7, D));
   // qué se refleja: el puente, la orilla de atrás (rayo que corre sobre la orilla y su pasto) o el cielo
   let refl: C3 | null = est.refl ? est.refl(rv, x, y) : null;
   if (!refl) {
@@ -355,13 +358,31 @@ function colorAgua(est: Estatico, x: number, y: number, G0: Geo, borde: number, 
   const lecho = mixC(COL.lechoOsc, COL.lecho, lechoN);
   let c = mixC(lecho, mixC(COL.medio, COL.hondo, sm(0.4, 1, prof)), sm(0.02, 0.55, prof));
   c = mixC(c, refl, F);
+  // los bordes más oscuros que el centro (la orilla hace sombra y el agua baja ahí)
+  const kb = (0.55 + 0.45 * sm(0.02, 0.45, D)) * (1 - 0.3 * Math.exp(-(((borde - ak) / 0.9) ** 2))); c = [c[0] * kb, c[1] * kb, c[2] * kb];
+  // franja de luz: el cielo largo que se refleja en el centro de la corriente, serpentea un poco y la corriente la rompe
+  {
+    const kf = G0.w * (0.12 * Math.sin((PI2 * G0.s) / P + 1.3) + 0.06 * Math.sin((2 * PI2 * G0.s) / P + 0.4)) + G0.w * 0.08;
+    let rot = 0; for (const Fz of flujo.fases) rot += Fz.w * nsk(G0.s - flujo.D * vel(G0.k, G0.w) * Fz.ph + Fz.o * 3.1, G0.k * 0.6 + Fz.o, 5, 30, 59);
+    const fr = Math.exp(-(((G0.k - kf) / (G0.w * 0.34)) ** 2)) * sm(0.2, 0.65, rot);
+    c = mixC(c, COL.franja, fr * 0.55);
+  }
   // brillo frío donde la onda mira al claro del cielo
   const sb = Math.max(0, rv[0] * SOL[0] + rv[1] * SOL[1] + rv[2] * SOL[2]);
-  const brillo = Math.pow(sb, 9) * 0.32 * (0.35 + 0.65 * D) + anillo * 0.06;
+  const brillo = Math.pow(sb, 7) * 0.45 * (0.35 + 0.65 * D) + anillo * 0.06;
   c = [c[0] + COL.brillo[0] * brillo, c[1] + COL.brillo[1] * brillo, c[2] + COL.brillo[2] * brillo];
   // espuma: en la orilla, alrededor de las piedras y en su estela; se rompe con la corriente
   const fn = espuma(G0.s, G0.k, G0.w);
-  let mascara = Math.exp(-(((borde - ak) / 1.5) ** 2)) * (0.35 + 0.75 * sm(0.35, 0.75, nsk(G0.s - t * 22, G0.k, 9, 12, 57)));
+  let mascara = Math.exp(-(((borde - ak) / 2.3) ** 2)) * (0.4 + 0.95 * sm(0.36, 0.66, nsk(G0.s - t * P, G0.k, 9, 12, 57)));
+  // contra los estribos del puente (o cualquier muro en el agua): espuma que se junta y se arrastra
+  for (const [x0, x1, y0, y1] of e.muros ?? []) {
+    const dx = Math.max(x0 - x, 0, x - x1), dy = Math.max(y0 - y, 0, y - y1), dm = Math.hypot(dx, dy);
+    if (dm > 0 && dm < 5) mascara = Math.max(mascara, Math.exp(-dm / 1.3) * 1.25);
+    // estela aguas abajo del estribo: una cola de espuma que se abre y se apaga
+    const qx = Math.min(x1, Math.max(x0, x)), qy = Math.min(y1, Math.max(y0, y)), d = g.dir(G0.s);
+    const along = (x - qx) * d[0] + (y - qy) * d[1], across = Math.abs((x - qx) * d[1] - (y - qy) * d[0]);
+    if (dm > 0 && along > 0 && along < 16) mascara = Math.max(mascara, (1 - along / 16) * sm(1.6 + along * 0.3, 0.2, across) * 1.0);
+  }
   const [, pc, dPiedra] = est.piedra(x, y), grande = est.cerca(x, y);
   if (grande) mascara = Math.max(mascara, Math.exp(-(((grande[1] - 1) / 0.4) ** 2)) * (grande[0].plana ? 0.75 : 1.05));
   void pc; void dPiedra;
@@ -375,10 +396,10 @@ function colorAgua(est: Estatico, x: number, y: number, G0: Geo, borde: number, 
   }
   if (e.juncal) {
     // lenteja de agua en lo quieto de la orilla (se corre muy despacio con la corriente)
-    const lj = nsk(G0.s - t * 8, G0.k, 12, 40, 91) * sm(0.45, 0.0, D);
+    const lj = nsk(G0.s, G0.k, 12, 40, 91) * sm(0.45, 0.0, D);
     if (lj > 0.42) c = mixC(c, COL.lenteja, sm(0.42, 0.55, lj) * 0.85);
   }
-  const esp = sm(0.5, 0.78, fn + mascara * 0.42 - 0.18) * cl(mascara * 1.4);
+  const esp = sm(0.42, 0.72, fn + mascara * 0.45 - 0.18) * cl(mascara * 1.5);
   if (esp > 0) c = mixC(c, mixC(COL.espuma, COL.espumaClara, sm(0.7, 0.95, fn)), esp * 0.9);
   // hilos de corriente: espuma fina estirada que baja por el centro (la dirección se lee sin ver la animación)
   let hilo = 0; const vv = vel(G0.k, G0.w);
@@ -471,7 +492,9 @@ export function aguaConPiezas(clave: string, e: EstiloAgua, piezas: Pieza[], f: 
   const agua = pintarAgua(e, f, L, { piezas, color: hex(colorRef) });
   const d = agua.data, t = top.data;
   for (let i = 0; i < d.length; i += 4) {
-    const a = t[i + 3] / 255; if (!a) continue;
+    // la sombra del puente sobre el agua, a la mitad: el agua de abajo no se apaga del todo
+    const sombra = t[i] === 8 && t[i + 1] === 6 && t[i + 2] === 12;
+    const a = (t[i + 3] / 255) * (sombra ? 0.35 : 1); if (!a) continue;
     const ad = d[i + 3] / 255, ao = a + ad * (1 - a);
     for (let k = 0; k < 3; k++) d[i + k] = (t[i + k] * a + d[i + k] * ad * (1 - a)) / ao;
     d[i + 3] = Math.round(ao * 255);
