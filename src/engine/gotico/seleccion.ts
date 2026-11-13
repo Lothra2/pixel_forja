@@ -141,7 +141,7 @@ function cazadora(p: Pose): Guion {
   plantar(p, [-2.8, 3.2], [2, 1.5], [40, 12]);
   const reposo: Vals = { manoI: [11, -7, 30], manoD: [8, -4, 31], codoD: [-0.35, 0.8, -0.5] };
   const bucle: Clave[] = [
-    K(0, { bajar: 1.2, torso: 0, ladeo: -0.6, giroTorso: 14, giroCadera: 6, lateral: 0.35, ladeoCadera: 1.4, respira: 0.1, hombros: [0.2, 0.2], cabeza: -5, giroCabeza: 8, ladeoCabeza: -1, ...reposo }),
+    K(0, { bajar: 1.2, torso: 0, ladeo: -0.6, giroTorso: 14, giroCadera: 6, lateral: 0.35, ladeoCadera: 1.4, respira: 0.1, hombros: [0.2, 0.2], cabeza: -9, giroCabeza: 20, ladeoCabeza: -1, ...reposo }),
     K(0.17, { respira: 0.9, hombros: [0.6, 0.6], torso: -1, bajar: 0.9 }),
     K(0.33, { respira: 0.15, torso: 0.5, bajar: 1.3, giroCabeza: 22, cabeza: -6, lateral: 0.1, ladeoCadera: 0.6 }, true),
     K(0.5, { respira: 0.9, hombros: [0.6, 0.6], torso: -1, bajar: 0.9, giroCabeza: 34, cabeza: -7, manoI: [12, -7, 32] }),
@@ -233,7 +233,7 @@ function arcanista(p: Pose, arma: ArmaPose): Guion {
 function druida(p: Pose): Guion {
   plantar(p, [-1.5, 2], [1.6, 1.4], [16, 12]);
   const bucle: Clave[] = [
-    K(0, { bajar: 1.4, torso: 7, ladeo: 0.8, lateral: 0.5, ladeoCadera: 1.8, giroTorso: 3, giroCadera: 0, respira: 0.1, hombros: [0.4, 0.4], cabeza: -6, giroCabeza: 8, ladeoCabeza: 1, varaPie: [13, 12.5, 0.5], manoD: [8, 10, 41], manoI: [4, -9, 29], codoI: [-0.2, -1, -0.3] }),
+    K(0, { bajar: 1.4, torso: 7, ladeo: 0.8, lateral: 0.5, ladeoCadera: 1.8, giroTorso: 3, giroCadera: 0, respira: 0.1, hombros: [0.4, 0.4], cabeza: -10, giroCabeza: 20, ladeoCabeza: 1, varaPie: [13, 12.5, 0.5], manoD: [8, 10, 41], manoI: [4, -9, 29], codoI: [-0.2, -1, -0.3] }),
     K(0.25, { respira: 1, hombros: [0.9, 0.9], torso: 6, bajar: 1.1 }),
     K(0.5, { respira: 0.15, hombros: [0.4, 0.4], torso: 7.5, bajar: 1.5, giroCabeza: 16, lateral: 0.2, ladeoCadera: 0.8 }, true),
     K(0.75, { respira: 1, hombros: [0.9, 0.9], torso: 6, bajar: 1.1, giroCabeza: 4 }),
@@ -259,7 +259,7 @@ function monje(p: Pose): Guion {
   plantar(p, [-2.4, 3.2], [2.6, 2.2], [24, 12]);
   const guardia: Vals = { manoD: [11, 5, 38], manoI: [14, -3, 42], codoD: [-0.3, 1, -0.4], codoI: [-0.3, -1, -0.4] };
   const bucle: Clave[] = [
-    K(0, { bajar: 3, torso: 4, lateral: 0.3, ladeoCadera: 1, ladeo: -0.6, giroTorso: 14, giroCadera: 6, respira: 0.1, hombros: [0.3, 0.3], cabeza: -3, giroCabeza: 4, ladeoCabeza: 0, ...guardia }),
+    K(0, { bajar: 3, torso: 4, lateral: 0.3, ladeoCadera: 1, ladeo: -0.6, giroTorso: 14, giroCadera: 6, respira: 0.1, hombros: [0.3, 0.3], cabeza: -8, giroCabeza: 18, ladeoCabeza: 0, ...guardia }),
     K(0.25, { respira: 1, hombros: [1, 1], bajar: 2.6, torso: 2.5, manoD: [11, 5, 39], manoI: [14, -3, 43] }),
     K(0.5, { respira: 0.15, hombros: [0.3, 0.3], bajar: 3.2, torso: 4.5, giroCabeza: 12, lateral: 0.1, ...guardia }, true),
     K(0.75, { respira: 1, hombros: [1, 1], bajar: 2.6, torso: 2.5, manoD: [11, 5, 39], manoI: [14, -3, 43], giroCabeza: 6 }),
@@ -282,7 +282,7 @@ function alquimista(p: Pose): Guion {
   plantar(p, [-1.6, 2.6], [1.4, 1.2], [16, 10]);
   const reposo: Vals = { manoD: [9, 5, 31], armaD: [96, -12], codoD: [-0.4, 1, -0.3], manoI: [16, 1.5, 30.5], codoI: [-0.2, -1, -0.4], pegaI: 0 };
   const bucle: Clave[] = [
-    K(0, { bajar: 1, torso: 3, ladeo: -0.6, lateral: 0.6, ladeoCadera: 2, giroTorso: 2, giroCadera: -2, respira: 0.1, cabeza: -2, giroCabeza: 10, ladeoCabeza: 2, ...reposo }),
+    K(0, { bajar: 1, torso: 3, ladeo: -0.6, lateral: 0.6, ladeoCadera: 2, giroTorso: 2, giroCadera: -2, respira: 0.1, cabeza: -7, giroCabeza: 18, ladeoCabeza: 2, ...reposo }),
     K(0.25, { respira: 0.9, lateral: 0.3, ladeoCadera: 1, giroCabeza: 22 }),
     K(0.5, { respira: 0.15, lateral: -0.5, ladeoCadera: -1.8, ladeo: 0.6, giroCabeza: 4, ladeoCabeza: -1 }, true),
     K(0.75, { respira: 0.9, lateral: 0.2, ladeoCadera: 0.6, giroCabeza: 16 }),

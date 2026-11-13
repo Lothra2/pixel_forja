@@ -36,7 +36,7 @@ export function retrato(escala = 1): Iluminacion {
     techo: { desde: 100, k: 0.45, color: '#c8b496', mezcla: 0.3 },
     metal: { brillo: 0.6, esp: 3.2, exp: 12, filo: 0.18, borde: 1.3, ancho: 1.4, piso: 0.03, difuso: 0.4, suave: 0.04, tope: 0.25 },
     ao: { radio: 3 * k, fuerza: 0.6, muestras: 8 },
-    piel: { sombra: '#1e0806', satura: 0.7, luz: 0.05, ao: 0.45 },
+    piel: { sombra: '#1e0806', satura: 0.7, luz: 0.11, ao: 0.45 },
   };
 }
 /** La de la selección, a la escala del grupo 'sel' (2,5: el héroe a ~195 px, que el juego dibuja a ×1). */
