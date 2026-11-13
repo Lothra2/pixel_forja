@@ -88,3 +88,16 @@ se gira sola. Para otra cosa, `huellaPor: { variante: [ancho, fondo] }`.
 
 `MODS=cementerio npx tsx scripts/gotico-lamina.ts /ruta/salida.png` pinta todas las variantes del archivo con una
 línea roja de 75 px (la persona) para comparar la escala. Mírala siempre antes de dar algo por terminado.
+
+## Pintores por pixel (agua, suelos, decals, portales)
+
+Lo que no se arma bien con piezas (agua, suelo que pega sin costura, luz) se pinta por pixel. Un objeto puede traer
+`pintar: (v, f, seed) => Render` y un piso `pintar: (v, f) => Raster`: `pintarObjeto` y `pintarPiso` los usan solos,
+así el horneo del juego no cambia. `armar` queda para el mapa, las cinemáticas y la luz (`fuenteDe`).
+
+- `agua.ts`: el arroyo (`par_arroyo`, `par_puente`) en coordenadas del río; lo que cruza el borde de la baldosa se
+  repite cada 80, así todos los tramos pegan. Bucle de 16 cuadros. Lo alto de la orilla va aparte
+  (`par_juncos_orilla`, `juncosDeTramo`).
+- `suelo_paramo.ts`: piso `par_suelo` de Wang por esquinas (81 variantes); `pisosParamo` elige las variantes.
+- `decals_paramo.ts`: `par_decal` y `par_charco_suelo`, planos; `regarDecalsParamo` dice dónde van.
+- `portales.ts`: `com_portal_vivo` (pueblo, mazmorra, infierno) y `com_portal_luz` (la luz del piso, para 'screen').

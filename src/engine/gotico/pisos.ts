@@ -1,6 +1,7 @@
 import { createRaster, type Raster } from '../core/raster';
 import { MATERIALES } from './materiales';
 import { LUZ, BALDOSA, trama, hash3 } from './render';
+import { pintarSueloParamo, PISO_PARAMO, VARIANTES_PARAMO } from './suelo_paramo';
 
 /**
  * Pisos del taller gótico: baldosas en rombo de 160×80 (5×5 celdas de juego), como las del juego de la catedral.
@@ -19,6 +20,8 @@ export interface PisoDef {
   cuadros?: number;
   /** Para cada punto del piso (x, y en 0..80) da [material, alto, tono]. */
   punto: (x: number, y: number, v: number, f: number) => [string, number, number];
+  /** Pintor propio por pixel (el suelo de Wang del páramo): si está, `pintarPiso` lo usa en lugar de `punto`. */
+  pintar?: (v: number, f: number) => Raster;
 }
 
 const P = BALDOSA;
@@ -83,6 +86,9 @@ export const PISOS: PisoDef[] = [
     const piedrita = hash3(Math.floor(x / 2), Math.floor(y / 2), 41) > 0.95;
     return piedrita ? ['piedra', 1, 0] : ['tierra', n * 1.5 - (rodada ? 1.2 : 0), rodada ? -0.14 : 0.1];
   } },
+  // suelo del páramo y del campamento en baldosas de Wang por esquinas (suelo_paramo.ts): la variante sale de las cuatro
+  // esquinas (pasto seco, tierra o barro), así las manchas cruzan las baldosas sin costura ni repetición
+  { id: PISO_PARAMO, nombre: ['Suelo del páramo', 'Moor ground'], tema: 'paramo', variantes: VARIANTES_PARAMO, punto: (x, y) => ['tierra', fr(x, y, 10, 3) * 2, (fr(x, y, 4, 8) - 0.5) * 0.3], pintar: (v) => pintarSueloParamo(v) },
   { id: 'empedrado', nombre: ['Empedrado', 'Cobblestone'], tema: 'pueblo', variantes: 4, punto: (x, y, v) => {
     const [d1, d2, id] = voronoi(x, y, 7, 7);
     if (d2 - d1 < 1.5) return ['tierra', -1.5, -0.2];
@@ -208,6 +214,7 @@ export function pintarPiso(id: string, v = 0, f = 0): Raster {
   if (c) return c;
   const d = PISOS.find((p) => p.id === id);
   if (!d) throw new Error(`No hay piso "${id}"`);
+  if (d.pintar) { const r = d.pintar(v, f); cache.set(k, r); return r; }
   const W = 160, H = 80, img = createRaster(W, H);
   const alto = (x: number, y: number) => d.punto(((x % P) + P) % P, ((y % P) + P) % P, v, f)[1];
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {

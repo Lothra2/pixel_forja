@@ -1,4 +1,5 @@
 import { pintarArroyo, aguaConPiezas, estiloArroyo, CUADROS_AGUA } from '../agua';
+import { pintarDecal, VARIANTES_DECAL, VARIANTES_CHARCO, CUADROS_CHARCO } from '../decals_paramo';
 import { registrar, conVarianteY, esCodo, codoArco, herramientas, TEMAS, type Arma, type Pieza, type Tema } from '../objeto';
 import { MATERIALES } from '../materiales';
 import { ruido, hueso, bulto, masa, type Comp, type Escena } from '../render';
@@ -738,6 +739,21 @@ reg({
   },
 });
 conVarianteY('par_juncos_orilla');
+
+/**
+ * Decals del suelo (decals_paramo.ts): planos, sin huella que bloquee, se dibujan como suelo. Rompen la grilla de las
+ * baldosas; `regarDecalsParamo` dice dónde van. Los charcos llevan lluvia (8 cuadros).
+ */
+reg({
+  id: 'par_decal', nombre: ['Marca del suelo', 'Ground decal'], tema: PAR, variantes: VARIANTES_DECAL, huella: [1, 1], bloquea: false, plano: true,
+  armar: (_v, _f, a) => [a.cilindro(0, 0, -0.4, 4, 0.5, { mat: 'par_turba' })],
+  pintar: (v) => pintarDecal(v, 0),
+});
+reg({
+  id: 'par_charco_suelo', nombre: ['Charco del camino', 'Road puddle'], tema: PAR, variantes: VARIANTES_CHARCO, cuadros: CUADROS_CHARCO, t: 3, huella: [1, 1], bloquea: false, plano: true,
+  armar: (_v, _f, a) => [a.cilindro(0, 0, -0.4, 5, 0.5, { mat: 'agua_sucia' })],
+  pintar: (v, f) => pintarDecal(v.startsWith('largo') ? 'charco_' + v : 'charco_' + v, f),
+});
 
 /**
  * Piezas del puente de piedra (a lo largo de x). Con `conAgua` lleva su arroyo de piezas debajo (cinemáticas, mapa);
