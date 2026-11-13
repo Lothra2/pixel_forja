@@ -343,7 +343,7 @@ export function regarDecalsParamo(o: OpcRiego): Riego[] {
   // libre con algo bloqueado al lado, de vez en cuando
   const bloq = (cx: number, cy: number) => o.tipo(cx, cy) === 'bloqueado';
   for (let cy = 2; cy < o.H - 2; cy++) for (let cx = 2; cx < o.W - 2; cx++) {
-    if (r(cx, cy, 60) > 0.3 || !libre(cx, cy) || o.tipo(cx, cy) === 'camino') continue;
+    if (r(cx, cy, 60) > 0.36 || !libre(cx, cy) || o.tipo(cx, cy) === 'camino') continue;
     if (!(bloq(cx - 1, cy) || bloq(cx, cy - 1) || bloq(cx + 1, cy) || bloq(cx, cy + 1))) continue;
     const w = r(cx, cy, 61);
     poner('par_decal', w < 0.35 ? 'musgo_a' : w < 0.6 ? 'musgo_c' : w < 0.8 ? 'musgo_b' : 'musgo_b_y', cx, cy, 'musgo');

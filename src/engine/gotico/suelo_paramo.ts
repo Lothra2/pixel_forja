@@ -42,11 +42,12 @@ const hc = (i: number, j: number, n: number, s: number) => hash3(((i % n) + n) %
 // ------------------------------------------------------------------ paleta (tonos tierra apagados)
 const COL = {
   // tres valores separados: pasto seco claro (ocre y paja), tierra pisada media, barro oscuro; verde apagado en lo húmedo
-  tierra: hex('#3f3122'), tierraOsc: hex('#2b2118'), grava: hex('#6c6558'), gravaOsc: hex('#38322a'),
-  secoBase: hex('#5c4828'), secoOsc: hex('#45351d'), paja: hex('#9c8650'), pajaClara: hex('#b8a066'),
-  brizna: hex('#a68e55'), briznaOsc: hex('#7a6538'), briznaVerde: hex('#66733d'), briznaClara: hex('#cbb375'),
+  tierra: hex('#3c2e20'), tierraOsc: hex('#291f16'), grava: hex('#6c6558'), gravaOsc: hex('#38322a'),
+  // pasto seco de páramo frío: oliva grisáceo y pardo de brezo, no paja amarilla; las briznas apenas sobre su base
+  secoBase: hex('#454030'), secoOsc: hex('#393328'), paja: hex('#54503b'), pajaClara: hex('#5d5741'),
+  brizna: hex('#5a553f'), briznaOsc: hex('#4c3e33'), briznaVerde: hex('#4d5237'), briznaClara: hex('#6e664d'),
   tierraFria: hex('#3b3630'), charco: hex('#1a222b'),
-  barro: hex('#221911'), barroOsc: hex('#120d09'), cielo: hex('#7d8890'), cieloAlto: hex('#3a444c'),
+  barro: hex('#1f170f'), barroOsc: hex('#0f0b07'), cielo: hex('#7d8890'), cieloAlto: hex('#3a444c'),
   musgo: hex('#2e3b1a'), musgoClaro: hex('#4a5b2b'), pastoHumedo: hex('#5a6636'),
 };
 const VIS: V3 = [-VISTA[0], -VISTA[1], -VISTA[2]];
@@ -120,8 +121,8 @@ function seco(x: number, y: number, dens: number): Muestra {
   if (ho > 0.74) c = mixC(c, COL.briznaOsc, sm(0.74, 0.86, ho) * 0.5);
   const [g, gt] = grava(x, y, 0.05, 21); if (g > 0) { c = mixC(COL.gravaOsc, COL.grava, 0.3 + gt * 0.4); h += g; }
   const [b, bt, ba, ao] = matas(x, y, dens * (0.55 + 0.45 * nper(x, y, 8, 12)));
-  c = [c[0] * (1 - ao * 0.8), c[1] * (1 - ao * 0.8), c[2] * (1 - ao * 0.8)];
-  if (b > 0) { const col = bt < 0.5 ? COL.brizna : bt < 0.76 ? COL.briznaOsc : COL.briznaVerde; c = mixC(c, mixC(col, COL.briznaClara, sm(1.4, 2.9, ba) * 0.65), cl(b * 1.6)); h += ba * cl(b * 2); }
+  c = [c[0] * (1 - ao * 0.45), c[1] * (1 - ao * 0.45), c[2] * (1 - ao * 0.45)];
+  if (b > 0) { const col = bt < 0.5 ? COL.brizna : bt < 0.76 ? COL.briznaOsc : COL.briznaVerde; c = mixC(c, mixC(col, COL.briznaClara, sm(1.4, 2.9, ba) * 0.65), cl(b * 1.6)); h += ba * cl(b * 2) * 0.55; }
   return { c, h, moja: 0 };
 }
 function tierra(x: number, y: number): Muestra {
