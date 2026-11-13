@@ -35,7 +35,7 @@ function empezarCine(acto: number, despues: () => void, clave = claveCine(acto))
   cine = { clave, acto, t: 0, despues }; estado = 'cine'; ui.izq = ui.der = null; E.clicIzq = false;
   Sonido.musica('intro');
 }
-import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, DIR_VEC, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
+import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, costoMana, DIR_VEC, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, nivelHab, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad, volverAEmpezar } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
 import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA } from './mundo/actos';
@@ -339,7 +339,14 @@ function controlar(jj: Juego, dt: number) {
     }
     (h as any).blancoTactil = best ?? undefined;
     const melee = hb.tipo === 'golpe' && !(id === 'ataque' && h.c.distancia);
-    if (best && melee) { h.objetivo = best; (h as any).usarDer = der; (h as any).usarId = porId ? id : null; return; }
+    if (best && melee) { h.objetivo = best; (h as any).usarDer = der; (h as any).usarId = porId ? id : null; (h as any).alcanceUsar = undefined; return; }
+    // los poderes que salen del propio héroe (descargas, gritos, maldiciones a su alrededor): si el enemigo está fuera
+    // de su radio, el héroe se le acerca y lo suelta al llegar (antes salía en el lugar y no tocaba a nadie)
+    const propio = hb.tipo === 'nova' || hb.tipo === 'grito' || ((hb.tipo === 'maldicion' || hb.tipo === 'area') && (hb as any).enHeroe);
+    if (best && propio) {
+      const r = (hb.radio ?? 4) * 0.8;
+      if (dist(best.x, best.y, h.x, h.y) > r + best.radio) { h.objetivo = best; (h as any).usarDer = der; (h as any).usarId = id; (h as any).alcanceUsar = r; return; }
+    }
     const [vx, vy] = DIR_VEC[h.dir] ?? [0.7, 0.7];
     const tx = best ? best.x : h.x + vx * 3, ty = best ? best.y : h.y + vy * 3;
     usarHabilidad(jj, id, tx, ty, best, !best && melee);
@@ -355,8 +362,8 @@ function controlar(jj: Juego, dt: number) {
       const hb = habilidadDe(id);
       const dd = dist(h.x, h.y, m.x, m.y);
       const lejos = esDistancia(jj, hb) || (id === 'ataque' && h.c.distancia);
-      const alcance = lejos ? 9 : (h.c.tipoArma === 'lanza' || h.c.tipoArma === 'alabarda' || h.c.tipoArma === 'guadana' ? 2.0 : 1.4) + m.radio;
-      if (dd <= alcance) { h.camino = null; if (h.acc !== 'atacar' && h.acc !== 'lanzar') usarHabilidad(jj, id, m.x, m.y, m); if (!E.izq && !E.der && h.acc !== 'atacar' && h.acc !== 'lanzar') h.objetivo = null; }
+      const alcance = (h as any).alcanceUsar !== undefined && (h as any).usarId === id ? (h as any).alcanceUsar + m.radio : lejos ? 9 : (h.c.tipoArma === 'lanza' || h.c.tipoArma === 'alabarda' || h.c.tipoArma === 'guadana' ? 2.0 : 1.4) + m.radio;
+      if (dd <= alcance) { h.camino = null; if (h.acc !== 'atacar' && h.acc !== 'lanzar') { const salio = usarHabilidad(jj, id, m.x, m.y, m); if ((h as any).alcanceUsar !== undefined) { if (salio || h.mana < costoMana(jj, hb)) { h.objetivo = null; (h as any).alcanceUsar = undefined; (h as any).usarId = null; } } } if (!E.izq && !E.der && h.acc !== 'atacar' && h.acc !== 'lanzar') h.objetivo = null; }
       else if (h.acc !== 'atacar' && h.acc !== 'lanzar') { (h as any).repath = ((h as any).repath ?? 0) - dt; if (!h.camino || (h as any).repath <= 0) { (h as any).repath = 0.3; caminarA(jj, m.x, m.y); } }
     }
   }

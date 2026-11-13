@@ -54,4 +54,21 @@ export function armarUsosPfx(efectos: { id: string; uso?: any[]; luz?: { enVuelo
     usosPfx.hab.set(h, { proy: proy?.id, area: area?.id });
     if (proy && area && !usosPfx.impacto.has(proy.id)) usosPfx.impacto.set(proy.id, area.id);
   }
+  // las habilidades que el catálogo todavía no nombra: su efecto de pixelfx más cercano (si el catálogo las declara, manda él)
+  const hay = new Set(efectos.map((e) => e.id));
+  for (const [h, u] of Object.entries(EXTRA_HAB)) if (!usosPfx.hab.has(h)) {
+    const v = { proy: u.proy && hay.has(u.proy) ? u.proy : undefined, area: u.area && hay.has(u.area) ? u.area : undefined };
+    if (v.proy || v.area) usosPfx.hab.set(h, v);
+  }
 }
+/** Efecto provisional de las habilidades sin uso declarado en el catálogo de la Forja. */
+const EXTRA_HAB: Record<string, { proy?: string; area?: string }> = {
+  rugido: { area: 'fx_trueno' }, alarido: { area: 'fx_trueno' }, canto_remero: { area: 'fx_furia' }, piel_hierro: { area: 'fx_bloqueo_escudo' }, cuerno_ancestros: { area: 'fx_estallido_mana' }, torrente_sangre: { area: 'fx_tajo_giratorio' },
+  filo_alba: { area: 'fx_castigo_divino' }, aura_fuerza: { area: 'fx_aureola' }, aura_llama: { area: 'fx_anillo_fuego' }, saeta_fe: { proy: 'fx_proyectil_magico', area: 'fx_castigo_divino' },
+  brasas_saltarinas: { proy: 'fx_bola_fuego', area: 'fx_explosion_chica' }, lanza_magma: { proy: 'fx_bola_fuego', area: 'fx_explosion_chica' },
+  flecha_ignea: { area: 'fx_explosion_chica' }, flecha_racimo: { area: 'fx_golpe_seco' }, picada: { area: 'fx_plumas' },
+  lanza_hueso: { area: 'fx_golpe_seco' }, sabueso_osario: { area: 'fx_surge_del_piso' }, mago_hueso: { area: 'fx_surge_del_piso' },
+  navaja_viento: { area: 'fx_tajo_doble' }, grulla: { area: 'fx_plumas' },
+  invocar_lobo: { area: 'fx_torbellino_hojas' }, forma_oso: { area: 'fx_torbellino_hojas' }, oso_espiritu: { area: 'fx_torbellino_hojas' },
+  virote_perforante: { area: 'fx_golpe_seco' }, rafaga_virotes: { area: 'fx_golpe_seco' }, tormenta_virotes: { area: 'fx_golpe_seco' }, torreta: { area: 'fx_humareda' }, tonico_hierro: { area: 'fx_burbujas' },
+};

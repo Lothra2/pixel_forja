@@ -244,3 +244,14 @@ export function cometa(ctx: CanvasRenderingContext2D, p: { vx: number; vy: numbe
   ctx.restore();
   return c.encima ? 'encima' : 'solo';
 }
+
+/**
+ * Una llama viva de pie (la misma simulación compartida de los cometas, por paleta) con el pie en (x, y): para los
+ * braseros de luz de los umbrales y cualquier fuego suelto que no sea un objeto del mapa.
+ */
+export function llamaViva(ctx: CanvasRenderingContext2D, pal: D.NombrePaleta, x: number, y: number, w: number, h: number, dt: number, alfa = 1) {
+  const s = colaDe(pal, dt);
+  ctx.save(); ctx.imageSmoothingEnabled = true; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alfa;
+  ctx.drawImage(s.llama.cv, x - w / 2, y - h, w, h);
+  ctx.restore();
+}

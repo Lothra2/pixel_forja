@@ -897,10 +897,26 @@ function posArbol(clase: string): Map<string, [number, number]> {
   for (const hb of todas) if (!pos.has(hb.id)) { const f = TIERS.reduce((b, t, i) => (Math.abs(t - hb.nivelReq) < Math.abs(TIERS[b] - hb.nivelReq) ? i : b), 0); pos.set(hb.id, [ARBOL_X + hb.rama * COL + COL / 2, ARBOL_Y + f * FILA + ICONO / 2 + 4]); }
   return pos;
 }
+/** Pone una habilidad activa en el botón Poder; la que estaba pasa a los atajos (el arco de botones del táctil). */
+function ponerEnPoder(j: Juego, hb: Habilidad) {
+  const d = j.heroe.d;
+  if (hb.tipo === 'aura') { d.aura = hb.id; Sonido.efecto('click'); recalc(j); msg(j, [`${hb.nombre[0]} es tu aura activa.`, `${hb.nombre[1]} is your active aura.`], '#ffd080'); return; }
+  const antes = d.der;
+  if (antes === hb.id) { msg(j, [`${hb.nombre[0]} ya está en el botón Poder.`, `${hb.nombre[1]} is already on the Skill button.`], '#c0b090'); return; }
+  d.der = hb.id;
+  // la de antes queda primera en los atajos (sin repetir) y la nueva sale de ellos: así las dos siguen a mano
+  d.atajos = d.atajos.map((a) => (a === hb.id || a === antes ? null : a));
+  if (antes && antes !== 'ataque') { const resto = d.atajos.filter((a) => a); d.atajos = [antes, ...resto, ...Array(10).fill(null)].slice(0, 10); }
+  Sonido.efecto('click'); recalc(j);
+  msg(j, [`${hb.nombre[0]} está ahora en el botón Poder.`, `${hb.nombre[1]} is now on the Skill button.`], '#ffd080');
+}
 function aprender(j: Juego, hb: Habilidad) {
   const d = j.heroe.d, n = d.habs[hb.id] ?? 0;
   d.habs[hb.id] = n + 1; d.puntosHab--; Sonido.efecto('click'); recalc(j);
+  if (n === 0 && hb.tipo === 'pasiva') msg(j, [`${hb.nombre[0]}: pasiva, siempre activa.`, `${hb.nombre[1]}: passive, always on.`], '#c0b090');
   if (n === 0 && hb.tipo !== 'pasiva') {
+    // en táctil el poder recién aprendido va directo al botón Poder: es el que el jugador quiere probar
+    if (E.tactil && hb.tipo !== 'aura' && d.der !== 'ataque') { ponerEnPoder(j, hb); return; }
     if (d.der === 'ataque') d.der = hb.id;
     if (hb.tipo === 'aura' && !d.aura) d.aura = hb.id;
     if (!d.atajos.includes(hb.id)) { const libreI = d.atajos.findIndex((a) => !a); if (libreI >= 0) d.atajos[libreI] = hb.id; }
@@ -957,13 +973,20 @@ function panelHabs(j: Juego, x: number, y: number) {
       ctx.strokeStyle = n > 0 ? '#a08850' : '#5a4a30'; ctx.lineWidth = 1; ctx.strokeRect(ix + ICONO - bw + 3.5, iy + ICONO - 8.5, bw - 1, 11);
       texto(s, ix + ICONO + 3 - bw / 2, iy + ICONO + 1, { alin: 'center', tam: 10, color: extra ? '#7c94ff' : n > 0 ? '#ffe8a0' : '#908070', sombra: false });
     }
-    if (sobre && E.clicIzq) { E.clicIzq = false; if (puede) aprender(j, hb); else Sonido.efecto('negado'); }
+    if (sobre && E.clicIzq) {
+      E.clicIzq = false;
+      if (puede) aprender(j, hb);
+      // tocar un poder ya aprendido lo pone en el botón Poder (en táctil no había otra forma de elegirlo)
+      else if (n > 0 && hb.tipo !== 'pasiva') ponerEnPoder(j, hb);
+      else if (n > 0) { Sonido.efecto('click'); msg(j, ['Es una pasiva: está siempre activa, no hace falta usarla.', 'It is a passive: always on, no need to use it.'], '#c0b090'); }
+      else Sonido.efecto('negado');
+    }
   }
   // pie: puntos y ayuda
   const py = y + PANEL_H - 22;
   ctx.fillStyle = '#1a1510'; ctx.fillRect(x + 10, py - 14, PANEL_W - 20, 22);
   texto(`${T('Puntos', 'Points')}: ${d.puntosHab}`, x + 18, py + 1, { tam: 13, color: d.puntosHab ? '#ffd060' : '#a09070', negrita: !!d.puntosHab });
-  texto(d.puntosHab ? T('Clic en un icono que brilla', 'Click a glowing icon') : T('Pasa el ratón para ver detalles', 'Hover for details'), x + PANEL_W - 18, py + 1, { tam: 11, alin: 'right', color: '#807060' });
+  texto(d.puntosHab ? (E.tactil ? T('Toca un icono que brilla', 'Tap a glowing icon') : T('Clic en un icono que brilla', 'Click a glowing icon')) : E.tactil ? T('Toca un poder para ponerlo en Poder', 'Tap a skill to set it as Skill') : T('Clic en un poder: va al botón derecho', 'Click a skill: goes to right button'), x + PANEL_W - 18, py + 1, { tam: 11, alin: 'right', color: '#807060' });
   if (encima) tooltipAl(lineasHab(j, encima, true), x - 6, encimaY);
 }
 /** Tooltip pegado a la izquierda de x (para paneles del lado derecho), centrado en y. */

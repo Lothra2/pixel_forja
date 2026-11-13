@@ -13,7 +13,30 @@ import type { Elemento } from './tipos_objetos';
 import { R, entre, elegir, clamp, dist, hashTxt } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 import { zancada } from '../../../src/engine/gotico/figura';
-import { manifiesto } from '../motor/assets';
+import { manifiesto, objetoMeta } from '../motor/assets';
+/**
+ * Qué celdas tapan un tiro: solo los objetos altos (muros, árboles, columnas, casas). Las cosas bajas (cercas, piedras,
+ * cajas, lápidas chicas) bloquean el paso pero un proyectil les pasa por encima; antes cualquier objeto lo frenaba y en
+ * el páramo, lleno de cosas bajas, uno de cada tres tiros moría en el camino. Alto = 58 px o más de sprite.
+ */
+const tapaTiros = new WeakMap<Zona, { n: number; a: Uint8Array }>();
+function tapaTiro(z: Zona, x: number, y: number): boolean {
+  const i = Math.floor(y) * z.W + Math.floor(x), b = z.bloq[i];
+  if (b === 2) return true; if (b !== 1) return false;
+  let c = tapaTiros.get(z);
+  if (!c || c.n !== z.objetos.length) {
+    c = { n: z.objetos.length, a: new Uint8Array(z.W * z.H) };
+    for (const o of z.objetos) {
+      if (!o.bloquea) continue;
+      const m = objetoMeta(o.id, o.v), alto = m?.f?.[0]?.h ?? 999;
+      if (alto < 58) continue;
+      const x0 = Math.round(o.cx - (o.hw - 1) / 2), y0 = Math.round(o.cy - (o.hh - 1) / 2);
+      for (let yy = y0; yy < y0 + o.hh; yy++) for (let xx = x0; xx < x0 + o.hw; xx++) if (xx >= 0 && yy >= 0 && xx < z.W && yy < z.H) c.a[yy * z.W + xx] = 1;
+    }
+    tapaTiros.set(z, c);
+  }
+  return c.a[i] === 1;
+}
 import { muertePfx, usosPfx, transicionPfx } from './pfx_usos';
 
 /** Celdas que avanza un ciclo completo de caminar o correr (cuerpo de alto 1), según la pisada del motor. */
@@ -1308,9 +1331,11 @@ function resolverHabilidad(j: Juego, parte?: number, cb?: { remate: boolean }) {
     }
     case 'cadena': {
       let desde: Ent = h, golpeados = new Set<number>(), rebotes = (hb.rebota ?? 3) + Math.floor(n / 4);
+      efecto(j, 'pfx:fx_carga_rayo', h.x, h.y, 0, 0.8, 0, 0.35); particulas(j, h.x, h.y, 8, 'chispa', '#fff6a0', 1.2, 40);
       let blanco: Ent | null = obj && !obj.muerto ? obj : masCercano(j, tx, ty, 8, golpeados);
       while (blanco && rebotes-- >= 0) {
-        j.efectos.push({ id: 'arco_cadena', x: desde.x, y: desde.y, t: 0, dir: 0, escala: 1, z: 0, dur: 0.3, seguir: blanco } as Efecto);
+        // (sin `seguir`: el arco seguía al blanco y quedaba de largo cero, o sea que el rayo no se veía salir de la mano)
+        j.efectos.push({ id: 'arco_cadena', x: desde.x, y: desde.y, t: 0, dir: 0, escala: 1, z: 0, dur: 0.42 } as Efecto);
         (j.efectos[j.efectos.length - 1] as any).x2 = blanco.x; (j.efectos[j.efectos.length - 1] as any).y2 = blanco.y;
         danar(j, blanco, { min: dh[0], max: dh[1], elem: 'rayo', deHeroe: true, fuente: h, sinFallo: true });
         if (!golpeados.size) efecto(j, 'impacto_rayo', blanco.x, blanco.y, 0, 0.6);
@@ -1999,6 +2024,7 @@ function golpeMonstruo(j: Juego, m: Monstruo) {
 function actualizarProyectiles(j: Juego, dt: number) {
   for (const p of j.proyectiles) {
     p.t += dt; p.vida -= dt;
+    if (p.vida <= 0 && !p.arco) { if (p.explota && p.deHeroe) explotar(j, p); else chocar(j, p, false); continue; }
     if (p.arco) {
       const a = p.arco; a.t += dt;
       const k = Math.min(1, a.t / a.T);
@@ -2023,11 +2049,11 @@ function actualizarProyectiles(j: Juego, dt: number) {
     }
     if (p.hab?.id === 'martillo_bendito') { const a = Math.atan2(p.vy, p.vx) + dt * 2.6; const v = Math.hypot(p.vx, p.vy); p.vx = Math.cos(a) * v * 1.01; p.vy = Math.sin(a) * v * 1.01; }
     if (p.hab?.id === 'tornado' || p.efecto === 'tornado') { const a = Math.atan2(p.vy, p.vx) + Math.sin(p.t * 6) * dt * 3; const v = Math.hypot(p.vx, p.vy); p.vx = Math.cos(a) * v; p.vy = Math.sin(a) * v; }
-    if (p.hab?.id === 'chispa') { const a = Math.atan2(p.vy, p.vx) + (R() - 0.5) * dt * 12; const v = Math.hypot(p.vx, p.vy); p.vx = Math.cos(a) * v; p.vy = Math.sin(a) * v; }
+    // (la chispa zigzagueaba tanto que a 9 casillas fallaba la mitad: ahora tiembla menos y la guía la lleva al blanco)
+    if (p.hab?.id === 'chispa') { const a = Math.atan2(p.vy, p.vx) + (R() - 0.5) * dt * 5; const v = Math.hypot(p.vx, p.vy); p.vx = Math.cos(a) * v; p.vy = Math.sin(a) * v; }
     if (p.hab?.id === 'orbe_glacial' && Math.floor(p.t * 8) !== Math.floor((p.t - dt) * 8)) { const a = R() * Math.PI * 2; j.proyectiles.push({ ...p, x: p.x, y: p.y, vx: Math.cos(a) * 9, vy: Math.sin(a) * 9, hab: undefined, explota: 0, perfora: false, vida: 0.6, golpeados: new Set(), dano: [p.dano[0] * 0.3, p.dano[1] * 0.3], efecto: 'saeta_hielo' }); }
     const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
-    const b = j.zona.bloq[Math.floor(ny) * j.zona.W + Math.floor(nx)];
-    if (b === 1 || b === 2 || nx < 0 || ny < 0 || nx >= j.zona.W || ny >= j.zona.H) { if (p.explota) explotar(j, p); p.vida = 0; continue; }
+    if (nx < 0 || ny < 0 || nx >= j.zona.W || ny >= j.zona.H || tapaTiro(j.zona, nx, ny)) { if (p.explota) explotar(j, p); else chocar(j, p, true); p.vida = 0; continue; }
     p.x = nx; p.y = ny;
     // estela
     if (p.elem === 'fuego' && R() < 0.6) particulas(j, p.x, p.y, 1, 'brasa', '#ff9030', 0.4, p.z);
@@ -2057,6 +2083,25 @@ function impactoDe(p: Proyectil): string {
   const sug = LUZ_EFECTO[p.efecto]?.impacto; if (sug) return sug;
   const IMP: Partial<Record<Elemento, string>> = { fuego: 'explosion_fuego', frio: 'estallido_esquirlas', fisico: 'chispas_carne', rayo: 'impacto_rayo', veneno: 'impacto_veneno', luz: 'impacto_sagrado', sangre: 'salpicadura_sangre' };
   return /hueso/.test(p.efecto) ? 'impacto_hueso' : IMP[p.elem] ?? 'chispas_metal';
+}
+/** Chispas del elemento donde un proyectil choca o se apaga: [color, tipo de partícula, sonido]. */
+const CHISPAS_ELEM: Partial<Record<Elemento, [string, Particula['tipo'], string]>> = {
+  fuego: ['#ffb040', 'brasa', 'explosion'], frio: ['#c8ecff', 'chispa', 'hielo_impacto'], rayo: ['#fff6a0', 'chispa', 'golpe_metal'],
+  veneno: ['#8fe050', 'chispa', 'golpe_carne'], luz: ['#fff0b0', 'chispa', 'luz'], sombra: ['#b070ff', 'chispa', 'hueso_cruje'], fisico: ['#d8d0c0', 'chispa', 'golpe_metal'], sangre: ['#d02020', 'sangre', 'golpe_carne'],
+};
+/**
+ * Un proyectil que choca contra algo del mundo (muro, árbol, columna) o que se apaga en el aire: nunca desaparece sin
+ * más. Contra el mundo suelta su impacto, chispas de su elemento que rebotan, un golpe de sonido y un temblor mínimo;
+ * al apagarse, un soplo de chispas.
+ */
+function chocar(j: Juego, p: Proyectil, contraMundo: boolean) {
+  const [color, tipo, son] = CHISPAS_ELEM[p.elem] ?? CHISPAS_ELEM.fisico!;
+  if (contraMundo) {
+    efecto(j, impactoDe(p), p.x, p.y, 0, 0.55);
+    particulas(j, p.x, p.y, p.deHeroe ? 12 : 7, tipo, color, 1.5, p.z);
+    if (p.elem !== 'frio' && p.elem !== 'veneno') particulas(j, p.x, p.y, 4, 'chispa', '#ffffff', 2, p.z);
+    if (p.deHeroe) { j.sacudida = Math.max(j.sacudida, 0.07); sonar(j, son, p.x, p.y, 0.45); }
+  } else particulas(j, p.x, p.y, 5, tipo, color, 0.7, p.z);
 }
 function explotar(j: Juego, p: Proyectil) {
   const r = p.explota || 1.5;

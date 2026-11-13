@@ -1,6 +1,7 @@
 // Dibuja la zona: pisos, manchas, objetos y personajes por profundidad, poderes, partículas, luz, niebla y clima.
 import { nuevoCuadroSombras } from './luces';
 import { ctx, W, H, E } from '../nucleo/lienzo';
+import { ZONAS } from '../mundo/actos';
 import { puntoSalida } from '../mundo/zona';
 import { esquivarHud, etiquetasMundo, hud } from '../ui/hud_rects';
 import { NPCS } from '../datos/npcs';
@@ -21,7 +22,7 @@ import { prepararFuegos, vivosDe, tieneFuegoDoom, dibujarVivos } from './fuego_v
 import { dibujarPfx, alfaCuerpo, efectoPfx, dirPfx } from './pfx';
 import { estadosPfx } from '../juego/pfx_usos';
 import { dibujarAmbiente, dibujarClimaPfx } from './pfx_mundo';
-import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde, cometa } from './fuego_especial';
+import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde, cometa, llamaViva } from './fuego_especial';
 let dtCuadro = 1 / 60;
 // bruma de altura: cada cuadro alto se pinta una vez con el degradado del color de la niebla de la zona
 let colorBruma = '78,82,96', anclasCuadro: { q: Cuadro; br: HTMLCanvasElement | null; px: number; py: number }[] = [], esAncla = new Set<object>();
@@ -359,20 +360,6 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     }
     ctx.fillStyle = '#fff'; ctx.fillRect(px - 2, py - 34, 4, 4);
   }
-  // arcos de rayo
-  for (const e of j.efectos) if (e.id === 'arco_cadena' && (e as any).x2 !== undefined) {
-    const [ax, ay] = aPant(e.x, e.y), [bx, by] = aPant((e as any).x2, (e as any).y2);
-    // el arco de la Forja (fila e, la horizontal) rotado y estirado entre los dos; si no cargó, el rayo de siempre
-    const fs = manifiesto().w?.['arco_cadena/e'], meta = manifiesto().wm?.arco_cadena;
-    if (fs?.length && meta) {
-      const raw = fs[Math.floor((e.t * 25) / (meta.t || 1)) % fs.length], q: Cuadro = { img: null, atlas: raw[0], x: raw[1], y: raw[2], w: raw[3], h: raw[4], ax: raw[5], ay: raw[6] };
-      const by2 = by - 39, ay2 = ay - 39;
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(ax, ay2); ctx.rotate(Math.atan2(by2 - ay2, bx - ax)); ctx.scale(Math.hypot(bx - ax, by2 - ay2) / 155.6, 1);
-      const ok = dibujar(ctx, q, 0, 39); ctx.restore();
-      if (ok) continue;
-    }
-    rayo(ax, ay - 34, bx, by - 34, 1 - e.t / (e.dur ?? 0.3));
-  }
   // cuervos
   for (const c of j.cuervos) { const [px, py] = aPant(c.x, c.y); ctx.globalCompositeOperation = 'source-over'; pajaro(px, py - 50 - Math.sin(tiempo * 9 + c.ang) * 6, tiempo + c.ang); ctx.globalCompositeOperation = 'lighter'; }
   ctx.restore();
@@ -398,6 +385,14 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   brumaAncla(j);
   dibujarLuz(j, tiempo);
   puertaCatedral(j, dt, tiempo);
+  // arcos de rayo: después de la luz (dibujados antes, la noche los apagaba y el rayo no se veía salir de la mano)
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1;
+  for (const e of j.efectos) if (e.id === 'arco_cadena' && (e as any).x2 !== undefined) {
+    const [ax, ay] = aPant(e.x, e.y), [bx, by] = aPant((e as any).x2, (e as any).y2);
+    // el relámpago en vivo, de la mano al pecho (el arco prehorneado estirado no se veía)
+    rayo(ax, ay - ((e as any).deMano ? 44 : 34), bx, by - 34, Math.max(0, 1 - e.t / (e.dur ?? 0.3)) ** 0.6);
+  }
+  ctx.restore();
   // números de daño (encima de la oscuridad para que se lean)
   ctx.textAlign = 'center';
   for (const n of j.numeros) {
@@ -418,26 +413,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     const [px, py] = aPant(...puntoSalida(z, sa));
     if (px < -120 || px > W + 120 || py < -140 || py > H + 80) continue;
     const pulso = 0.5 + 0.5 * Math.sin(tiempo * 2.2 + sa.cx);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    // aro en el piso
-    const g = ctx.createRadialGradient(px, py, 4, px, py, 40); g.addColorStop(0, `rgba(255,190,100,${0.22 + pulso * 0.08})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(px, py, 40, 20, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = `rgba(255,200,120,${0.35 + pulso * 0.2})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, py, 30, 15, 0, 0, Math.PI * 2); ctx.stroke();
-    if (!sa.obj) {
-      // el umbral: dos pilares de luz y el arco que los une
-      for (const sx of [-22, 22]) {
-        const gp = ctx.createLinearGradient(0, py - 74, 0, py); gp.addColorStop(0, 'rgba(255,190,100,0)'); gp.addColorStop(0.35, `rgba(255,190,100,${0.28 + pulso * 0.1})`); gp.addColorStop(1, `rgba(255,210,140,${0.5 + pulso * 0.15})`);
-        ctx.fillStyle = gp; ctx.fillRect(px + sx - 2.5, py - 74 + Math.abs(sx) * 0.1, 5, 74 - Math.abs(sx) * 0.1);
-      }
-      ctx.strokeStyle = `rgba(255,205,130,${0.4 + pulso * 0.15})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px - 22, py - 60); ctx.quadraticCurveTo(px, py - 92, px + 22, py - 60); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,240,200,0.5)'; ctx.lineWidth = 1; ctx.stroke();
-    }
-    // motas que suben
-    for (let i = 0; i < 7; i++) {
-      const f = (tiempo * 0.45 + i / 7 + sa.cy * 0.13) % 1, x = px + Math.sin(i * 2.3 + tiempo * 0.9) * 20, y = py - 4 - f * 78;
-      ctx.fillStyle = `rgba(255,215,150,${Math.sin(f * Math.PI) * 0.75})`; ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
-    }
-    ctx.restore();
+    umbralVivo(px, py, !sa.obj, ZONAS[sa.destino], tiempo, pulso, sa.cx * 7.3 + sa.cy * 3.1, dtCuadro);
     // el nombre: de cerca, entero en pantalla y en táctil fuera de los botones de abajo a la derecha
     const d = Math.hypot(j.heroe.x - sa.cx - 0.5, j.heroe.y - sa.cy - 0.5), kn = E.alt ? 1 : Math.max(0, Math.min(1, 6.5 - d));
     if (kn <= 0) continue;
@@ -451,6 +427,66 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   }
   // clima
   clima(j, dt, tiempo);
+}
+
+/**
+ * El umbral de una salida, vivo: un sello de runas que gira en el piso, y donde no hay puerta un arco de luz con un velo
+ * que ondula adentro, dos braseros de fuego de Doom en los pies, un haz que sube y motas en espiral. El color dice a
+ * dónde lleva: oro al pueblo, verde azulado a las mazmorras, rojo brasa a las tierras de fuego y luna fría al resto.
+ */
+function umbralVivo(px: number, py: number, conArco: boolean, dest: { tipo?: string; tema?: string } | undefined, t: number, pulso: number, sem: number, dt: number) {
+  const fuego = /infierno|lava|fragua|ceniza/.test(dest?.tema ?? '');
+  const [c, pal]: [[number, number, number], 'sagrado' | 'animas' | 'infierno' | 'corona_fria'] = dest?.tipo === 'pueblo' ? [[255, 196, 110], 'sagrado'] : fuego ? [[255, 96, 48], 'infierno'] : dest?.tipo === 'mazmorra' ? [[96, 220, 204], 'animas'] : [[170, 198, 255], 'corona_fria'];
+  const rgba = (a: number, k = 1) => `rgba(${Math.round(c[0] * k)},${Math.round(c[1] * k)},${Math.round(c[2] * k)},${Math.max(0, Math.min(1, a))})`;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1;
+  // la luz que se derrama en el piso
+  const g = ctx.createRadialGradient(px, py, 3, px, py, 52); g.addColorStop(0, rgba(0.3 + pulso * 0.1)); g.addColorStop(0.5, rgba(0.1)); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(px, py, 52, 26, 0, 0, Math.PI * 2); ctx.fill();
+  // el sello: dos aros de trazos que giran al revés y ocho runas entre ellos
+  ctx.lineWidth = 1.5;
+  for (const [rx, giro, n, a] of [[34, t * 0.5, 14, 0.55], [24, -t * 0.8, 9, 0.4]] as [number, number, number, number][]) {
+    ctx.strokeStyle = rgba(a + pulso * 0.2);
+    for (let i = 0; i < n; i++) { const a0 = giro + (i / n) * Math.PI * 2; ctx.beginPath(); ctx.ellipse(px, py, rx, rx / 2, 0, a0, a0 + (Math.PI * 2 / n) * 0.62); ctx.stroke(); }
+  }
+  for (let i = 0; i < 8; i++) {
+    const a = t * 0.5 + (i / 8) * Math.PI * 2, x = px + Math.cos(a) * 29, y = py + Math.sin(a) * 14.5, k = 0.45 + 0.4 * Math.sin(t * 3 + i * 1.7);
+    ctx.fillStyle = rgba(k); ctx.fillRect(Math.round(x) - 1, Math.round(y) - 2, 2, 4); ctx.fillRect(Math.round(x) - 2, Math.round(y) - (i % 2 ? 2 : 0), 4, 1);
+  }
+  if (conArco) {
+    const forma = () => { ctx.beginPath(); ctx.moveTo(px - 20, py - 2); ctx.lineTo(px - 20, py - 58); ctx.quadraticCurveTo(px, py - 92, px + 20, py - 58); ctx.lineTo(px + 20, py - 2); ctx.closePath(); };
+    // el velo: luz que ondula dentro del arco, más densa abajo, con hebras que suben
+    ctx.save(); forma(); ctx.clip();
+    const gv = ctx.createLinearGradient(0, py - 90, 0, py); gv.addColorStop(0, rgba(0.08)); gv.addColorStop(0.6, rgba(0.15 + pulso * 0.05)); gv.addColorStop(1, rgba(0.27 + pulso * 0.08));
+    ctx.fillStyle = gv; ctx.fillRect(px - 22, py - 94, 44, 94);
+    for (let i = 0; i < 9; i++) {
+      const x = px - 18 + ((i * 4.7 + Math.sin(t * 1.3 + i * 2.1 + sem) * 3) % 36), f = (t * (0.35 + (i % 3) * 0.12) + i * 0.37 + sem) % 1, y = py - f * 88, l = 10 + (i % 4) * 5;
+      const gh = ctx.createLinearGradient(0, y - l, 0, y); gh.addColorStop(0, rgba(0)); gh.addColorStop(0.5, rgba(0.5 * Math.sin(f * Math.PI))); gh.addColorStop(1, rgba(0));
+      ctx.fillStyle = gh; ctx.fillRect(Math.round(x), y - l, 1.5, l);
+    }
+    // el brillo que cruza el velo de lado a lado
+    const bx = px - 30 + ((t * 26 + sem * 9) % 90); const gb = ctx.createLinearGradient(bx - 8, 0, bx + 8, 0); gb.addColorStop(0, 'rgba(255,255,255,0)'); gb.addColorStop(0.5, `rgba(255,255,255,${0.16 + pulso * 0.06})`); gb.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gb; ctx.fillRect(bx - 8, py - 94, 16, 94);
+    ctx.restore();
+    // el marco: resplandor ancho, cuerpo de color y un filo blanco
+    for (const [w, col] of [[9, rgba(0.14 + pulso * 0.05)], [4, rgba(0.6 + pulso * 0.2)], [1.2, `rgba(255,250,235,${0.75 + pulso * 0.2})`]] as [number, string][]) {
+      ctx.lineWidth = w; ctx.strokeStyle = col; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(px - 20, py - 2); ctx.lineTo(px - 20, py - 58); ctx.quadraticCurveTo(px, py - 92, px + 20, py - 58); ctx.lineTo(px + 20, py - 2); ctx.stroke();
+    }
+    // la clave del arco: una gema que late
+    const gk = ctx.createRadialGradient(px, py - 76, 0, px, py - 76, 9 + pulso * 3); gk.addColorStop(0, 'rgba(255,255,255,0.95)'); gk.addColorStop(0.35, rgba(0.8)); gk.addColorStop(1, rgba(0));
+    ctx.fillStyle = gk; ctx.fillRect(px - 13, py - 89, 26, 26);
+    // el haz que sube por encima del arco
+    const gz = ctx.createLinearGradient(0, py - 150, 0, py - 70); gz.addColorStop(0, rgba(0)); gz.addColorStop(1, rgba(0.16 + pulso * 0.08));
+    ctx.fillStyle = gz; ctx.fillRect(px - 5, py - 150, 10, 80);
+    // dos braseros de fuego vivo en los pies del arco
+    if (!(window as any).__sinFuego) for (const sx of [-20, 20]) llamaViva(ctx, pal, px + sx, py + 1, 16, 34, dt, 0.9);
+  }
+  // motas en espiral y alguna chispa que salta
+  for (let i = 0; i < 10; i++) {
+    const f = (t * 0.4 + i / 10 + sem * 0.13) % 1, a = f * 7 + i * 2.4, r = (conArco ? 17 : 22) * (1 - f * 0.45), x = px + Math.cos(a) * r, y = py - 3 - f * (conArco ? 84 : 62) + Math.sin(a) * r * 0.25;
+    ctx.fillStyle = i % 4 ? rgba(Math.sin(f * Math.PI) * 0.85) : `rgba(255,255,255,${Math.sin(f * Math.PI) * 0.9})`; ctx.fillRect(Math.round(x), Math.round(y), i % 3 ? 2 : 1, i % 3 ? 2 : 1);
+  }
+  ctx.restore();
 }
 
 function dibujarRaw(raw: any[], x: number, y: number) {
@@ -474,14 +510,26 @@ function dibujarEfecto(e: Efecto, _t: number) {
   dibujar(ctx, q, px, py - (e.z ?? 0), e.escala);
   ctx.globalAlpha = 1;
 }
+/**
+ * Un relámpago en vivo de (ax, ay) a (bx, by): línea quebrada que cambia cada cuadro, con resplandor azul ancho, cuerpo
+ * celeste y núcleo blanco, y dos ramas cortas que se abren. `k` 1 recién nacido, 0 apagado.
+ */
 function rayo(ax: number, ay: number, bx: number, by: number, k: number) {
-  ctx.strokeStyle = `rgba(200,210,255,${k})`; ctx.lineWidth = 2;
-  for (let n = 0; n < 2; n++) {
-    ctx.beginPath(); ctx.moveTo(ax, ay);
-    const seg = 8;
-    for (let i = 1; i < seg; i++) { const t = i / seg; ctx.lineTo(ax + (bx - ax) * t + (R() - 0.5) * 18, ay + (by - ay) * t + (R() - 0.5) * 18); }
-    ctx.lineTo(bx, by); ctx.stroke(); ctx.lineWidth = 1;
+  const dx = bx - ax, dy = by - ay, largo = Math.hypot(dx, dy) || 1, nx = -dy / largo, ny = dx / largo;
+  const seg = Math.max(4, Math.round(largo / 13)), pts: [number, number][] = [[ax, ay]];
+  for (let i = 1; i < seg; i++) { const t = i / seg, d = (R() - 0.5) * 22 * Math.sin(t * Math.PI); pts.push([ax + dx * t + nx * d, ay + dy * t + ny * d]); }
+  pts.push([bx, by]);
+  const traza = (ps: [number, number][]) => { ctx.beginPath(); ctx.moveTo(ps[0][0], ps[0][1]); for (let i = 1; i < ps.length; i++) ctx.lineTo(ps[i][0], ps[i][1]); ctx.stroke(); };
+  const ramas: [number, number][][] = [];
+  for (let r = 0; r < 2; r++) { const i = 1 + Math.floor(R() * (pts.length - 2)), [x0, y0] = pts[i], a = Math.atan2(dy, dx) + (R() - 0.5) * 1.6, l = 10 + R() * 16; ramas.push([[x0, y0], [x0 + Math.cos(a) * l * 0.5 + (R() - 0.5) * 6, y0 + Math.sin(a) * l * 0.5 + (R() - 0.5) * 6], [x0 + Math.cos(a) * l, y0 + Math.sin(a) * l]]); }
+  ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (const [w, c] of [[9, `rgba(70,120,255,${0.22 * k})`], [4, `rgba(150,190,255,${0.7 * k})`], [1.5, `rgba(255,255,255,${Math.min(1, k * 1.4)})`]] as [number, string][]) {
+    ctx.lineWidth = w; ctx.strokeStyle = c; traza(pts);
+    if (w < 9) { ctx.lineWidth = w * 0.6; for (const rm of ramas) traza(rm); }
   }
+  // el destello donde nace y donde cae
+  for (const [x, y, r] of [[ax, ay, 9], [bx, by, 13]] as [number, number, number][]) { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(255,255,255,${0.9 * k})`); g.addColorStop(0.4, `rgba(150,190,255,${0.5 * k})`); g.addColorStop(1, 'rgba(70,120,255,0)'); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
+  ctx.restore();
 }
 function pajaro(x: number, y: number, t: number) {
   const a = Math.sin(t * 18) * 5;
