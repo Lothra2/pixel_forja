@@ -42,7 +42,8 @@ export const SELECCION = {
 export function pintarSeleccion(cuerpo: Cuerpo, equipo: Equipo, f: number, o: { ss?: number; fijo?: { w: number; h: number; ax: number; ay: number } } = {}): Render {
   const k = SELECCION.escala;
   const e = personajeEscena(cuerpo, equipo, SELECCION.dir, 'seleccion', f, { detalle: 2 });
-  const resplandor = e.resplandor ? { ...e.resplandor, c: e.resplandor.c.map((v) => v * k) as V3, r: e.resplandor.r * k } : undefined;
+  // (el resplandor del encantamiento, contenido: solo alrededor del filo, no tiñe el arma entera)
+  const resplandor = e.resplandor ? { ...e.resplandor, c: e.resplandor.c.map((v) => v * k) as V3, r: e.resplandor.r * k * 0.55 } : undefined;
   const luz = { ...RETRATO, expo: (RETRATO.expo ?? 1) * exposicion(cuerpo, equipo, resplandor) };
   return pintarEscena({ piezas: escalarPiezas(contenido(e.piezas), k), resplandor, luz, sinSombra: true, ss: o.ss }, {}, o.fijo);
 }
