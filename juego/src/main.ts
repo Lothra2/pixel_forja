@@ -327,8 +327,17 @@ function controlar(jj: Juego, dt: number) {
     const hb = habilidadDe(id);
     if (jj.zona.tipo === 'pueblo' && hb.tipo !== 'aura' && hb.tipo !== 'pasiva') { msg(jj, ['Aquí no peleo: es tierra de paz.', 'No fighting here: this is safe ground.'], '#c0b090'); return; }
     if (id !== 'ataque' && nivelHab(h.d, id, h.c) <= 0) { msg(jj, ['Todavía no aprendí ese poder. Abre Habilidades (H).', 'I have not learned that skill yet. Open Skills (H).'], '#c0b090'); return; }
-    let best: Monstruo | null = null, bd = 10;
-    for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado !== 'surgir') { const d = dist(m.x, m.y, h.x, h.y); if (d < bd) { bd = d; best = m; } }
+    // el blanco: hasta 13 casillas (lo que entra en pantalla), prefiriendo al que el héroe tiene delante (hacia donde
+    // camina o mira) y al último que eligió; antes era solo el más cercano a 10 y más lejos el poder salía recto
+    let best: Monstruo | null = null, bd = Infinity;
+    const [fx, fy] = DIR_VEC[h.dir] ?? [0.7, 0.7], fa = Math.atan2(fy, fx), previo = (h as any).blancoTactil as Monstruo | undefined;
+    for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado !== 'surgir') {
+      const d = dist(m.x, m.y, h.x, h.y); if (d > 14) continue;
+      let da = Math.abs(Math.atan2(m.y - h.y, m.x - h.x) - fa); if (da > Math.PI) da = Math.PI * 2 - da;
+      const punt = d * (1 + 0.9 * (da / Math.PI)) * (m === previo ? 0.75 : 1);
+      if (punt < bd) { bd = punt; best = m; }
+    }
+    (h as any).blancoTactil = best ?? undefined;
     const melee = hb.tipo === 'golpe' && !(id === 'ataque' && h.c.distancia);
     if (best && melee) { h.objetivo = best; (h as any).usarDer = der; (h as any).usarId = porId ? id : null; return; }
     const [vx, vy] = DIR_VEC[h.dir] ?? [0.7, 0.7];

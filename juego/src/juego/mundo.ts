@@ -74,6 +74,8 @@ export interface Monstruo extends Ent {
 export interface Proyectil {
   x: number; y: number; z: number; vx: number; vy: number; vida: number; dano: [number, number]; elem: Elemento;
   deHeroe: boolean; perfora: boolean; explota: number; efecto: string; golpeados: Set<number>; buscador: boolean; radio: number;
+  /** A quién iba apuntado (hechizos del héroe con blanco): el proyectil corrige un poco el rumbo si el blanco se movió. */
+  guia?: Ent | null;
   arco?: { x0: number; y0: number; x1: number; y1: number; t: number; T: number; n?: number };
   hab?: Habilidad; nivelHab?: number; mult?: number; lento?: number; t: number; rebota?: number;
   /** Abanicos: golpes de la misma salva por monstruo (la 2.ª flecha y siguientes al mismo blanco hacen 60 %). */
@@ -1161,7 +1163,9 @@ function resolverHabilidad(j: Juego, parte?: number, cb?: { remate: boolean }) {
       break;
     }
     case 'proyectil': {
-      const base = Math.atan2(ty - h.y, tx - h.x);
+      // el blanco pudo moverse mientras duraba el gesto: se apunta a donde está ahora, no a donde estaba al empezar
+      const vivo = obj && !obj.muerto ? obj : null;
+      const base = vivo ? Math.atan2(vivo.y - h.y, vivo.x - h.x) : Math.atan2(ty - h.y, tx - h.x);
       if (hb.id === 'descarga_prismatica') {
         const cs = gastarCargas(h);
         const k = 1 + cs.length * 0.25;
@@ -1181,7 +1185,7 @@ function resolverHabilidad(j: Juego, parte?: number, cb?: { remate: boolean }) {
         const a = cnt === 1 ? base : circ ? base + (k / cnt) * Math.PI * 2 : base - abanico / 2 + (abanico * k) / (cnt - 1);
         const g: Golpe = hb.mult ? golpeArma(j, mult, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? dh : undefined) : { min: dh[0], max: dh[1], elem: hb.elem, deHeroe: true, fuente: h, sinFallo: true };
         if (prec && g.precision !== undefined) g.precision += prec;
-        disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, g, efectoDe(hb.efecto, hb.elem, hb, true), hb.vel ?? 12, { perfora: !!hb.perfora || R() * 100 < h.c.perforar, explota: hb.explota ?? 0, buscador: !!hb.buscador, hab: hb, nivelHab: n, vida: hb.id === 'martillo_bendito' ? 2.4 : hb.id === 'orbe_glacial' ? 1.4 : 1.6, rebota: hb.id === 'chispa' ? 1 : 0, salva });
+        disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, g, efectoDe(hb.efecto, hb.elem, hb, true), hb.vel ?? 12, { perfora: !!hb.perfora || R() * 100 < h.c.perforar, explota: hb.explota ?? 0, buscador: !!hb.buscador, hab: hb, nivelHab: n, vida: hb.id === 'martillo_bendito' ? 2.4 : hb.id === 'orbe_glacial' ? 1.4 : 1.6, rebota: hb.id === 'chispa' ? 1 : 0, salva, guia: cnt === 1 && !circ && hb.id !== 'martillo_bendito' ? vivo : null, radio: hb.explota ? 0.75 : 0.5 });
       }
       break;
     }
@@ -2007,6 +2011,16 @@ function actualizarProyectiles(j: Juego, dt: number) {
       let best: Ent | null = null, bd = 7; for (const e of enem) { if (p.golpeados.has(e.id)) continue; const d = dist(e.x, e.y, p.x, p.y); if (d < bd) { bd = d; best = e; } }
       if (best) { const v = Math.hypot(p.vx, p.vy); const dx = best.x - p.x, dy = best.y - p.y, l = Math.hypot(dx, dy) || 1; p.vx += ((dx / l) * v - p.vx) * Math.min(1, dt * 5); p.vy += ((dy / l) * v - p.vy) * Math.min(1, dt * 5); }
     }
+    // guía suave: si el blanco sigue vivo y adelante (a menos de 50°), el proyectil dobla hacia él hasta 2,6 rad/s
+    if (p.guia && !p.buscador) {
+      const g = p.guia as Monstruo;
+      if (g.muerto) p.guia = null;
+      else {
+        const v = Math.hypot(p.vx, p.vy), a = Math.atan2(p.vy, p.vx); let da = Math.atan2(g.y - p.y, g.x - p.x) - a;
+        while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
+        if (Math.abs(da) > 0.87) p.guia = null; else { const na = a + Math.max(-2.6 * dt, Math.min(2.6 * dt, da)); p.vx = Math.cos(na) * v; p.vy = Math.sin(na) * v; }
+      }
+    }
     if (p.hab?.id === 'martillo_bendito') { const a = Math.atan2(p.vy, p.vx) + dt * 2.6; const v = Math.hypot(p.vx, p.vy); p.vx = Math.cos(a) * v * 1.01; p.vy = Math.sin(a) * v * 1.01; }
     if (p.hab?.id === 'tornado' || p.efecto === 'tornado') { const a = Math.atan2(p.vy, p.vx) + Math.sin(p.t * 6) * dt * 3; const v = Math.hypot(p.vx, p.vy); p.vx = Math.cos(a) * v; p.vy = Math.sin(a) * v; }
     if (p.hab?.id === 'chispa') { const a = Math.atan2(p.vy, p.vx) + (R() - 0.5) * dt * 12; const v = Math.hypot(p.vx, p.vy); p.vx = Math.cos(a) * v; p.vy = Math.sin(a) * v; }
@@ -2055,6 +2069,11 @@ function explotar(j: Juego, p: Proyectil) {
   // el frasco incendiario deja el piso ardiendo
   if (p.hab?.id === 'bomba_ignea') efecto(j, 'suelo_ardiente', p.x, p.y, 0, Math.max(0.8, r / 2.2), 0, 3);
   if (p.hab?.id === 'gran_crisol') j.areas.push({ x: p.x, y: p.y, radio: r * 0.7, dano: [p.dano[0] * 0.08, p.dano[1] * 0.08], elem: 'fuego', t: 0, dur: 4, tick: 0.5, prox: 0.5, deHeroe: true, efecto: 'crater_ardiente', retraso: 0.05 });
+  // las explosiones grandes de fuego del héroe: una segunda onda más ancha, el piso queda ardiendo y la cámara lo siente
+  if (p.deHeroe && p.elem === 'fuego' && (p.hab?.id === 'bola_fuego' || p.hab?.id === 'flecha_cometa' || p.hab?.id === 'virote_dragon' || p.hab?.id === 'virote_explosivo')) {
+    efecto(j, 'explosion_fuego', p.x, p.y, 0, r / 1.25); efecto(j, 'suelo_ardiente', p.x, p.y, 0, Math.max(0.8, r / 2.2), 0, 2.5);
+    particulas(j, p.x, p.y, 14, 'brasa', '#ffb040', 1.4, 30); j.sacudida = Math.max(j.sacudida, 0.32);
+  }
   j.sacudida = Math.max(j.sacudida, 0.15);
   sonar(j, p.elem === 'frio' ? 'hielo_impacto' : 'explosion', p.x, p.y, 0.8);
   if (p.elem === 'fuego') ponerMancha(j, { x: p.x, y: p.y, r: r * 0.6, color: '#141008', t: 0, tipo: 'quemado' });

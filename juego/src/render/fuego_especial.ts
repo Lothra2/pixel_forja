@@ -185,3 +185,62 @@ export function ozmarenArde(ctx: CanvasRenderingContext2D, m: Ent, q: Cuadro, px
   // cuernos y espalda mandan en sus luces
   pulsosOzmaren = [0, 1, 4].map((i) => D.pulsoLuz(fs![i].f, esp.luz.mueve).k);
 }
+
+// ------------------------------------------------------------------ proyectiles que arden (cometas)
+/**
+ * Los hechizos lanzados como cometas de fuego de Doom en vivo: un núcleo incandescente y una cola de llamas que se
+ * estira hacia atrás del rumbo. Una simulación por paleta (la comparten todos los proyectiles de esa paleta, cada uno
+ * la dibuja rotada y a su tamaño). `r` es el radio del núcleo en px, `cola` cuánto se estira la llama y `ancho` su
+ * grosor; `encima` deja además el sprite de siempre (la flecha o el virote que lleva el fuego).
+ */
+interface Cometa { pal: D.NombrePaleta; r: number; cola: number; ancho: number; encima?: boolean }
+const COMETAS: Record<string, Cometa> = {
+  saeta_ignea: { pal: 'infierno', r: 4.5, cola: 1.5, ancho: 1.1 }, brasas_saltarinas: { pal: 'infierno', r: 3.2, cola: 1.1, ancho: 0.9 },
+  bola_fuego: { pal: 'infierno', r: 12, cola: 3, ancho: 3 }, lanza_magma: { pal: 'infierno', r: 6, cola: 4, ancho: 1.5 },
+  esquirla: { pal: 'corona_fria', r: 4, cola: 1.4, ancho: 1 }, carambano: { pal: 'corona_fria', r: 5.5, cola: 2.2, ancho: 1.3 }, orbe_glacial: { pal: 'corona_fria', r: 11, cola: 1.6, ancho: 2.6 },
+  saeta_fe: { pal: 'sagrado', r: 4.5, cola: 1.8, ancho: 1.1 }, espadas_votivas: { pal: 'sagrado', r: 3, cola: 1.6, ancho: 0.9, encima: true }, lanza_espiritu: { pal: 'sagrado', r: 6, cola: 3.2, ancho: 1.4 }, mil_palmas: { pal: 'sagrado', r: 3.5, cola: 1.2, ancho: 1 },
+  flecha_ignea: { pal: 'infierno', r: 2.5, cola: 1.4, ancho: 0.8, encima: true }, flecha_cometa: { pal: 'infierno', r: 5, cola: 3, ancho: 1.4, encima: true },
+  virote_explosivo: { pal: 'infierno', r: 3.5, cola: 1.6, ancho: 1, encima: true }, virote_dragon: { pal: 'infierno', r: 6, cola: 3.2, ancho: 1.6, encima: true },
+  flecha_helada: { pal: 'corona_fria', r: 2.5, cola: 1.4, ancho: 0.8, encima: true }, virote_escarcha: { pal: 'corona_fria', r: 3, cola: 1.5, ancho: 0.9, encima: true },
+  zarzas: { pal: 'veneno', r: 4, cola: 1.5, ancho: 1.1 }, virote_veneno: { pal: 'veneno', r: 3, cola: 1.5, ancho: 0.9, encima: true },
+};
+/** Los proyectiles de fuego de los monstruos (sin habilidad). */
+const COMETA_MONSTRUO: Cometa = { pal: 'infierno', r: 5, cola: 1.8, ancho: 1.3 };
+const NUCLEO: Partial<Record<D.NombrePaleta, [string, string, string]>> = {
+  infierno: ['#fff6d8', '#ffb43c', '#ff5a14'], corona_fria: ['#ffffff', '#b8dcff', '#4a8cf0'], sagrado: ['#ffffff', '#ffe9a8', '#e0a030'], veneno: ['#f4ffd0', '#a8e040', '#3c8a14'],
+};
+const colas = new Map<D.NombrePaleta, { s: Suelto; cuadro: number }>();
+function colaDe(pal: D.NombrePaleta, dt: number): Suelto {
+  let c = colas.get(pal);
+  if (!c) { c = { s: suelto({ ancho: 18, alto: 40, forma: { tipo: 'llama', ancho: 0.62, afinar: 0.55 }, paleta: pal, altura: 0.9, humo: 0, turbulencia: 0.7, ruido: 0.25, tramo: 3, velocidadTramo: 3, brillo: 1.7, pegada: 0.6, semilla: 23, margen: 1, pps: 40 }, 1), cuadro: -1 }; colas.set(pal, c); }
+  if (c.cuadro !== cuadro) { c.cuadro = cuadro; avanzar(c.s, dt); }
+  return c.s;
+}
+/**
+ * Dibuja el cometa de un proyectil en (px, py) de pantalla (el piso bajo el proyectil). Devuelve 'solo' si reemplaza
+ * al sprite, 'encima' si el sprite de siempre va después, o null si este proyectil no arde.
+ */
+export function cometa(ctx: CanvasRenderingContext2D, p: { vx: number; vy: number; t: number; elem: string; deHeroe: boolean; efecto: string; hab?: { id: string } }, px: number, py: number, dt: number): 'solo' | 'encima' | null {
+  const c = p.hab ? COMETAS[p.hab.id] : !p.deHeroe && p.elem === 'fuego' && !/flecha|virote/.test(p.efecto) ? COMETA_MONSTRUO : undefined;
+  if (!c) return null;
+  const s = colaDe(c.pal, dt), nuc = NUCLEO[c.pal] ?? NUCLEO.infierno!;
+  // rumbo en pantalla (isométrica 2:1) y el centro a la altura de la mano
+  const svx = p.vx - p.vy, svy = (p.vx + p.vy) / 2, ang = Math.atan2(svy, svx), cy = py - 34;
+  const nace = Math.min(1, p.t * 7), lat = 1 + 0.07 * Math.sin(p.t * 31), r = c.r * nace * lat;
+  ctx.save(); ctx.translate(px, cy);
+  // halo: la bola alumbra el aire a su alrededor
+  ctx.globalCompositeOperation = 'lighter';
+  const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 3.4); halo.addColorStop(0, nuc[2] + '70'); halo.addColorStop(0.45, nuc[2] + '28'); halo.addColorStop(1, nuc[2] + '00');
+  ctx.fillStyle = halo; ctx.fillRect(-r * 3.4, -r * 3.4, r * 6.8, r * 6.8);
+  // la cola: la llama de Doom acostada, con el pie en el núcleo y la punta hacia atrás del rumbo
+  ctx.save(); ctx.rotate(ang - Math.PI / 2); ctx.imageSmoothingEnabled = true;
+  const w = s.f.w * c.ancho * nace, h = s.f.h * c.cola * 0.55 * nace;
+  ctx.drawImage(s.llama.cv, -w / 2, -h + r * 0.55, w, h);
+  ctx.restore();
+  // el núcleo: blanco caliente adentro, color afuera, un poco achatado hacia el rumbo
+  ctx.rotate(ang); ctx.scale(1.18, 0.9);
+  const g = ctx.createRadialGradient(r * 0.15, 0, 0, 0, 0, r); g.addColorStop(0, nuc[0]); g.addColorStop(0.42, nuc[1]); g.addColorStop(0.8, nuc[2] + 'c0'); g.addColorStop(1, nuc[2] + '00');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  return c.encima ? 'encima' : 'solo';
+}

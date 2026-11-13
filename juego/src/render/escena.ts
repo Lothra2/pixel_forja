@@ -21,7 +21,7 @@ import { prepararFuegos, vivosDe, tieneFuegoDoom, dibujarVivos } from './fuego_v
 import { dibujarPfx, alfaCuerpo, efectoPfx, dirPfx } from './pfx';
 import { estadosPfx } from '../juego/pfx_usos';
 import { dibujarAmbiente, dibujarClimaPfx } from './pfx_mundo';
-import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde } from './fuego_especial';
+import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde, cometa } from './fuego_especial';
 let dtCuadro = 1 / 60;
 // bruma de altura: cada cuadro alto se pinta una vez con el degradado del color de la niebla de la zona
 let colorBruma = '78,82,96', anclasCuadro: { q: Cuadro; br: HTMLCanvasElement | null; px: number; py: number }[] = [], esAncla = new Set<object>();
@@ -346,6 +346,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     const [px, py] = aPant(p.x, p.y);
     if (p.arco) { const [ax, ay] = [px, py - p.z * 1.2]; ctx.fillStyle = p.elem === 'frio' ? '#a0e0ff' : p.elem === 'veneno' ? '#80ff60' : '#ffa040'; ctx.beginPath(); ctx.arc(ax, ay, 4, 0, Math.PI * 2); ctx.fill(); continue; }
     const id = p.efecto;
+    // los hechizos lanzados arden en vivo (cometas de fuego de Doom); flechas y virotes llevan además su sprite
+    if (!(window as any).__sinCometa && cometa(ctx, p, px, py, dtCuadro) === 'solo') continue;
     if (id.startsWith('pfx:')) { if (dibujarPfx(ctx, id.slice(4), p.t, px, py, { dir: dirPfx(p.vx, p.vy) })) continue; }
     mezclar(id);
     const meta = manifiesto().wm?.[id];
