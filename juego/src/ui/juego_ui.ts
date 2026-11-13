@@ -419,7 +419,7 @@ export function dibujarArriba(j: Juego, encima: Monstruo | null) {
 /** En táctil: los tres últimos, en letra de 11 pt o más, con salto de línea a 300 pt, debajo de la misión. */
 function mensajesTactil(j: Juego) {
   const P = disposicion(), Lp = (pt: number) => pt / Math.max(0.1, ESCALA);
-  const mx = P.m.l, tam = Math.round(Lp(11)), lh = Math.round(tam * 1.3);
+  const mx = P.m.l, tam = Math.max(9, Math.round(Lp(11))), lh = Math.round(tam * 1.3);
   const anchoMax = Math.min(Lp(300), P.mini[0] - mx - Lp(12));
   let y = (hud.rastreo ? hud.rastreo[1] + hud.rastreo[3] : P.orbes[1] + P.orbes[3] + Lp(22)) + Lp(8) + tam;
   const y0 = y - tam; let anchoM = 0;

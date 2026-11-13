@@ -95,6 +95,8 @@ export function dibujarPortada(tReal: number): { botones: number; yBotones: numb
         const col = Math.floor((t * cz.fps + p.f) % cz.columnas);
         const x = ox + (p.x - cx * pc.paralaje + Math.sin(t * 1.3 + p.f) * pc.vaiven) * esc, y = oy + (p.y - cy * pc.paralaje) * esc, s = cz.celda * p.s * esc;
         ctx.globalAlpha = p.a * fondoK * (p.vida !== undefined ? Math.min(1, p.vida) : 1);
+        // los copos de ceniza: un punto de 1 o 2 px de lienzo, tibio y a media luz (el cuadro grande se leía como polvo en el vidrio)
+        if (pc.fila.startsWith('copo')) { ctx.globalAlpha *= 0.5; ctx.fillStyle = p.s > 1 ? '#c9a68a' : '#a88a74'; const d = p.s > 1 ? 2 : 1; ctx.fillRect(Math.round(x), Math.round(y), d, d); continue; }
         ctx.drawImage(im, col * cz.celda, fila * cz.celda, cz.celda, cz.celda, x - s / 2, y - s / 2, s, s);
       }
     }

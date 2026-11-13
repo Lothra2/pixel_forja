@@ -38,7 +38,7 @@ export function disposicion() {
   const m = margenes();
   const O = L(56), B = L(44), gap = L(6);
   const orbes: Rect = [m.l, m.t, O * 2 + gap, O + L(14)];
-  const rastreo: Rect = [m.l, orbes[1] + orbes[3] + L(22), L(230), L(34)];
+  const rastreo: Rect = [m.l, orbes[1] + orbes[3] + L(22), Math.max(L(230), 190), Math.max(L(34), 30)]; // con lienzo bajo (iPad ×3) el texto no baja de 9-10 px
   const filaW = B * 5 + gap * 4;
   const botones: Rect = [W - m.r - filaW, m.t, filaW, B];
   const R = L(45);
@@ -196,7 +196,7 @@ export function dibujarHudTactil(j: Juego, t: number) {
     const [x, y] = P.orbes;
     orbeHud(h.veneno > 0 ? 'veneno' : h.frio > 0 ? 'helado' : 'vida', h.vida / h.vidaMax, x, y, P.O, f);
     orbeHud('mana', h.mana / Math.max(1, h.c.manaMax), x + P.O + P.gap, y, P.O, f);
-    const tn = Math.round(L(12));
+    const tn = Math.max(10, Math.round(L(12)));
     texto(`${Math.ceil(h.vida)}`, x + P.O / 2, y + P.O + L(12), { alin: 'center', tam: tn, color: '#ff9080' });
     texto(`${Math.floor(h.mana)}`, x + P.O * 1.5 + P.gap, y + P.O + L(12), { alin: 'center', tam: tn, color: '#90a8ff' });
     hud.orbes = P.orbes;
@@ -207,8 +207,8 @@ export function dibujarHudTactil(j: Juego, t: number) {
       const linea = e === 2 ? T('Vuelve al campamento', 'Return to camp') : objetivoTxt(m, d);
       const [rx, ry, rw, rh] = P.rastreo;
       ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(rx, ry, rw, rh); ctx.restore();
-      texto(TT(m.nombre), rx + L(6), ry + L(13), { tam: Math.round(L(11)), color: '#ffd080', max: rw - L(10) });
-      texto(linea, rx + L(6), ry + L(28), { tam: Math.round(L(10)), color: e === 2 ? '#80ff80' : '#d8c8a0', max: rw - L(10) });
+      texto(TT(m.nombre), rx + L(6), ry + Math.max(L(13), 12), { tam: Math.max(10, Math.round(L(11))), color: '#ffd080', max: rw - L(10) });
+      texto(linea, rx + L(6), ry + Math.max(L(28), 25), { tam: Math.max(9, Math.round(L(10))), color: e === 2 ? '#80ff80' : '#d8c8a0', max: rw - L(10) });
       hud.rastreo = P.rastreo;
     }
   }
