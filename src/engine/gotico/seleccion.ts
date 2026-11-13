@@ -95,7 +95,9 @@ function berserker(p: Pose, arma: ArmaPose): Guion {
 function templario(p: Pose, arma: ArmaPose, mano?: ManoPose): Guion {
   plantar(p, [-1.6, 2.4], [1.6, 1.8], [16, 10]);
   void arma; void mano;
-  const pomo: Vals = { manoD: [13, 1, 33], armaD: [152, -2], pisoArma: 0, codoD: [-0.2, 1, -0.3] };
+  // la espada vertical con la punta clavada en el piso delante del pie, la mano sobre el pomo cerca del cuerpo y el codo
+  // doblado y afuera (antes: brazo estirado hacia adelante y la hoja en diagonal sin tocar el piso, como si se le cayera)
+  const pomo: Vals = { manoD: [8.5, 3.5, 27.5], armaD: [178, 4], pisoArma: 1, codoD: [-0.3, 1, -0.2] };
   const escudo: Vals = { hombroI: [-2, 26, 12, 0] };
   const bucle: Clave[] = [
     K(0, { bajar: 1.2, torso: 3, lateral: 0.45, ladeoCadera: 1.8, ladeo: -0.8, giroTorso: 6, giroCadera: -3, respira: 0.1, hombros: [0.3, 0.3], cabeza: -2, giroCabeza: 6, ladeoCabeza: 1, ...pomo, ...escudo }),
@@ -109,8 +111,8 @@ function templario(p: Pose, arma: ArmaPose, mano?: ManoPose): Guion {
     // el saludo: la guarnición junto al mentón, al costado derecho, la hoja vertical
     K(0.36, { bajar: 0.4, torso: -3, cabeza: -6, giroCabeza: 16, respira: 1, hombros: [0.8, 0.7], manoD: [3, 13, 45], armaD: [-6, 22] }, true),
     // la clava al frente de un golpe
-    K(0.56, { bajar: 2.6, torso: 9, cabeza: 2, respira: 0.3, hombros: [0.2, 0.2], manoD: [14, 1, 31], armaD: [150, -2], pisoArma: 0 }, true),
-    K(0.72, { bajar: 1.8, torso: 5, manoD: [13.5, 1, 32.5] }),
+    K(0.56, { bajar: 2.6, torso: 7, cabeza: 2, respira: 0.3, hombros: [0.2, 0.2], manoD: [9, 3.5, 27], armaD: [178, 4], pisoArma: 1 }, true),
+    K(0.72, { bajar: 1.8, torso: 4, manoD: [8.5, 3.5, 27.5] }),
   ];
   return { bucle, entrada, o: { lagCab: 0.04, capa: 0.8 } };
 }
