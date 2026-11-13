@@ -819,7 +819,9 @@ reg({
     const ejeY = v.endsWith('_y'), base = ejeY ? v.slice(0, -2) : v;
     let ps = piezasPuente(base, 0, herramientas(seed), false);
     if (ejeY) ps = mover(ps, [0, 0, 0], 90);
-    return aguaConPiezas(`par_puente|${v}|${seed}`, estiloArroyo(ejeY ? 'puente' : 'puente_y'), ps, f, '#2c2d2a');
+    // los estribos (de |x| 16.5 a 52, el tablero de 23 de ancho) meten espuma en el agua; girados 90° en las _y
+    const muros: [number, number, number, number][] = ejeY ? [[-11.5, 11.5, -52, -16.5], [-11.5, 11.5, 16.5, 52]] : [[-52, -16.5, -11.5, 11.5], [16.5, 52, -11.5, 11.5]];
+    return aguaConPiezas(`par_puente|${v}|${seed}`, { ...estiloArroyo(ejeY ? 'puente' : 'puente_y'), muros }, ps, f, '#3a3b37');
   },
 });
 conVarianteY('par_puente');

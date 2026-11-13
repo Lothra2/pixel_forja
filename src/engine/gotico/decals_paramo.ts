@@ -23,9 +23,10 @@ function vn(x: number, y: number, s: number): number {
 const fbm = (x: number, y: number, s: number) => vn(x, y, s) * 0.6 + vn(x * 2.1, y * 2.1, s + 1) * 0.3 + vn(x * 4.3, y * 4.3, s + 2) * 0.1;
 
 const COL = {
-  barroMojado: hex('#16110c'), barro: hex('#261d14'), cielo: hex('#596167'), cieloAlto: hex('#283035'), brillo: hex('#a8b8c1'),
-  agua: hex('#0c1115'), corteza: hex('#2b2118'), cortezaClara: hex('#5a4834'), piedra: hex('#5e584d'), piedraOsc: hex('#2a2722'),
-  musgo: hex('#2b3320'), tierraOsc: hex('#1d1710'), brizna: hex('#5f5639'), briznaOsc: hex('#463d28'), briznaClara: hex('#766b4c'),
+  barroMojado: hex('#16110c'), barro: hex('#261d14'), cielo: hex('#8a959c'), cieloAlto: hex('#46515a'), brillo: hex('#b4c3cb'),
+  agua: hex('#11181e'), corteza: hex('#3a2c1f'), cortezaClara: hex('#7a6448'), piedra: hex('#8c8579'), piedraOsc: hex('#3c3832'),
+  musgo: hex('#2f3b1f'), musgoClaro: hex('#56682f'), pastoVerde: hex('#66733a'), pastoVerdeClaro: hex('#87904f'),
+  tierraOsc: hex('#1d1710'), sombra: hex('#100c08'), brizna: hex('#8a7646'), briznaOsc: hex('#5e4f2e'), briznaClara: hex('#b09a62'),
   ceniza: hex('#3f3d3a'), cenizaClara: hex('#5d5a55'), carbon: hex('#121110'), brasaVieja: hex('#3a1c10'), hollin: hex('#191716'),
 };
 const VIS: V3 = [-VISTA[0], -VISTA[1], -VISTA[2]];
@@ -51,8 +52,9 @@ function enPiedras(ps: Piedrita[], x: number, y: number): [number, Piedrita | nu
     const dx = x - p.x, dy = y - p.y, c = Math.cos(p.g), s = Math.sin(p.g);
     const u = (dx * c + dy * s) / p.rx, v = (-dx * s + dy * c) / p.ry, d = Math.sqrt(u * u + v * v);
     // sombra de contacto alrededor (hacia +x-y, lejos de la luz)
-    const ds = Math.hypot(u - 0.35, v + 0.2);
-    if (ds < 1.6) ao = Math.max(ao, sm(1.6, 0.9, ds) * 0.6);
+    const us = ((dx - p.h * 0.55) * c + (dy + p.h * 0.35) * s) / p.rx, vs = (-(dx - p.h * 0.55) * s + (dy + p.h * 0.35) * c) / p.ry;
+    const ds = Math.min(Math.hypot(us, vs), d * 1.12);
+    if (ds < 1.55) ao = Math.max(ao, sm(1.55, 0.85, ds) * 0.85);
     if (d >= 1) continue;
     const h = p.h * Math.sqrt(1 - d * d); if (h > hm) { hm = h; cual = p; }
   }
@@ -98,11 +100,13 @@ function raices(seed: number): Decal {
     let best = 0, hh = 0, ao = 0;
     for (const q of rs) for (let s = 0; s <= 1.0001; s += 0.05) {
       const p0 = bez(q.a, q.c, q.b, s), d = Math.hypot(x - p0[0], y - p0[1]), rad = q.r * (1 - s * 0.75);
-      if (d < rad * 2.2) ao = Math.max(ao, sm(rad * 2.2, rad, d) * 0.5 * (1 - s * 0.5));
+      // sombra: la raíz corrida hacia +x -y (lejos de la luz) y más ancha
+      const dsh = Math.hypot(x - p0[0] - rad * 0.8, y - p0[1] + rad * 0.5);
+      if (dsh < rad * 2) ao = Math.max(ao, sm(rad * 2, rad * 0.9, dsh) * 0.8 * (1 - s * 0.45));
       if (d < rad) { const h = Math.sqrt(1 - (d / rad) ** 2) * rad * 0.8 * (1 - s * 0.55); if (h > hh) { hh = h; best = s; } }
     }
-    if (hh > 0) { const tex = fbm(x * 0.9, y * 0.3, seed + 5); return { c: mixC(COL.corteza, COL.cortezaClara, 0.25 + tex * 0.75), a: sm(1, 0.82, best), h: hh * 1.3, moja: 0 }; }
-    if (ao > 0.02) return { c: COL.tierraOsc, a: ao, h: 0, moja: 0 };
+    if (hh > 0) { const tex = fbm(x * 0.9, y * 0.3, seed + 5); return { c: mixC(COL.corteza, COL.cortezaClara, 0.3 + tex * 0.7), a: sm(1, 0.82, best), h: hh * 1.4, moja: 0 }; }
+    if (ao > 0.02) return { c: COL.sombra, a: ao, h: 0, moja: 0 };
     return null;
   };
 }
@@ -114,12 +118,12 @@ function piedras(n: number, rad: [number, number], esparcir: number, seed: numbe
     const [h, p, ao] = enPiedras(ps, x, y);
     const mancha = grava ? sm(1.0, 0.55, Math.hypot(x / esparcir, y / (esparcir * 0.8)) + (fbm(x * 0.2, y * 0.2, seed) - 0.5) * 0.5) : 0;
     if (p) {
-      const seca = sm(0.15, 0.8, h / p.h);
-      let c = mixC(COL.piedraOsc, COL.piedra, 0.35 + p.t * 0.4 + seca * 0.2);
+      const seca = sm(0.1, 0.75, h / p.h);
+      let c = mixC(COL.piedraOsc, COL.piedra, 0.3 + p.t * 0.3 + seca * 0.4);
       if (p.musgo && h / p.h > 0.6 && fbm(x * 1.4, y * 1.4, seed + 9) > 0.5) c = mixC(c, COL.musgo, 0.65);
       return { c, a: 1, h, moja: 0.15 };
     }
-    if (ao > 0.02 || mancha > 0.02) return { c: COL.tierraOsc, a: Math.max(ao, mancha * 0.45), h: 0, moja: 0 };
+    if (ao > 0.02 || mancha > 0.02) return { c: ao > mancha * 0.45 ? COL.sombra : COL.tierraOsc, a: Math.max(ao, mancha * 0.45), h: 0, moja: 0 };
     return null;
   };
 }
@@ -173,6 +177,33 @@ function pasto(seed: number, esparcir: number): Decal {
     return null;
   };
 }
+function musgo(seed: number, rx: number, ry: number): Decal {
+  // mancha húmeda al pie de un árbol o un muro: cojines de musgo y matas de pasto verde mojado, borde que se funde
+  const ms: { x: number; y: number; R: number; s: number }[] = [];
+  let k = 0; const r = () => hash3(k++, seed, 61);
+  for (let i = 0; i < Math.round((rx * ry) / 22) + 3; i++) { const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 0.8; ms.push({ x: Math.cos(a) * d * rx, y: Math.sin(a) * d * ry, R: 2 + r() * 2.4, s: r() * 1000 }); }
+  return (x, y) => {
+    const u = x / rx, v = y / ry, d = Math.sqrt(u * u + v * v) + (fbm(x * 0.16, y * 0.16, seed) - 0.5) * 0.7;
+    if (d > 1.15) return null;
+    const borde = sm(1.15, 0.7, d);
+    // cojines: bultos chicos de musgo con su sombra entre ellos
+    const n1 = fbm(x * 0.55, y * 0.55, seed + 2), n2 = vn(x * 1.7, y * 1.7, seed + 3);
+    let c = mixC(COL.musgo, COL.musgoClaro, sm(0.35, 0.75, n1) * 0.85 + (n2 - 0.5) * 0.25);
+    let h = n1 * 1.4 + n2 * 0.3;
+    // matas de pasto verde mojado encima
+    let best = 0, alto = 0;
+    for (const m of ms) {
+      const dx0 = x - m.x, dy0 = y - m.y; if (Math.hypot(dx0, dy0) > m.R * 1.4) continue;
+      for (let b = 0; b < 10; b++) {
+        const th = hash3(b, m.s, 1) * Math.PI * 2, L = m.R * (0.6 + hash3(b, m.s, 2) * 0.6), ex = Math.cos(th) * L + 0.4 * L, ey = Math.sin(th) * L + 0.4 * L;
+        const t = cl((dx0 * ex + dy0 * ey) / (ex * ex + ey * ey)), dd = Math.hypot(ex * t - dx0, ey * t - dy0), an = 0.48 * (1 - t * 0.6);
+        if (dd < an) { const w = (1 - dd / an) * (0.6 + 0.4 * t); if (w > best) { best = w; alto = 0.5 + t * 2; } }
+      }
+    }
+    if (best > 0) { c = mixC(c, mixC(COL.pastoVerde, COL.pastoVerdeClaro, sm(1.2, 2.4, alto) * 0.7), cl(best * 1.7)); h += alto * cl(best * 2); }
+    return { c, a: borde * 0.95, h, moja: 0.18 * borde };
+  };
+}
 function ceniza(seed: number, rx: number, ry: number, fogata: boolean): Decal {
   const piedras6 = fogata ? Array.from({ length: 8 }, (_, i): Piedrita => { const a = (i / 8) * Math.PI * 2 + hash3(i, seed, 3) * 0.4, R = 7 + hash3(i, seed, 4) * 1.2; return { x: Math.cos(a) * R, y: Math.sin(a) * R * 0.9, rx: 1.7 + hash3(i, seed, 5) * 0.8, ry: 1.4 + hash3(i, seed, 6) * 0.6, g: a, h: 1.3 + hash3(i, seed, 7) * 0.8, t: hash3(i, seed, 8), musgo: false }; }) : [];
   return (x, y) => {
@@ -210,8 +241,9 @@ const DECALS: Record<string, DefDecal> = {
   pasto_a: { r: [16, 13], d: () => pasto(31, 8) }, pasto_b: { r: [22, 17], d: () => pasto(32, 12) }, pasto_c: { r: [13, 11], d: () => pasto(33, 5) },
   ceniza_a: { r: [14, 12], d: () => ceniza(41, 10, 8, false) }, ceniza_b: { r: [20, 14], d: () => ceniza(42, 15, 9, false) },
   fogata_vieja: { r: [14, 13], d: () => ceniza(43, 6.5, 6, true) },
+  musgo_a: { r: [16, 13], d: () => musgo(51, 11, 8.5) }, musgo_b: { r: [22, 17], d: () => musgo(52, 16, 11) }, musgo_c: { r: [13, 11], d: () => musgo(53, 8, 6.5) },
 };
-export const VARIANTES_DECAL = ['raices_a', 'raices_b', 'piedras_a', 'piedras_b', 'grava', 'pisadas', 'pisadas_y', 'carreta', 'carreta_y', 'pasto_a', 'pasto_b', 'pasto_c', 'ceniza_a', 'ceniza_b', 'fogata_vieja'];
+export const VARIANTES_DECAL = ['raices_a', 'raices_b', 'piedras_a', 'piedras_b', 'grava', 'pisadas', 'pisadas_y', 'carreta', 'carreta_y', 'pasto_a', 'pasto_b', 'pasto_c', 'ceniza_a', 'ceniza_b', 'fogata_vieja', 'musgo_a', 'musgo_b', 'musgo_c', 'musgo_b_y'];
 export const VARIANTES_CHARCO = ['chico', 'mediano', 'largo', 'largo_y'];
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
@@ -240,7 +272,7 @@ export function pintarDecal(v: string, f = 0): Render {
       let c: C3 = m.moja >= 1 ? m.c : [m.c[0] * (0.5 + 0.62 * dif), m.c[1] * (0.5 + 0.62 * dif), m.c[2] * (0.5 + 0.62 * dif)];
       if (m.moja > 0.04) {
         const d = VISTA, k2 = 2 * (d[0] * n[0] + d[1] * n[1] + d[2] * n[2]), rv: V3 = [d[0] - k2 * n[0], d[1] - k2 * n[1], d[2] - k2 * n[2]];
-        const F = cl((m.moja >= 1 ? 0.38 : 0.08) + 0.7 * Math.pow(1 - Math.max(0, n[0] * VIS[0] + n[1] * VIS[1] + n[2] * VIS[2]), 3)) * Math.min(1, m.moja);
+        const F = cl((m.moja >= 1 ? 0.55 : 0.08) + 0.7 * Math.pow(1 - Math.max(0, n[0] * VIS[0] + n[1] * VIS[1] + n[2] * VIS[2]), 3)) * Math.min(1, m.moja);
         const cie = mixC(COL.cielo, COL.cieloAlto, Math.pow(cl(rv[2]), 0.55));
         c = mixC(c, cie, F);
         const sb = Math.pow(Math.max(0, rv[0] * SOL[0] + rv[1] * SOL[1] + rv[2] * SOL[2]), 10) * 0.3 * m.moja;
@@ -285,7 +317,7 @@ export interface Riego { id: 'par_decal' | 'par_charco_suelo'; v: string; cx: nu
 export function regarDecalsParamo(o: OpcRiego): Riego[] {
   const out: Riego[] = [], dens = (o.densidad ?? 7) / 100, S = o.semilla;
   const r = (i: number, j: number, k: number) => hash3(i, j, S * 31 + k);
-  const lejos: Record<string, number> = { charco: 7, raices: 3, ceniza: 3, fogata: 12, pisadas: 5, carreta: 9, piedras: 4, grava: 5, pasto: 4 };
+  const lejos: Record<string, number> = { musgo: 3, charco: 7, raices: 3, ceniza: 3, fogata: 12, pisadas: 5, carreta: 9, piedras: 4, grava: 5, pasto: 4 };
   const puesto: { cx: number; cy: number; clase: string }[] = [];
   const libre = (cx: number, cy: number) => { if (cx < 1 || cy < 1 || cx >= o.W - 1 || cy >= o.H - 1) return false; const t = o.tipo(cx, cy); return t !== 'bloqueado' && t !== 'fuera'; };
   const poner = (id: Riego['id'], v: string, cx: number, cy: number, clase: string) => {
@@ -305,6 +337,15 @@ export function regarDecalsParamo(o: OpcRiego): Riego[] {
   });
   // el decal de raíces tiene el tronco a (-12, -6) unidades de su centro: va una celda a +x del árbol
   (o.arboles ?? []).forEach(([ax, ay], i) => { if (r(i, 0, 11) < 0.65) poner('par_decal', r(i, 0, 12) < 0.5 ? 'raices_a' : 'raices_b', ax + 1, ay, 'raices'); });
+  // musgo y pasto mojado al pie de lo que se para en el piso (árboles, muros, empalizadas, la orilla del agua): una celda
+  // libre con algo bloqueado al lado, de vez en cuando
+  const bloq = (cx: number, cy: number) => o.tipo(cx, cy) === 'bloqueado';
+  for (let cy = 2; cy < o.H - 2; cy++) for (let cx = 2; cx < o.W - 2; cx++) {
+    if (r(cx, cy, 60) > 0.3 || !libre(cx, cy) || o.tipo(cx, cy) === 'camino') continue;
+    if (!(bloq(cx - 1, cy) || bloq(cx, cy - 1) || bloq(cx + 1, cy) || bloq(cx, cy + 1))) continue;
+    const w = r(cx, cy, 61);
+    poner('par_decal', w < 0.35 ? 'musgo_a' : w < 0.6 ? 'musgo_c' : w < 0.8 ? 'musgo_b' : 'musgo_b_y', cx, cy, 'musgo');
+  }
   // 2) el riego: rejilla de 4×4 con un punto corrido al azar (ruido azul barato) y una densidad que sube y baja
   const G = 4;
   for (let gy = 0; gy * G < o.H; gy++) for (let gx = 0; gx * G < o.W; gx++) {
@@ -320,7 +361,7 @@ export function regarDecalsParamo(o: OpcRiego): Riego[] {
       let clase: string;
       if (t === 'camino') clase = u < 0.45 ? 'carreta' : u < 0.8 ? 'pisadas' : 'charco';
       else if (t === 'agua') clase = u < 0.6 ? 'piedras' : 'pasto';
-      else if (est === 2) clase = u < 0.5 ? 'charco' : u < 0.8 ? 'pisadas' : 'piedras';
+      else if (est === 2) clase = u < 0.45 ? 'charco' : u < 0.68 ? 'pisadas' : u < 0.85 ? 'musgo' : 'piedras';
       else if (est === 1) clase = u < 0.25 ? 'piedras' : u < 0.42 ? 'grava' : u < 0.66 ? 'pasto' : u < 0.86 ? 'pisadas' : 'charco';
       else clase = u < 0.45 ? 'piedras' : u < 0.75 ? 'grava' : 'charco';
       // a lo largo del camino: si el camino sigue en y y no en x
@@ -331,6 +372,7 @@ export function regarDecalsParamo(o: OpcRiego): Riego[] {
       else if (clase === 'carreta') poner('par_decal', 'carreta' + y2, cx, cy, clase);
       else if (clase === 'piedras') poner('par_decal', w < 0.5 ? 'piedras_a' : 'piedras_b', cx, cy, clase);
       else if (clase === 'grava') poner('par_decal', 'grava', cx, cy, clase);
+      else if (clase === 'musgo') poner('par_decal', w < 0.5 ? 'musgo_a' : 'musgo_c', cx, cy, clase);
       else poner('par_decal', w < 0.4 ? 'pasto_a' : w < 0.75 ? 'pasto_b' : 'pasto_c', cx, cy, clase);
     }
   }
