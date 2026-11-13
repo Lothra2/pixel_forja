@@ -45,7 +45,7 @@ function emitir(f: Ficha, cx: number, cy: number, dt: number, t: number) {
     const x = cx + (R() - 0.5) * 260, y = cy - R() * 260;
     switch (f.part) {
       case 'brasas': parts.push({ x, y: cy + 10, vx: (R() - 0.5) * 20, vy: -40 - R() * 60, t: 0, d: 2 + R() * 2, c: R() < 0.5 ? '#ff8030' : '#ffd060', s: 2 }); break;
-      case 'motas': parts.push({ x, y, vx: 0, vy: -8 - R() * 10, t: 0, d: 2 + R() * 2, c: '#fff0c0', s: 2 }); break;
+      case 'motas': if (R() < 0.5) parts.push({ x, y, vx: 0, vy: -8 - R() * 10, t: 0, d: 2 + R() * 2, c: '#fff0c0', s: 2 }); break;
       case 'chispas': { const a = R() * Math.PI * 2; parts.push({ x: cx, y: cy - 60 - R() * 100, vx: 0, vy: -6, t: 0, d: 1.2 + R(), c: R() < 0.3 ? '#ffffff' : c, s: 2, ang: a }); break; }
       case 'hojas': parts.push({ x: cx + (R() - 0.5) * 400, y: cy - 300, vx: 15 + R() * 20, vy: 30 + R() * 20, t: 0, d: 6, c: R() < 0.5 ? '#6a7a30' : '#9a7030', s: 3 }); break;
       case 'bruma': parts.push({ x, y: cy - R() * 30, vx: (R() - 0.5) * 12, vy: -6, t: 0, d: 3 + R() * 2, c: '#2e7058', s: 14 }); break;
@@ -72,7 +72,7 @@ function dibujarParts(f: Ficha, t: number, atras: boolean) {
     if (!!p.atras !== atras) continue;
     const x = p.ang !== undefined ? p.vx : p.x, y = p.ang !== undefined ? p.y + Math.sin(p.ang) * 22 : p.y;
     const k = Math.sin((p.t / p.d) * Math.PI) * (atras ? 0.75 : 1);
-    ctx.globalAlpha = f.part === 'bruma' ? k * 0.028 : f.part === 'luciernagas' ? k * (0.5 + 0.5 * Math.sin(t * 9 + p.x)) : k * 0.85;
+    ctx.globalAlpha = f.part === 'bruma' ? k * 0.028 : f.part === 'luciernagas' ? k * (0.5 + 0.5 * Math.sin(t * 9 + p.x)) : k * (f.part === 'motas' ? 0.42 : 0.85);
     ctx.fillStyle = p.c;
     if (f.part === 'viento') { ctx.globalAlpha *= 0.35; ctx.fillRect(x, y + Math.sin(x * 0.03) * 3, 14, 1); }
     else if (f.part === 'bruma' || f.part === 'burbujas') { if (f.part === 'burbujas') ctx.globalAlpha *= 0.12; ctx.beginPath(); ctx.arc(x, y, p.s * (1 + (p.t / p.d) * (f.part === 'burbujas' ? 3 : 1)), 0, Math.PI * 2); ctx.fill(); }
@@ -116,7 +116,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   const lc = `${f.luz[0]},${f.luz[1]},${f.luz[2]}`;
   const dt = 1 / 60;
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-  const angosto = W < 820;
+  const angosto = W < 760;
   const cx = angosto ? W * 0.5 : W * 0.44, cy = angosto ? H * 0.5 : H * 0.7;
   // piso de piedra con la fogata detrás
   const piso = cuadrosPiso('lajas', 0)[0] ?? cuadrosPiso('tierra', 1)[0];

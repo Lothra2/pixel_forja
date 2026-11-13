@@ -284,7 +284,7 @@ export function menuPrincipal(t: number, hayPartidas: boolean): string | null {
   const alfa = pt ? pt.botones : 1;
   if (alfa <= 0) return null;
   // con la portada, los botones van en fila en la franja oscura de abajo, sobre el cementerio, sin tapar la catedral
-  const fila = !!pt && W >= 900; const bw = fila ? Math.min(210, (W - 120) / 4 - 12) : 260; let bx = W / 2 - (fila ? (bw * 4 + 36) / 2 : 130);
+  const fila = !!pt && W >= 760; const bw = fila ? Math.min(210, (W - 120) / 4 - 12) : 260; let bx = W / 2 - (fila ? (bw * 4 + 36) / 2 : 130);
   if (fila) y = H - 92;
   const b = (s: string, id: string, activo = true) => { ctx.save(); ctx.globalAlpha = alfa; const ok = boton(s, bx, y, bw, 38, { activo, tam: 16 }); ctx.restore(); if (ok && alfa > 0.6) r = id; if (fila) bx += bw + 12; else y += 50; };
   b(T('Jugar', 'Play'), 'jugar');

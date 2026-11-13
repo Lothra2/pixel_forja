@@ -25,10 +25,17 @@ export function ajustar() {
   // en vertical el ancho mínimo de 640 dejaba un cuadrado chiquito en el medio: se estira el alto para llenar la pantalla
   if (ww < wh && w < 640) H = Math.round(Math.min(1400, (640 * wh) / ww));
   ESCALA = Math.min(ww / W, wh / H);
+  // escala entera en píxeles del aparato: cada píxel del lienzo mide exactamente 2 o 3 píxeles de la pantalla, así el
+  // pixel art no sale desparejo ni titila con la cámara. Solo si el alto lógico queda en un rango jugable (480 a 780) y,
+  // en pantallas táctiles, si no achica el juego: en el teléfono el texto ya va justo y se queda con la escala de antes.
+  const dpr = window.devicePixelRatio || 1, dw = Math.round(ww * dpr), dh = Math.round(wh * dpr);
+  const ke = Math.max(1, Math.round(dh / 600));
+  const entero = ww >= wh && dh / ke >= 480 && dh / ke <= 780 && dw / ke >= 760 && (ke / dpr >= k * 0.95 || !(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)) && !(window as unknown as { __sinEntero?: boolean }).__sinEntero;
+  if (entero) { W = Math.min(1600, Math.floor(dw / ke)); H = Math.floor(dh / ke); ESCALA = ke / dpr; }
   lienzo.width = W; lienzo.height = H;
-  lienzo.style.width = `${Math.floor(W * ESCALA)}px`;
-  lienzo.style.height = `${Math.floor(H * ESCALA)}px`;
-  lienzo.style.imageRendering = Math.abs(ESCALA - Math.round(ESCALA)) < 0.01 ? 'pixelated' : 'auto';
+  lienzo.style.width = `${entero ? (W * ke) / dpr : Math.floor(W * ESCALA)}px`;
+  lienzo.style.height = `${entero ? (H * ke) / dpr : Math.floor(H * ESCALA)}px`;
+  lienzo.style.imageRendering = entero || Math.abs(ESCALA - Math.round(ESCALA)) < 0.01 ? 'pixelated' : 'auto';
   ctx.imageSmoothingEnabled = false;
 }
 
