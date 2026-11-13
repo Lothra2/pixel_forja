@@ -87,8 +87,8 @@ function berserker(p: Pose, arma: ArmaPose): Guion {
   const entrada: Clave[] = [
     // se hunde y junta fuerza
     K(0.16, { bajar: 4.2, torso: 13, cabeza: 3, hombros: [0.4, 0.4], respira: 0, hombroD: [22, 12, 118, 0], armaRel: [126, 30], hombroI: [14, 16, 40, 10], pegaI: 0.2 }, true),
-    // alza el hacha por encima del hombro, el pecho inflado
-    K(0.36, { bajar: 0.4, torso: -7, cabeza: -18, respira: 1, hombros: [2.8, 2.6], hombroD: [84, 26, 38, 0], armaRel: [112, 16], hombroI: [24, 26, 50, 10], pegaI: 1 }),
+    // alza el hacha bien arriba, por encima de la cabeza (el brazo no cruza delante de la cara), el pecho inflado
+    K(0.36, { bajar: 0.4, torso: -7, cabeza: -18, respira: 1, hombros: [2.8, 2.6], hombroD: [80, 55, 45, 0], armaRel: [120, 40], hombroI: [24, 26, 50, 10], pegaI: 1 }),
     // la descarga adelante contra el piso (el contacto, sostenido)
     K(0.54, { bajar: 5.2, torso: 22, giroTorso: -8, cabeza: -6, respira: 0.3, hombros: [0.6, 0.6], hombroD: [56, -14, 34, 0], armaRel: [30, 6], hombroI: [34, 30, 50, 10], agarreI: -3, pegaI: 0 }, true),
     K(0.62, { bajar: 5.0, torso: 21, giroTorso: -8, hombroD: [55, -14, 36, 0], armaRel: [32, 6], agarreI: -3 }, true),
@@ -211,8 +211,8 @@ function arcanista(p: Pose, arma: ArmaPose): Guion {
     K(0.75, { respira: 0.9, bajar: 0.2, puntillas: [0.5, 0.5], giroCabeza: 12, ladeoCabeza: 4 }),
   ];
   const entrada: Clave[] = vara ? [
-    K(0.2, { bajar: 1.4, torso: 4, varaPie: [10, 18, 6], manoD: [6, 14, 46], respira: 0.4 }),
-    K(0.45, { bajar: -0.4, torso: -6, puntillas: [0.9, 0.9], varaPie: [12, 17, 12], manoD: [7, 14, 53], respira: 1, cabeza: -12 }, true),
+    K(0.2, { bajar: 1.4, torso: 4, varaPie: [6, 21, 6], manoD: [3, 16, 46], respira: 0.4 }),
+    K(0.45, { bajar: -0.4, torso: -6, puntillas: [0.9, 0.9], varaPie: [5, 23, 12], manoD: [2, 17, 52], respira: 1, cabeza: -12 }, true),
     K(0.7, { bajar: 1.0, torso: 3, puntillas: [0.2, 0.2], varaPie: [7, 19, 0.5], manoD: [4, 14, 43], respira: 0.3, cabeza: -2 }, true),
   ] : [
     K(0.25, { bajar: 0.2, torso: -4, puntillas: [0.8, 0.8], manoD: [12, 8, 46], armaD: [10, 20], manoI: [14, -6, 36], respira: 1, cabeza: -10 }, true),
@@ -239,7 +239,7 @@ function druida(p: Pose): Guion {
     K(0.75, { respira: 1, hombros: [0.9, 0.9], torso: 6, bajar: 1.1, giroCabeza: 4 }),
   ];
   const entrada: Clave[] = [
-    K(0.22, { bajar: 0.6, torso: 2, varaPie: [14, 12, 9], manoD: [9, 10, 50], cabeza: -14, respira: 1 }, true),
+    K(0.22, { bajar: 0.6, torso: 2, varaPie: [9, 19, 9], manoD: [5, 15, 50], cabeza: -14, respira: 1 }, true),
     K(0.42, { bajar: 3.2, torso: 14, varaPie: [13, 12.5, 0.5], manoD: [8, 10, 39], cabeza: -2, respira: 0.2 }, true),
     K(0.6, { bajar: 2.6, torso: 11 }),
   ];
