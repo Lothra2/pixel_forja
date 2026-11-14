@@ -956,6 +956,28 @@ function costa(k: Constructor, tema: string) {
   bordeCueva(k, ab, 'bor_risco', e + '_', (i) => !!fuera[i]);
 }
 
+const ESCOMBRO_TEMA: Record<string, string> = { tumba: 'desierto', templo: 'selva', santuario: 'infierno', abismo: 'infierno', celestial_interior: 'celestial', catedral_ahogada: 'ahogada', mina: 'paramo' };
+function escombroFrente(k: Constructor, suelo: Uint8Array, estilo: string) {
+  const z = k.z, r = k.r, { W, tw, th } = z;
+  const pen = REGISTRO.find((d) => d.id === 'bor_risco'); if (!pen) return;
+  const de = (talla: string) => { const vs = pen.variantes.filter((v) => v.startsWith(estilo + '_' + talla)); return vs[Math.floor(r() * vs.length)]; };
+  const puestos: { o: ObjZ; i: number }[] = [];
+  // cuántas regiones separadas de piso libre hay (para comprobar que el escombro no parte ninguna)
+  const regiones = () => { const v = new Uint8Array(W * z.H); let n = 0; for (let i0 = 0; i0 < v.length; i0++) { if (v[i0] || z.bloq[i0]) continue; n++; const pila = [i0]; v[i0] = 1; while (pila.length) { const i = pila.pop()!, x = i % W, y = (i - x) / W; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= W || Y >= z.H) continue; const j = Y * W + X; if (!v[j] && !z.bloq[j]) { v[j] = 1; pila.push(j); } } } } return n; };
+  const antes = regiones();
+  const pon = (x: number, y: number) => {
+    const i = y * W + x; if (z.bloq[i] || k.reserva[i] || r() > 0.42) return;
+    const o = k.poner(pen, x + 0.3, y + 0.3, de(r() < 0.1 ? 'media' : 'baja'), true); if (!o) return; z.bloq[i] = 1; puestos.push({ o, i });
+  };
+  for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) {
+    if (!suelo[by * tw + bx]) continue;
+    if (bx === tw - 1 || !suelo[by * tw + bx + 1]) for (let y = by * 5; y < by * 5 + 5; y++) pon(bx * 5 + 4, y);
+    if (by === th - 1 || !suelo[(by + 1) * tw + bx]) for (let x = bx * 5; x < bx * 5 + 5; x++) pon(x, by * 5 + 4);
+  }
+  // si el escombro partió el piso en más regiones (algún rincón quedó aislado), se quita entero
+  if (regiones() !== antes) { const fuera = new Set(puestos.map((q) => q.o)); z.objetos = z.objetos.filter((o) => !fuera.has(o)); for (const q of puestos) z.bloq[q.i] = 0; }
+}
+
 // ------------------------------------------------------------------ mazmorra
 function mazmorra(def: DefZona, semilla: number): Zona {
   const z = nuevaZona(def, semilla), k = new Constructor(z), t = tematica(def.tema), r = k.r;
@@ -1029,6 +1051,9 @@ function mazmorra(def: DefZona, semilla: number): Zona {
       k.poner(defY, bx * 5 + (hw - 1) / 2, by * 5 + (hh - 1) / 2, v, true);
     }
   }
+  // el frente de las mazmorras de obra (hacia la cámara) no lleva muro: en vez de un piso cortado a regla, escombro y roca
+  // caída del tema a lo largo de esos bordes, que estrecha y desordena el filo
+  if (!abierto && !t.islas && !(globalThis as any).__sinEscombro) escombroFrente(k, sala, ESCOMBRO_TEMA[def.tema] ?? 'cementerio'); // (solo en las salas: en un pasillo podría cerrar el paso)
   // entrada (primer cuarto) y fondo (último)
   const c0 = orden[0], cN = orden[orden.length - 1];
   const centroDe = (c: [number, number, number, number]): [number, number] => [Math.floor((c[0] + c[2] / 2) * 5), Math.floor((c[1] + c[3] / 2) * 5)];
@@ -1156,6 +1181,17 @@ export function generarZona(def: DefZona, semilla: number): Zona {
   for (const t of z.pisos) if (t && (t.id === 'fortaleza' || t.id === 'arcano')) t.id = t.id === 'fortaleza' ? 'baldosa_catedral' : 'arenisca';
   if (def.tipo !== 'pueblo') ambientarHorror(z, def);
   conectar(z);
+  // un grupo sembrado en un rincón que no se alcanza desde la entrada no sale (quedaba vivo e inalcanzable)
+  const e0 = z.entradas.arriba ?? Object.values(z.entradas)[0];
+  if (e0) {
+    const vis = new Uint8Array(z.W * z.H), i0 = Math.floor(e0[1]) * z.W + Math.floor(e0[0]);
+    if (!z.bloq[i0]) {
+      const pila = [i0]; vis[i0] = 1;
+      while (pila.length) { const i = pila.pop()!, x = i % z.W, y = (i - x) / z.W; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= z.W || Y >= z.H) continue; const j = Y * z.W + X; if (!vis[j] && !z.bloq[j]) { vis[j] = 1; pila.push(j); } } }
+      const llega = (cx: number, cy: number) => { for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const X = Math.floor(cx) + dx, Y = Math.floor(cy) + dy; if (X >= 0 && Y >= 0 && X < z.W && Y < z.H && vis[Y * z.W + X]) return true; } return false; };
+      z.spawns = z.spawns.filter((sp) => sp.tipo === 'jefe' || llega(sp.cx, sp.cy));
+    }
+  }
   return z;
 }
 

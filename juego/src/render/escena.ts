@@ -872,10 +872,16 @@ function dibujarLuz(j: Juego, t: number) {
   for (let by = Math.floor(fy0 / 5) - 2; by <= Math.ceil(fy1 / 5) + 2; by++) for (let bx = Math.floor(fx0 / 5) - 2; bx <= Math.ceil(fx1 / 5) + 2; bx++) {
     const dentro = bx >= 0 && by >= 0 && bx < z.tw && by < z.th;
     if (dentro && z.explorado[by * z.tw + bx] && z.pisos[by * z.tw + bx]) continue;
+    // una baldosa vacía que queda justo DETRÁS de piso ya visto no se tapa: en pantalla cae sobre los muros, los árboles y
+    // la cabeza del que está parado en ese borde
+    if (!(dentro && z.pisos[by * z.tw + bx])) {
+      const visto = (x: number, y: number) => x >= 0 && y >= 0 && x < z.tw && y < z.th && !!z.pisos[y * z.tw + x] && !!z.explorado[y * z.tw + x];
+      if (visto(bx + 1, by) || visto(bx, by + 1) || visto(bx + 1, by + 1)) continue;
+    }
     const [px, py] = aPant(bx * 5 + 2.5, by * 5 + 2.5);
     if (px < -140 || px > W + 140 || py < -90 || py > H + 90) continue;
     // cada mancha con su tamaño (sale de la baldosa, no cambia con el tiempo): el contorno no repite
-    const k = dentro && z.pisos[by * z.tw + bx] ? 0.92 + 0.3 * hashCelda(bx * 3 + 1, by * 7 + 2) : 0.95 + 0.6 * hashCelda(bx * 3 + 1, by * 7 + 2);
+    const k = dentro && z.pisos[by * z.tw + bx] ? 0.92 + 0.3 * hashCelda(bx * 3 + 1, by * 7 + 2) : z.tipo === 'mazmorra' ? 0.74 + 0.2 * hashCelda(bx * 3 + 1, by * 7 + 2) : 0.95 + 0.6 * hashCelda(bx * 3 + 1, by * 7 + 2); // (en las mazmorras, menos: no debe comerse los muros)
     nb.beginPath(); nb.ellipse(px / NB + 1, py / NB + 1, (81 * k) / NB, (41 * k) / NB, 0, 0, Math.PI * 2); nb.fill(); hay = true;
   }
   if (hay) { nc.save(); nc.imageSmoothingEnabled = true; nc.imageSmoothingQuality = 'high'; nc.drawImage(nieblaBaja, -NB, -NB, nw * NB, nh * NB); nc.restore(); }

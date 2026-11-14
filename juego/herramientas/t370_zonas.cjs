@@ -3,7 +3,7 @@ const { entrar } = require('./comun');
 (async () => {
   const { b, p, errs } = await entrar('pc', 'berserker', 8);
   const r = await p.evaluate(async (N) => {
-    const Z = await import('/src/mundo/zona.ts'), A = await import('/src/mundo/actos.ts'); const out = []; let malas = 0, total = 0, riscos = 0; const t0 = performance.now();
+    const Z = await import('/src/mundo/zona.ts'), A = await import('/src/mundo/actos.ts'); globalThis.__sinEscombro = !!globalThis.__SE; const out = []; let malas = 0, total = 0, riscos = 0; const t0 = performance.now();
     for (const id of Object.keys(A.ZONAS)) for (let s = 1; s <= N; s++) {
       total++; let z; try { z = Z.generarZona(A.ZONAS[id], s * 7919 + 13); } catch (e) { malas++; out.push(id + ' ' + s + ' ERROR ' + e.message); continue; }
       const W = z.W, H = z.H, vis = new Uint8Array(W * H); const e = z.entradas.arriba ?? Object.values(z.entradas)[0]; if (!e) { out.push(id + ' sin entradas'); continue; }
