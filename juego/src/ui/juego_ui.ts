@@ -1331,6 +1331,22 @@ function panelMenu(j: Juego, x: number, y: number) {
 }
 
 // ------------------------------------------------------------------ mapa (Tab) y minimapa
+const segsMapa = new Map<number, number[]>(); let segsDe = '';
+/** Los bordes (en celdas) entre lo que se pisa y la roca o el vacío dentro de una baldosa; se calculan una vez por baldosa. */
+function segmentosMapa(z: Juego['zona'], bx: number, by: number): number[] {
+  const clave = z.id + ':' + z.semilla; if (segsDe !== clave) { segsDe = clave; segsMapa.clear(); }
+  const idx = by * z.tw + bx; let sg = segsMapa.get(idx); if (sg) return sg;
+  sg = [];
+  const hu = z.hueco!, tierra = (x: number, y: number) => x >= 0 && y >= 0 && x < z.W && y < z.H && !hu[y * z.W + x] && z.bloq[y * z.W + x] !== 2 && !!z.pisos[Math.floor(y / 5) * z.tw + Math.floor(x / 5)];
+  for (let y = by * 5; y < by * 5 + 5; y++) for (let x = bx * 5; x < bx * 5 + 5; x++) {
+    if (!tierra(x, y)) continue;
+    if (!tierra(x, y - 1)) sg.push(x, y, x + 1, y);
+    if (!tierra(x + 1, y)) sg.push(x + 1, y, x + 1, y + 1);
+    if (!tierra(x, y + 1)) sg.push(x + 1, y + 1, x, y + 1);
+    if (!tierra(x - 1, y)) sg.push(x, y + 1, x, y);
+  }
+  segsMapa.set(idx, sg); return sg;
+}
 export function dibujarMapa(j: Juego, grande: boolean) {
   const z = j.zona, h = j.heroe;
   // el grande llena la pantalla con la zona entera y se centra en ella (no en el héroe)
@@ -1355,6 +1371,13 @@ export function dibujarMapa(j: Juego, grande: boolean) {
   ctx.globalAlpha = grande ? 0.75 : 0.85;
   for (let by = 0; by < z.th; by++) for (let bx = 0; bx < z.tw; bx++) {
     if (!z.explorado[by * z.tw + bx] || !z.pisos[by * z.tw + bx]) continue;
+    // cavernas y mundos con costa: el contorno se traza celda por celda (sigue la forma de verdad, no la baldosa)
+    if (z.hueco) {
+      const sg = segmentosMapa(z, bx, by);
+      ctx.strokeStyle = z.tipo === 'mazmorra' ? '#8a7a5a' : '#6a6a50'; ctx.lineWidth = 1; ctx.beginPath();
+      for (let i = 0; i < sg.length; i += 4) { const [x1, y1] = p(sg[i], sg[i + 1]), [x2, y2] = p(sg[i + 2], sg[i + 3]); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+      ctx.stroke(); continue;
+    }
     const [a, b] = p(bx * 5, by * 5), [c, d] = p(bx * 5 + 5, by * 5), [e, f] = p(bx * 5 + 5, by * 5 + 5), [g, hh] = p(bx * 5, by * 5 + 5);
     ctx.strokeStyle = z.tipo === 'mazmorra' ? '#8a7a5a' : '#6a6a50'; ctx.lineWidth = 1;
     // borde con lo no explorado o vacío

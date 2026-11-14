@@ -63,17 +63,17 @@ function lajas(n: number, matA: string, matJ: string, tostado = 0) {
 }
 
 export const PISOS: PisoDef[] = [
-  { id: 'pasto', nombre: ['Pasto', 'Grass'], tema: 'campo', variantes: 4, punto: (x, y, v) => {
+  { id: 'pasto', nombre: ['Pasto', 'Grass'], tema: 'campo', variantes: 8, punto: (x, y, v) => {
     const n = fr(x, y, 8, 1), m = fr(x, y, 3, 5);
     if (v > 0 && lejosBorde(x, y) && det(x, y, v, 3) > 0.96) return ['piedra', 1, 0];
     if (m < 0.3) return ['tierra', n * 1.5, (n - 0.5) * 0.3];
     return ['pasto', n * 1.5 + (hash3(x | 0, y | 0, 3) > 0.75 ? 0.8 : 0), (m - 0.5) * 0.2];
   } },
-  { id: 'pasto_seco', nombre: ['Pasto seco', 'Dry grass'], tema: 'campo', variantes: 4, punto: (x, y) => {
+  { id: 'pasto_seco', nombre: ['Pasto seco', 'Dry grass'], tema: 'campo', variantes: 8, punto: (x, y) => {
     const n = fr(x, y, 8, 2), m = fr(x, y, 4, 6);
     return m < 0.45 ? ['tierra', n * 1.5, 0.05] : ['paja', n * 1.5, (m - 0.5) * 0.3 - 0.15];
   } },
-  { id: 'tierra', nombre: ['Tierra', 'Dirt'], tema: 'campo', variantes: 4, punto: (x, y, v) => {
+  { id: 'tierra', nombre: ['Tierra', 'Dirt'], tema: 'campo', variantes: 8, punto: (x, y, v) => {
     const n = fr(x, y, 10, 3);
     if (v > 0 && lejosBorde(x, y) && det(x, y, v, 2) > 0.97) return ['piedra', 1.5, 0];
     return ['tierra', n * 2, (fr(x, y, 4, 8) - 0.5) * 0.3];
@@ -89,18 +89,18 @@ export const PISOS: PisoDef[] = [
   // suelo del páramo y del campamento en baldosas de Wang por esquinas (suelo_paramo.ts): la variante sale de las cuatro
   // esquinas (pasto seco, tierra o barro), así las manchas cruzan las baldosas sin costura ni repetición
   { id: PISO_PARAMO, nombre: ['Suelo del páramo', 'Moor ground'], tema: 'paramo', variantes: VARIANTES_PARAMO, punto: (x, y) => ['tierra', fr(x, y, 10, 3) * 2, (fr(x, y, 4, 8) - 0.5) * 0.3], pintar: (v) => pintarSueloParamo(v) },
-  { id: 'empedrado', nombre: ['Empedrado', 'Cobblestone'], tema: 'pueblo', variantes: 4, punto: (x, y, v) => {
+  { id: 'empedrado', nombre: ['Empedrado', 'Cobblestone'], tema: 'pueblo', variantes: 8, punto: (x, y, v) => {
     const [d1, d2, id] = voronoi(x, y, 7, 7);
     if (d2 - d1 < 1.5) return ['tierra', -1.5, -0.2];
     if (v > 1 && lejosBorde(x, y) && det(x, y, v, 16) > 0.85) return ['tierra', 0, 0];
     return ['piedra', Math.min(2.5, (d2 - d1) * 0.7), (hash3(id, 3, 3) - 0.5) * 0.25];
   } },
-  { id: 'lajas', nombre: ['Lajas de piedra', 'Flagstones'], tema: 'monasterio', variantes: 4, punto: lajas(4, 'piedra_bloques', 'tierra') },
-  { id: 'lajas_musgo', nombre: ['Lajas con musgo', 'Mossy flagstones'], tema: 'cementerio', variantes: 4, punto: (x, y, v) => {
+  { id: 'lajas', nombre: ['Lajas de piedra', 'Flagstones'], tema: 'monasterio', variantes: 8, punto: lajas(4, 'piedra_bloques', 'tierra') },
+  { id: 'lajas_musgo', nombre: ['Lajas con musgo', 'Mossy flagstones'], tema: 'cementerio', variantes: 8, punto: (x, y, v) => {
     const r = lajas(4, 'piedra_gris', 'musgo')(x, y, v);
     return fr(x, y, 5, 11) > 0.62 && r[1] > 0 ? ['piedra_musgo', r[1], r[2]] : r;
   } },
-  { id: 'baldosa_catedral', nombre: ['Piso de catedral', 'Cathedral floor'], tema: 'monasterio', variantes: 3, punto: (x, y, v) => {
+  { id: 'baldosa_catedral', nombre: ['Piso de catedral', 'Cathedral floor'], tema: 'monasterio', variantes: 6, punto: (x, y, v) => {
     const c = 20, i = Math.floor(x / c), j = Math.floor(y / c), ux = x % c, uy = y % c;
     if (ux < 1 || uy < 1) return ['negro', -1, 0];
     const blanco = (i + j) % 2 === 0;
@@ -108,50 +108,50 @@ export const PISOS: PisoDef[] = [
     if (v > 0 && lejosBorde(x, y) && det(x, y, v, 20) > 0.75) tono -= 0.25;
     return [blanco ? 'marmol' : 'marmol_negro', 1, tono];
   } },
-  { id: 'madera', nombre: ['Piso de tablas', 'Wooden floor'], tema: 'muebles', variantes: 3, punto: (x, y, v) => {
+  { id: 'madera', nombre: ['Piso de tablas', 'Wooden floor'], tema: 'muebles', variantes: 6, punto: (x, y, v) => {
     const ancho = 8, tabla = Math.floor(x / ancho);
     if (x % ancho < 1) return ['negro', -1, 0];
     const corte = (y + hash3(tabla % 10, 0, 5) * P) % 40 < 0.8;
     if (corte) return ['negro', -1, 0];
     return [v === 2 ? 'madera_vieja' : 'madera', 0.5, (hash3(tabla % 10, 1, 6) - 0.5) * 0.25 + (fr(x * 0.3, y * 3, 6, tabla) - 0.5) * 0.25];
   } },
-  { id: 'cueva', nombre: ['Suelo de cueva', 'Cave floor'], tema: 'cueva', variantes: 4, punto: (x, y, v) => {
+  { id: 'cueva', nombre: ['Suelo de cueva', 'Cave floor'], tema: 'cueva', variantes: 8, punto: (x, y, v) => {
     const n = fr(x, y, 6, 13), g = fr(x, y, 16, 14);
     if (v > 0 && lejosBorde(x, y) && det(x, y, v, 5) > 0.88) return ['roca', 2.5, 0.1];
     return ['roca', n * 3 + g, (g - 0.5) * 0.3 - 0.05];
   } },
-  { id: 'arena', nombre: ['Arena', 'Sand'], tema: 'desierto', variantes: 4, punto: (x, y) => {
+  { id: 'arena', nombre: ['Arena', 'Sand'], tema: 'desierto', variantes: 8, punto: (x, y) => {
     const ola = Math.sin(((2 * x + y) / P) * Math.PI * 2 * 2 + fr(x, y, 4, 15) * 6);
     return ['arena', ola * 0.8 + fr(x, y, 12, 16), ola * 0.06];
   } },
-  { id: 'arenisca', nombre: ['Losas de arenisca', 'Sandstone tiles'], tema: 'tumba', variantes: 4, punto: (x, y, v) => {
+  { id: 'arenisca', nombre: ['Losas de arenisca', 'Sandstone tiles'], tema: 'tumba', variantes: 8, punto: (x, y, v) => {
     const c = 16, ux = x % c, uy = (y + (Math.floor(x / c) % 2) * 8) % c;
     if (ux < 1 || uy < 1) return ['arena', -1, -0.1];
     let tono = (fr(x, y, 8, 17) - 0.5) * 0.25;
     if (v > 0 && lejosBorde(x, y) && det(x, y, v, 16) > 0.8) tono -= 0.2;
     return ['arenisca_lisa', 1, tono];
   } },
-  { id: 'ladrillo_cloaca', nombre: ['Ladrillo de cloaca', 'Sewer bricks'], tema: 'cloaca', variantes: 3, punto: (x, y) => {
+  { id: 'ladrillo_cloaca', nombre: ['Ladrillo de cloaca', 'Sewer bricks'], tema: 'cloaca', variantes: 6, punto: (x, y) => {
     const ux = (x + (Math.floor(y / 6) % 2) * 6) % 12, uy = y % 6;
     if (ux < 1 || uy < 1) return ['negro', -1, 0];
     const humedo = fr(x, y, 4, 18) > 0.6;
     return [humedo ? 'piedra_musgo' : 'ladrillo', 0.5, (fr(x, y, 10, 19) - 0.5) * 0.25 + (humedo ? 0.05 : 0)];
   } },
-  { id: 'nieve', nombre: ['Nieve', 'Snow'], tema: 'nieve', variantes: 4, punto: (x, y, v) => {
+  { id: 'nieve', nombre: ['Nieve', 'Snow'], tema: 'nieve', variantes: 8, punto: (x, y, v) => {
     const n = fr(x, y, 6, 20);
     if (v > 0 && lejosBorde(x, y) && fr(x, y, 10, 40 + v) > 0.78) return ['roca', 1, 0.15];
     return ['nieve', n * 3, (n - 0.5) * 0.2];
   } },
-  { id: 'hielo', nombre: ['Hielo', 'Ice'], tema: 'hielo', variantes: 3, punto: (x, y) => {
+  { id: 'hielo', nombre: ['Hielo', 'Ice'], tema: 'hielo', variantes: 6, punto: (x, y) => {
     const [d1, d2] = voronoi(x, y, 5, 21);
     return d2 - d1 < 0.9 ? ['nieve', 0, 0.1] : ['hielo', 0.5, (fr(x, y, 4, 22) - 0.5) * 0.3];
   } },
-  { id: 'selva', nombre: ['Suelo de selva', 'Jungle floor'], tema: 'selva', variantes: 4, punto: (x, y, v) => {
+  { id: 'selva', nombre: ['Suelo de selva', 'Jungle floor'], tema: 'selva', variantes: 8, punto: (x, y, v) => {
     const n = fr(x, y, 8, 23), hoja = hash3(Math.floor(x / 3), Math.floor(y / 3), 24 + v);
     if (hoja > 0.88) return ['hojas_otono', 1, 0];
     return n > 0.5 ? ['hojas_selva', n * 2, -0.1] : ['tierra', n, -0.1];
   } },
-  { id: 'pantano', nombre: ['Pantano', 'Marsh'], tema: 'selva', variantes: 3, cuadros: 4, punto: (x, y, _v, f) => {
+  { id: 'pantano', nombre: ['Pantano', 'Marsh'], tema: 'selva', variantes: 6, cuadros: 4, punto: (x, y, _v, f) => {
     const m = fr(x, y, 4, 25);
     if (m < 0.42) return ['agua_sucia', 0, (rper((x / P) * 6 + f * 0.25, (y / P) * 6, 6, 42) - 0.5) * 0.3];
     return ['tierra', fr(x, y, 12, 26) * 1.5, -0.12];
@@ -160,17 +160,17 @@ export const PISOS: PisoDef[] = [
     const ola = Math.sin(((x - y) / P) * Math.PI * 2 * 3 + (f / 6) * Math.PI * 2) + Math.sin(((x + 2 * y) / P) * Math.PI * 2 * 2 - (f / 6) * Math.PI * 2) * 0.6;
     return ['agua', ola * 0.6, ola * 0.08 + (fr(x, y, 6, 27) - 0.5) * 0.15];
   } },
-  { id: 'hueso', nombre: ['Suelo de huesos', 'Bone floor'], tema: 'catacumbas', variantes: 3, punto: (x, y) => {
+  { id: 'hueso', nombre: ['Suelo de huesos', 'Bone floor'], tema: 'catacumbas', variantes: 6, punto: (x, y) => {
     const [d1, d2, id] = voronoi(x, y, 14, 28);
     if (d2 - d1 < 1) return ['tierra', -1, -0.15];
     return [hash3(id, 2, 2) > 0.85 ? 'piedra' : 'hueso', Math.min(2, d2 - d1), (hash3(id, 5, 5) - 0.5) * 0.3 - 0.1];
   } },
-  { id: 'tierra_infierno', nombre: ['Tierra del infierno', 'Hell ground'], tema: 'infierno', variantes: 4, punto: (x, y, v) => {
+  { id: 'tierra_infierno', nombre: ['Tierra del infierno', 'Hell ground'], tema: 'infierno', variantes: 8, punto: (x, y, v) => {
     const n = fr(x, y, 6, 29);
     if (v > 0 && lejosBorde(x, y) && det(x, y, v, 6) > 0.9) return ['hueso', 1, -0.1];
     return ['roca_roja', n * 3, (n - 0.5) * 0.3];
   } },
-  { id: 'lava_grietas', nombre: ['Roca con grietas de lava', 'Lava-cracked rock'], tema: 'infierno', variantes: 3, cuadros: 6, punto: (x, y, _v, f) => {
+  { id: 'lava_grietas', nombre: ['Roca con grietas de lava', 'Lava-cracked rock'], tema: 'infierno', variantes: 6, cuadros: 6, punto: (x, y, _v, f) => {
     const [d1, d2] = voronoi(x, y, 5, 30);
     if (d2 - d1 < 1.4) return ['lava', 0, Math.sin(f / 6 * Math.PI * 2 + x * 0.1) * 0.15];
     return ['roca_roja', Math.min(3, (d2 - d1) * 0.5), -0.15];
@@ -180,7 +180,7 @@ export const PISOS: PisoDef[] = [
     const n = rper((x / P) * 4 + t * 4, (y / P) * 4, 4, 31) * 0.6 + rper((x / P) * 8, (y / P) * 8 - t * 8, 8, 32) * 0.4;
     return n > 0.72 ? ['roca_roja', 1, -0.2] : ['lava', 0, (n - 0.5) * 0.6];
   } },
-  { id: 'fortaleza', nombre: ['Losas con runas', 'Runed slabs'], tema: 'fortaleza', variantes: 3, cuadros: 4, punto: (x, y, _v, f) => {
+  { id: 'fortaleza', nombre: ['Losas con runas', 'Runed slabs'], tema: 'fortaleza', variantes: 6, cuadros: 4, punto: (x, y, _v, f) => {
     const c = 40, ux = x % c, uy = y % c;
     if (ux < 1.2 || uy < 1.2) return ['negro', -1, 0];
     const runa = Math.abs(Math.hypot(ux - 20, uy - 20) - 11) < 0.9 || (Math.abs(ux - 20) < 0.7 && Math.abs(uy - 20) < 8);

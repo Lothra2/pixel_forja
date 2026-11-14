@@ -137,18 +137,28 @@ export const PAISAJES: Paisaje[] = [
     k.regar(k.buscar(['monasterio'], ['brasero', 'antorcha', 'candel', 'vela', 'estatua']), 6, 3, 3, k.W - 2, k.H - 2);
     k.regar(k.buscar(['monasterio'], ['sangre', 'charco']), 1, 8, 8, k.W - 6, k.H - 6);
   } },
-  { id: 'campamento', nombre: ['Campamento', 'Encampment'], ambiente: 'atardecer', tam: [6, 6], armar: (k) => {
-    k.piso('tierra'); k.piso('pasto', 0, 0, 6, 1); k.piso('pasto', 0, 0, 1, 6);
+  { id: 'campamento', nombre: ['Campamento', 'Encampment'], ambiente: 'atardecer', tam: [9, 9], armar: (k) => {
+    // Campamento grande (45 x 45 celdas): empalizada y torres por detrás, el pabellón del capitán al fondo mirando a la
+    // fogata, carpas grandes a los lados, carpas chicas hacia el frente, la herrería a un costado y el patio de
+    // prácticas al otro. El centro queda despejado para la gente (radio de 9 celdas alrededor del fuego).
+    k.piso('tierra'); k.piso('pasto', 0, 0, 9, 1); k.piso('pasto', 0, 0, 1, 9);
+    const de = (...pal: string[]) => k.buscar(['campamento'], pal)[0];
     const empal = k.buscar(['campamento'], ['empaliz', 'palizad', 'estacad']);
-    k.poner(k.buscar(['campamento'], ['torre'])[0], 1, 1);
-    borde(k, empal, 'x', 1, 5, k.W - 2); borde(k, empal, 'y', 1, 5, k.H - 2);
-    k.poner(k.buscar(['comun'], ['portal_azul'])[0], 20, 22);
-    k.poner(k.buscar(['campamento'], ['fogata', 'hoguera'])[0], 15, 15, 'grande');
-    const carpas = k.buscar(['campamento'], ['carpa', 'tienda', 'pabell']);
-    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; k.poner(carpas[i % Math.max(1, carpas.length)], 16.5 + Math.cos(a + 0.3) * 10.5, 16.5 + Math.sin(a + 0.3) * 10.5); }
-    k.poner(k.buscar(['comun'], ['viaje', 'waypoint'])[0], 23, 7);
-    k.poner(k.buscar(['comun', 'campamento'], ['baul', 'alijo', 'stash'])[0], 9, 22);
-    k.regar(k.buscar(['campamento'], ['carro', 'carreta', 'caja', 'saco', 'barril', 'heno', 'estandarte', 'muñeco', 'maniqu', 'yunque', 'forja', 'leña']), 14, 4, 4, k.W - 1, k.H - 1);
+    borde(k, empal, 'x', 2, 4, k.W - 3); borde(k, empal, 'y', 2, 4, k.H - 3);
+    for (const [x, y] of [[5, 5], [k.W - 6, 5], [5, k.H - 6]]) k.poner(de('torre'), x, y);
+    k.poner(k.buscar(['campamento'], ['fogata', 'hoguera'])[0], 22, 22, 'grande');
+    k.poner(k.buscar(['comun'], ['portal_azul'])[0], 20, 27);
+    k.poner(de('pabellon'), 22, 9);
+    k.poner(de('carpa_grande'), 9, 15); k.poner(de('carpa_grande'), 36, 17);
+    const chica = k.buscar(['campamento'], ['carpa']).find((d) => d.id === 'camp_carpa');
+    for (const [x, y, v] of [[8, 29, 'cerrada'], [14, 38, 'abierta'], [27, 39, 'remendada'], [38, 27, 'abierta']] as [number, number, string][]) k.poner(chica, x, y, v);
+    k.poner(k.buscar(['comun'], ['viaje', 'waypoint'])[0], 31, 6);
+    k.poner(k.buscar(['comun', 'campamento'], ['baul', 'alijo', 'stash'])[0], 14, 27);
+    // la herrería
+    k.poner(de('fragua'), 36, 34); k.poner(de('yunque'), 32, 33); k.poner(de('armero'), 39, 38); k.poner(de('soporte_armadura'), 33, 37);
+    // el patio de prácticas, el agua y la comida
+    k.poner(de('muneco'), 19, 35); k.poner(de('muneco'), 22, 37); k.poner(de('fuente'), 11, 22); k.poner(de('asador'), 30, 27);
+    k.regar(k.buscar(['campamento'], ['carro', 'carreta', 'caja', 'saco', 'barril', 'heno', 'estandarte', 'leña', 'lena']), 22, 5, 5, k.W - 3, k.H - 3);
   } },
   { id: 'pueblo', nombre: ['Pueblo en ruinas', 'Ruined village'], ambiente: 'noche', tam: [7, 7], armar: (k) => {
     k.piso('pasto_seco'); k.piso('empedrado', 3, 0, 4, 7); k.piso('empedrado', 0, 3, 7, 4);
