@@ -113,7 +113,7 @@ export const nkSprint: AnimDef = {
 
 /** El tiro fuerte: abre los brazos al cargar, y al pegar el cuerpo se va atrás, la pierna sube sobre la cabeza y despega del piso. */
 export const nkShot: AnimDef = {
-  name: 'nk_shot', pack: 'football', fps: 14, loop: false,
+  name: 'nk_power_shot', pack: 'football', fps: 14, loop: false,
   events: shotP.events, travel: shotP.travel,
   build: (c) => {
     const L = c.L, u = c.u, base = shotP.build(c);
@@ -126,5 +126,58 @@ export const nkShot: AnimDef = {
     });
   },
 };
+
+/**
+ * La versión Nekketsu de una animación que ya existe: cada cuadro se aleja de la pose media del ciclo más de lo que se
+ * alejaba. El tronco se inclina más, los brazos barren más ángulo, la zancada es más larga y el salto más alto. Es lo que
+ * hace un animador cuando "exagera": la misma acción, con más recorrido. `lean` echa el cuerpo adelante todo el ciclo.
+ */
+interface Amp { t?: number; a?: number; l?: number; air?: number; lean?: number; head?: number }
+const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
+function exaggerate(poses: Pose[], k: Amp): Pose[] {
+  const n = poses.length || 1, mean = (f: (p: Pose) => number): number => poses.reduce((s, p) => s + f(p), 0) / n;
+  const mt = mean((p) => p.torso), mh = mean((p) => p.head.tilt);
+  const ms = { near: mean((p) => p.arms.near.shoulder), far: mean((p) => p.arms.far.shoulder) }, me = { near: mean((p) => p.arms.near.elbow), far: mean((p) => p.arms.far.elbow) };
+  const kt = k.t ?? 1, ka = k.a ?? 1, kl = k.l ?? 1;
+  return poses.map((p) => ({
+    ...p,
+    torso: clamp(mt + (p.torso - mt) * kt + (k.lean ?? 0), -80, 85),
+    head: { ...p.head, tilt: clamp(mh + (p.head.tilt - mh) * (k.head ?? kt), -35, 35) },
+    arms: {
+      near: { ...p.arms.near, shoulder: ms.near + (p.arms.near.shoulder - ms.near) * ka, elbow: clamp(me.near + (p.arms.near.elbow - me.near) * Math.min(ka, 1.4), 0, 150) },
+      far: { ...p.arms.far, shoulder: ms.far + (p.arms.far.shoulder - ms.far) * ka, elbow: clamp(me.far + (p.arms.far.elbow - me.far) * Math.min(ka, 1.4), 0, 150) },
+    },
+    legs: { near: { ...p.legs.near, x: p.legs.near.x * kl }, far: { ...p.legs.far, x: p.legs.far.x * kl } },
+    air: p.air * (k.air ?? 1),
+  }));
+}
+
+/** Qué se exagera de cada animación del juego. La nueva se llama `nk_` más el nombre de la original. */
+const AMP: Record<string, Amp> = {
+  idle: { t: 2.2, a: 2.4, head: 2 }, walk: { t: 1.4, a: 1.7, l: 1.1 }, run: { t: 1.4, a: 1.55, l: 1.15, lean: 6 }, run_ball: { t: 1.3, a: 1.55, l: 1.1, lean: 8 },
+  pass: { t: 1.7, a: 1.7, l: 1.15 }, chip: { t: 1.7, a: 1.7, l: 1.12 }, shot: { t: 1.8, a: 1.8, l: 1.15 }, volley: { t: 1.4, a: 1.7, l: 1.1 }, chilena: { t: 1.2, a: 1.7, l: 1.1, air: 1.25 },
+  trap: { t: 1.9, a: 1.9 }, slide: { t: 1.2, a: 1.9, l: 1.1 }, tackle: { t: 1.6, a: 1.7, l: 1.15 }, throw_in: { t: 1.9, a: 1.3 }, run_kick: { t: 1.5, a: 1.7, l: 1.12 },
+  hit: { t: 2.2, a: 2.2, head: 2.5 }, stagger: { t: 2, a: 2 }, knockout: { t: 1.15, a: 1.8, air: 1.5 }, fall_getup: { t: 1.2, a: 1.6 }, dizzy: { t: 2.4, a: 2.2, head: 2.5 }, ko_bounce: { a: 1.8, air: 1.6 }, slip_wet: { t: 1.2, a: 2, air: 1.4 },
+  sad: { t: 1.7, a: 1.5, head: 2 }, laugh: { t: 2.2, a: 2, head: 2.2 }, taunt: { t: 1.7, a: 1.7 }, celebrate: { t: 1.5, a: 1.4, air: 1.5 }, victory: { t: 1.6, a: 1.5, air: 1.4 },
+  jump_rise: { t: 1.5, a: 1.7, air: 1.15 }, jump_apex: { t: 1.5, a: 1.7, air: 1.15 }, jump_fall: { t: 1.5, a: 1.7, air: 1.15 }, land: { t: 1.8, a: 1.6 },
+  keeper_ready: { t: 1.6, a: 1.9, l: 1.25 }, keeper_dive: { t: 1.1, a: 1.5, l: 1.1, air: 1.25 }, keeper_catch: { t: 1.5, a: 1.5, air: 1.3 }, keeper_throw: { t: 1.7, a: 1.5, l: 1.1 }, keeper_punt: { t: 1.7, a: 1.7, l: 1.12 },
+  kick_martial: { t: 1.6, a: 1.7, l: 1.12 }, air_kick: { t: 1.3, a: 1.7, l: 1.12 }, flying_kick: { t: 1.2, a: 1.6, l: 1.15, air: 1.2 }, uppercut: { t: 1.5, a: 1.3, air: 1.5 }, run_punch: { t: 1.6, a: 1.6, l: 1.15 },
+  guard: { t: 1.6, a: 1.6, l: 1.15 }, point: { t: 1.7, a: 1.3 }, call: { t: 1.7, a: 1.3 }, skid: { t: 1.5, a: 1.6, l: 1.1 }, power: { t: 1.8, a: 1.9 }, ready: { t: 1.7, a: 1.9, l: 1.25 },
+  shuttle_kick_back_nekketsu: { a: 1.6, l: 1.1, air: 1.2 }, vb_dive: { t: 1.1, a: 1.4, l: 1.1 }, clap: { t: 1.8, a: 1.5 }, goal_knee: { t: 1.5, a: 1.4 },
+};
+
+/**
+ * Las animaciones de Nekketsu que salen de exagerar las del motor. `find` da la animación original por su nombre (la que
+ * usa el kit), así ninguna queda copiada: si la original mejora, esta mejora con ella.
+ */
+export function nekketsuFrom(find: (name: string) => AnimDef | undefined): AnimDef[] {
+  const out: AnimDef[] = [];
+  for (const [name, k] of Object.entries(AMP)) {
+    const src = find(name);
+    if (!src) continue;
+    out.push({ ...src, name: 'nk_' + name, pack: 'football', build: (c) => exaggerate(src.build(c), k) });
+  }
+  return out;
+}
 
 export const NEKKETSU_FUTBOL: AnimDef[] = [nkGoalRun, nkGoalJump, nkBanzai, nkShoulder, nkPunch, nkHeader, nkSprint, nkShot];

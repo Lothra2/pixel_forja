@@ -335,6 +335,70 @@ export const A_WAKE: AnimalAnimDef = {
   },
 };
 
-export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH, A_BITE, A_BARK, A_HOWL, A_PICKUP, A_HURT, A_DIE, A_DIG, A_SLEEP, A_SCRATCH, A_JUMP_WALL, A_POUNCE, A_WAKE];
+// ---------- Thor en Fútbol Familia GG (Nekketsu) ----------
+
+/** La atajada: se agacha, se lanza y vuela estirado entero, las de adelante al frente y las de atrás atrás; cae de pecho y resbala. */
+export const A_NK_DIVE: AnimalAnimDef = {
+  name: 'nk_dive', fps: 14, loop: false,
+  events: [{ type: 'despegue', phase: 2 / 10 }, { type: 'aterriza', phase: 7 / 10 }],
+  build: (d) => {
+    const L = d.legUpper + d.legLower, u = d.u;
+    const crouch = Q(d, { pitch: 16, legs: { fn: { x: 0.35 * L, y: 0.5 * L }, ff: { x: 0.25 * L, y: 0.5 * L }, rn: { x: 0.1 * L, y: 0.55 * L }, rf: { x: 0, y: 0.55 * L } }, head: { angle: -18 }, tail: 20, eyes: 'open', mouth: 'closed' });
+    const launch = Q(d, { pitch: -30, air: 3 * u, legs: { fn: { x: 0.9 * L, y: 0.45 * L }, ff: { x: 0.8 * L, y: 0.5 * L }, rn: { x: -0.35 * L, y: 0.95 * L }, rf: { x: -0.45 * L, y: 0.95 * L } }, head: { angle: -16 }, tail: 30, mouth: 'open' });
+    const fly = (air: number, pitch: number) => Q(d, { pitch, air: air * u, legs: { fn: { x: 1.05 * L, y: 0.2 * L }, ff: { x: 0.95 * L, y: 0.28 * L }, rn: { x: -1.0 * L, y: 0.3 * L }, rf: { x: -0.9 * L, y: 0.36 * L } }, head: { angle: -10 }, tail: 8, mouth: 'open', eyes: 'open' });
+    const chest = Q(d, { pitch: 22, legs: { fn: { x: 0.95 * L, y: 0.12 * L }, ff: { x: 0.85 * L, y: 0.14 * L }, rn: { x: -0.8 * L, y: 0.45 * L }, rf: { x: -0.7 * L, y: 0.5 * L } }, head: { angle: 6, dy: 1 }, tail: 50, mouth: 'closed', eyes: 'closed' });
+    const up = Q(d, { pitch: 8, legs: { fn: { x: 0.5 * L, y: 0.6 * L }, ff: { x: 0.4 * L, y: 0.6 * L }, rn: { x: -0.2 * L, y: 0.8 * L }, rf: { x: -0.3 * L, y: 0.8 * L } }, tail: 40, mouth: 'tongue' });
+    return [crouch, crouch, launch, fly(7, -10), fly(9, -2), fly(8, 6), fly(4, 16), chest, chest, up];
+  },
+};
+
+/** ¡Gol! Se para en dos patas y salta con las de adelante arriba, moviendo la cola. */
+export const A_NK_BANZAI: AnimalAnimDef = {
+  name: 'nk_banzai', fps: 12, loop: true,
+  events: [{ type: 'despegue', phase: 2 / 8 }, { type: 'aterriza', phase: 6 / 8 }],
+  build: (d) => {
+    const L = d.legUpper + d.legLower, u = d.u;
+    const stand = (air: number, wave: number, squat: number) => Q(d, { pitch: -64, air: air * u,
+      legs: { fn: { x: (0.55 + wave * 0.12) * L, y: (0.1 - wave * 0.1) * L }, ff: { x: (0.5 - wave * 0.12) * L, y: (0.1 + wave * 0.1) * L }, rn: { x: 0.12 * L, y: (L - 0.3) * (1 - squat * 0.3) }, rf: { x: -0.06 * L, y: (L - 0.3) * (1 - squat * 0.3) } },
+      head: { angle: 38 }, tail: 60 + wave * 22, mouth: 'tongue', eyes: 'happy' });
+    return [stand(0, 1, 1), stand(0, -1, 1), stand(3, 1, 0), stand(6, -1, 0), stand(7, 1, 0), stand(5, -1, 0), stand(0, 1, 0.6), stand(0, -1, 1)];
+  },
+};
+
+/** El galope de dibujo animado: el lomo se dobla y se estira el doble y vuela más alto en cada tranco. */
+export const A_NK_GALLOP: AnimalAnimDef = {
+  ...A_RUN, name: 'nk_gallop',
+  build: (d) => A_RUN.build(d).map((p) => ({ ...p, pitch: p.pitch * 2, air: Math.round(p.air * 2.2), mouth: 'tongue' as const,
+    legs: { fn: { ...p.legs.fn, x: p.legs.fn.x * 1.22 }, ff: { ...p.legs.ff, x: p.legs.ff.x * 1.22 }, rn: { ...p.legs.rn, x: p.legs.rn.x * 1.22 }, rf: { ...p.legs.rf, x: p.legs.rf.x * 1.22 } } })),
+};
+
+/** En guardia: el pecho al piso, la cola arriba a toda velocidad, y ladra. */
+export const A_NK_GUARD: AnimalAnimDef = {
+  name: 'nk_guard', fps: 12, loop: true,
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    return [0, 1, 2, 3, 4, 5, 6, 7].map((i) => Q(d, { pitch: 22 + (i % 4 === 1 ? 3 : 0), legs: { fn: { x: 0.6 * L, y: 0.3 * L }, ff: { x: 0.5 * L, y: 0.3 * L }, rn: { x: 0, y: L - 0.3 }, rf: { x: -0.12 * L, y: L - 0.3 } },
+      head: { angle: i % 4 === 1 ? -34 : -24 }, tail: 70 + (i % 2 ? 22 : -22), mouth: i % 4 === 1 || i % 4 === 2 ? 'open' : 'tongue', eyes: 'open' }));
+  },
+};
+
+/** Lo tumbaron: sale por el aire pataleando y cae de costado. */
+export const A_NK_FLOP: AnimalAnimDef = {
+  name: 'nk_flop', fps: 12, loop: false,
+  events: [{ type: 'aterriza', phase: 3 / 8 }],
+  build: (d) => {
+    const L = d.legUpper + d.legLower, u = d.u, down = A_DIE.build(d);
+    const fly = (air: number, pitch: number, k: number) => Q(d, { pitch, air: air * u, legs: { fn: { x: (0.6 + k * 0.3) * L, y: 0.4 * L }, ff: { x: (0.3 - k * 0.3) * L, y: 0.5 * L }, rn: { x: (-0.5 - k * 0.3) * L, y: 0.5 * L }, rf: { x: (-0.2 + k * 0.3) * L, y: 0.6 * L } }, head: { angle: -30 }, tail: -30, mouth: 'open', eyes: 'closed' });
+    return [fly(4, -24, 1), fly(8, -34, -1), fly(5, -14, 1), ...down.slice(Math.max(0, down.length - 5))];
+  },
+};
+
+/** Le metieron un gol: echado, la cabeza entre las patas y la cola caída. */
+export const A_NK_SAD: AnimalAnimDef = {
+  name: 'nk_sad', fps: 5, loop: true,
+  build: (d) => A_LIE.build(d).map((p, i) => ({ ...p, head: { angle: 34 + (i % 4 === 2 ? 4 : 0), dx: 0, dy: 3 }, tail: -40, eyes: 'closed' as const, mouth: 'closed' as const })),
+};
+
+export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH, A_BITE, A_BARK, A_HOWL, A_PICKUP, A_HURT, A_DIE, A_DIG, A_SLEEP, A_SCRATCH, A_JUMP_WALL, A_POUNCE, A_WAKE, A_NK_DIVE, A_NK_BANZAI, A_NK_GALLOP, A_NK_GUARD, A_NK_FLOP, A_NK_SAD];
 /** Animaciones de la mascota de un RPG, en el orden en que suelen pedirse. */
 export const PET_RPG_ANIMS = ['idle', 'walk', 'run', 'bite', 'bark', 'howl', 'pickup', 'hurt', 'die', 'sit', 'wag', 'dig'];
