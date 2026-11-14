@@ -66,7 +66,14 @@ export function registrar(...defs: ObjetoDef[]) { for (const d of defs) { if (!R
  * Las edificaciones a escala de la gente: casas, chozas, carpas y pabellones salían con puertas más bajas que una persona.
  * Se agrandan enteras (piezas y huella) al registrarlas, sin tocar cada armado.
  */
-const ESCALA_OBRA: [RegExp, number][] = [[/^casa_/, 1.55], [/^camp_(carpa|carpa_grande|pabellon)$/, 1.5], [/^pue_(casa_en_llamas|casa_calcinada|ruina_derrumbada|puesto)$/, 1.5]];
+const ESCALA_OBRA: [RegExp, number][] = [
+  [/^casa_/, 1.55], [/^camp_(carpa|carpa_grande|pabellon)$/, 1.5], [/^pue_(casa_en_llamas|casa_calcinada|ruina_derrumbada|puesto)$/, 1.5],
+  // auditoría de todos los temas contra la altura de una persona (75 px): lo que se habita o se cruza de pie
+  [/^par_(tienda_bandidos|molino)$/, 1.55], [/^par_torre_vigia$/, 1.25], [/^(des_tienda|des2_tienda)$/, 1.45], [/^des_(puesto|toldo)$/, 1.3],
+  [/^nie2_cabana$/, 1.5], [/^nie2_tienda$/, 1.25], [/^sel2_choza$/, 1.45], [/^sel_choza_pilotes$/, 1.25],
+  [/^cem2_mausoleo_(chico|familiar)$/, 1.3], [/^cem_entrada_cripta$/, 1.35], [/^cem2_capilla_ruinas$/, 1.4], [/^(cem_mausoleo|cem2_mausoleo_gotico)$/, 1.25],
+  [/^ahg_torre_(farol|campanario)$/, 1.3], [/^for2_torre$/, 1.3],
+];
 function escalarPiezas(ps: Pieza[], s: number): Pieza[] {
   const P = (v: V3): V3 => [v[0] * s, v[1] * s, v[2] * s];
   return ps.map((p): Pieza => {

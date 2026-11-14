@@ -85,7 +85,7 @@ interface Tematica {
   murosAlt?: [[string, string[]], [string, string[]]][];
   deco?: Sel[]; vinetas?: string[];
   /** Caverna orgánica: cámaras irregulares y túneles que serpentean, con peñascos por todo el contorno (en vez de cuartos rectos con muros). */
-  organica?: boolean;
+  organica?: boolean | string;
   /** Mazmorra de islas: sin muros, los cuartos son islas con borde de precipicio y los pasillos son puentes sobre el vacío. */
   islas?: { borde: string; puente: string; vacio?: Sel[]; mapa?: Record<string, string> };
   /** Mazmorra con vías: los pasillos llevan rieles (rectos, curvas y fin de vía) y a veces una vagoneta. */
@@ -177,6 +177,7 @@ const TEMATICAS: Record<string, Tematica> = {
     grande: [{ t: ['hielo'], p: ['pilar', 'hie2_columna', 'hie2_serac', 'hie2_estatua', 'hie2_pilar_runa', 'hie2_arbol', 'hie2_sarcofago', 'hie2_espejo', 'hie2_pozo'] }],
     luces: [{ t: ['hielo'], p: ['antorcha', 'hie2_cristal', 'hie2_brasero', 'hie2_altar'] }],
     deco: [{ t: ['hielo'], p: ['hie2_trono', 'hie2_barco', 'hie2_cascada', 'hie2_portal'] }],
+    organica: 'nieve',
     muroX: ['hie_muro', ['x', 'x_alta']], muroY: ['hie_muro', ['y', 'y_alta']],
   },
   infierno: {
@@ -529,6 +530,7 @@ function exterior(def: DefZona, semilla: number): Zona {
   sembrar(k, Math.floor((area / 700) * dens), puntos);
   if (def.jefe) { const p = lejos(k, puntos); z.spawns.push({ cx: p[0], cy: p[1], tipo: 'jefe', fuerza: 1 }); }
   if (def.tema === 'paramo') sueloParamo(k);
+  costa(k, def.tema);
   return z;
 }
 
@@ -886,14 +888,14 @@ function cavarCueva(k: Constructor, cuartos: number[][], enlaces: [number[], num
   return ab;
 }
 /** Peñascos por todo el contorno de la caverna: altos donde la roca queda detrás del piso (se ve de frente) y bajos donde queda delante (para no tapar). */
-function bordeCueva(k: Constructor, ab: Uint8Array) {
+function bordeCueva(k: Constructor, ab: Uint8Array, id = 'cue_penasco', pre = '', puede?: (i: number) => boolean) {
   const z = k.z, r = k.r, { W, H } = z;
-  const pen = REGISTRO.find((d) => d.id === 'cue_penasco'); if (!pen) return;
+  const pen = REGISTRO.find((d) => d.id === id); if (!pen) return;
   const cub = new Uint8Array(W * H);
   const op = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && !!ab[y * W + x];
-  const de = (pre: string) => { const vs = pen.variantes.filter((v) => v.startsWith(pre)); return vs[Math.floor(r() * vs.length)]; };
+  const de = (talla: string) => { const vs = pen.variantes.filter((v) => v.startsWith(pre + talla)); return vs[Math.floor(r() * vs.length)]; };
   for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-    if (ab[y * W + x] || cub[y * W + x]) continue;
+    if (ab[y * W + x] || cub[y * W + x] || (puede && !puede(y * W + x))) continue;
     let borde = false; for (let dy = -1; dy <= 1 && !borde; dy++) for (let dx = -1; dx <= 1; dx++) if (op(x + dx, y + dy)) { borde = true; break; }
     if (!borde) continue;
     const atras = op(x + 1, y) || op(x, y + 1) || op(x + 1, y + 1);
@@ -905,6 +907,53 @@ function bordeCueva(k: Constructor, ab: Uint8Array) {
       cub[y * W + x] = 1; if (r() < 0.5 && x + 1 < W) cub[y * W + x + 1] = 1;
     }
   }
+}
+
+// ------------------------------------------------------------------ la costa de los mundos abiertos
+const ESTILO_BORDE: Record<string, string> = { paramo: 'paramo', cementerio: 'cementerio', desierto: 'desierto', nieve: 'nieve', selva: 'selva', infierno: 'infierno', ahogada: 'ahogada', celestial: 'celestial' };
+/**
+ * Recorta el contorno de un exterior o un pueblo a nivel de celda: una franja de ancho irregular junto al vacío pasa a
+ * ser roca (no se pisa, se pinta negra) y se bordea con los riscos del tema. Caminos, salidas, entradas, piedras de
+ * viaje, edificios y grupos quedan protegidos; si aun así algo dejara de alcanzarse, el recorte se deshace entero.
+ */
+function costa(k: Constructor, tema: string) {
+  const e = ESTILO_BORDE[tema]; if (!e) return;
+  const z = k.z, r = k.r, { W, H } = z;
+  const d = new Int16Array(W * H).fill(99), cola: number[] = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; if (z.bloq[i] === 2) { d[i] = 0; cola.push(i); } else if (x === 0 || y === 0 || x === W - 1 || y === H - 1) { d[i] = 1; cola.push(i); } }
+  for (let q = 0; q < cola.length; q++) { const i = cola[q], x = i % W, y = (i - x) / W; if (d[i] >= 8) continue; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= W || Y >= H) continue; const j = Y * W + X; if (d[j] > d[i] + 1) { d[j] = d[i] + 1; cola.push(j); } } }
+  const prot = new Uint8Array(W * H);
+  const guarda = (cx: number, cy: number, rad: number) => { for (let y = Math.floor(cy - rad); y <= cy + rad; y++) for (let x = Math.floor(cx - rad); x <= cx + rad; x++) if (x >= 0 && y >= 0 && x < W && y < H) prot[y * W + x] = 1; };
+  for (let i = 0; i < W * H; i++) if (k.reserva[i]) guarda(i % W, Math.floor(i / W), 2);
+  for (const sa of z.salidas) guarda(sa.cx, sa.cy, 8);
+  for (const p of Object.values(z.entradas)) guarda(p[0], p[1], 8);
+  for (const m of z.marcas) guarda(m.cx, m.cy, 5);
+  for (const sp of z.spawns) guarda(sp.cx, sp.cy, 3);
+  for (const o of z.objetos) if (o.tag || o.hw >= 4 || o.hh >= 4) guarda(o.cx, o.cy, Math.max(o.hw, o.hh) / 2 + 2);
+  const n1 = ruido2(r, W, H, 6), n2 = ruido2(r, W, H, 2.2), fuera = new Uint8Array(W * H);
+  let hay = 0;
+  for (let i = 0; i < W * H; i++) if (z.bloq[i] !== 2 && !prot[i] && d[i] <= 0.6 + (n1[i] * 0.7 + n2[i] * 0.3) * 4.6) { fuera[i] = 1; hay++; }
+  if (!hay) return;
+  const bloq0 = z.bloq.slice(), obj0 = z.objetos;
+  z.objetos = z.objetos.filter((o) => { const x = Math.floor(o.cx), y = Math.floor(o.cy); return !(x >= 0 && y >= 0 && x < W && y < H && fuera[y * W + x]); });
+  for (let i = 0; i < W * H; i++) if (fuera[i]) z.bloq[i] = 1;
+  // todo lo importante se sigue alcanzando desde la primera entrada
+  const vis = new Uint8Array(W * H), e0 = Object.values(z.entradas)[0];
+  if (e0) {
+    let ini = -1; for (let rad = 0; rad < 6 && ini < 0; rad++) for (let dy = -rad; dy <= rad && ini < 0; dy++) for (let dx = -rad; dx <= rad; dx++) { const X = Math.floor(e0[0]) + dx, Y = Math.floor(e0[1]) + dy; if (X >= 0 && Y >= 0 && X < W && Y < H && !z.bloq[Y * W + X]) { ini = Y * W + X; break; } }
+    const pila = ini >= 0 ? [ini] : []; if (ini >= 0) vis[ini] = 1;
+    while (pila.length) { const i = pila.pop()!, x = i % W, y = (i - x) / W; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= W || Y >= H) continue; const j = Y * W + X; if (vis[j] || z.bloq[j]) continue; vis[j] = 1; pila.push(j); } }
+    const llega = (cx: number, cy: number) => { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const X = Math.floor(cx) + dx, Y = Math.floor(cy) + dy; if (X >= 0 && Y >= 0 && X < W && Y < H && vis[Y * W + X]) return true; } return false; };
+    const antes = (cx: number, cy: number) => { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const X = Math.floor(cx) + dx, Y = Math.floor(cy) + dy; if (X >= 0 && Y >= 0 && X < W && Y < H && !bloq0[Y * W + X]) return true; } return false; };
+    const ptos: [number, number][] = [...z.salidas.map((q): [number, number] => [q.cx, q.cy]), ...Object.values(z.entradas), ...z.spawns.map((q): [number, number] => [q.cx, q.cy]), ...z.marcas.map((q): [number, number] => [q.cx, q.cy])];
+    // (solo cuenta lo que antes del recorte tenía piso al lado: una salida sobre el agua no es culpa de la costa)
+    const mal = ptos.filter(([x, y]) => antes(x, y) && !llega(x, y));
+    if (mal.length) { (globalThis as any).__costaMal = { id: z.id, mal: mal.length, de: ptos.length, ini }; z.bloq.set(bloq0); z.objetos = obj0; return; }
+  }
+  z.hueco ??= new Uint8Array(W * H);
+  const ab = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) { if (fuera[i]) z.hueco[i] = 1; else if (z.bloq[i] !== 2) ab[i] = 1; }
+  bordeCueva(k, ab, 'bor_risco', e + '_', (i) => !!fuera[i]);
 }
 
 // ------------------------------------------------------------------ mazmorra
@@ -961,7 +1010,7 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     // la roca maciza dentro de las baldosas con piso: no se pasa y se pinta negra; el contorno lleva peñascos
     z.hueco = new Uint8Array(z.W * z.H);
     for (let y = 0; y < z.H; y++) for (let x = 0; x < z.W; x++) if (!abierto[y * z.W + x] && suelo[Math.floor(y / 5) * tw + Math.floor(x / 5)]) { z.bloq[y * z.W + x] = 1; z.hueco[y * z.W + x] = 1; }
-    bordeCueva(k, abierto);
+    if (typeof t.organica === 'string') bordeCueva(k, abierto, 'bor_risco', t.organica + '_'); else bordeCueva(k, abierto);
   }
   // muros: en los bordes de atrás (hacia -x y -y) de cada baldosa con suelo
   const opcionesMuro: [[string, string[]], [string, string[]]][] = [[t.muroX ?? ['mon_muro', ['izq']], t.muroY ?? ['mon_muro', ['der']]], ...(t.murosAlt ?? [])];
@@ -1092,6 +1141,7 @@ function pueblo(def: DefZona, semilla: number): Zona {
   if (def.tema === 'paramo') sueloParamo(k, [[cx0 / 5, cy0 / 5]]);
   void r;
   z.explorado.fill(1); // el campamento se conoce entero desde que llegas
+  costa(k, def.tema);
   return z;
 }
 
