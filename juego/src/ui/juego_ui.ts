@@ -479,8 +479,12 @@ export function dibujarPaneles(j: Juego, t: number) {
     const dentroDe = (lado: 'izq' | 'der') => { if (!ui[lado]) return false; const [x, y, w, h] = rectPanel(lado); return ex >= x && ex < x + w && ey >= y && ey < y + h; };
     if (dentroDe('izq') || dentroDe('der')) ui.sobreUI = true;
     // en táctil, tocar fuera de los paneles los cierra (y ese toque no camina)
-    else if (E.tactil && clic && E.clicIzq && !ui.mano) { E.clicIzq = false; ui.sobreUI = true; cerrarPaneles(); }
+    // con la tienda o el baúl abiertos, un toque que se sale del panel no cierra nada ni hace caminar: se cierra con la X
+    else if (E.tactil && clic && E.clicIzq && (ui.izq === 'tienda' || ui.izq === 'cofre')) { E.clicIzq = false; ui.sobreUI = true; }
+    else if (E.tactil && clic && E.clicIzq && !ui.mano) { E.clicIzq = false; ui.sobreUI = true; cerrarPaneles(); (ui as any).guardaToque = performance.now() + 350; }
   }
+  // recién cerrados los paneles con un toque, el toque siguiente (el dedo que iba al panel) no hace caminar
+  if (E.tactil && (ui as any).guardaToque > performance.now()) { ui.sobreUI = true; if (E.clicIzq) E.clicIzq = false; }
   if (ui.confirmar) {
     const w = 360, h = 110, x = W / 2 - w / 2, y = H / 2 - h / 2 - 40;
     marco(x, y, w, h); envolver(ui.confirmar.txt, w - 30).forEach((l, i) => texto(l, W / 2, y + 30 + i * 16, { alin: 'center' }));

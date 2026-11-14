@@ -349,4 +349,5 @@ export function volverAEmpezar(d: DatosHeroe) {
   d.ciclo = (d.ciclo ?? 0) + 1;
   d.dificultad = Math.min(2, (d.dificultad ?? 0) + 1);
   d.acto = 1; d.zona = 'a1_refugio'; d.misiones = {}; d.actosHechos = []; d.viajes = ['a1_refugio'];
+  delete (d as any).mapas; // el mundo del ciclo nuevo se descubre otra vez
 }

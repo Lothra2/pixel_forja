@@ -700,7 +700,8 @@ function rioDeLava(k: Constructor, r: () => number, arroyo = false) {
         // solo se pasa por el tablero: el agua a los lados del puente bloquea (antes la baldosa entera quedaba libre y el
         // héroe cruzaba por el agua, dibujado detrás del puente). El juego sube al que va por el tablero (ver escena.ts)
         bloquear(tx, ty, 1);
-        for (let y = y0 + 1; y <= y0 + 3; y++) for (let x = x0; x < x0 + 5; x++) z.bloq[y * z.W + x] = 0;
+        // el tablero mide 6 casillas: la huella del puente se sale de la baldosa y tapaba la salida. Se libera con una casilla de más a cada lado
+        for (let y = y0 + 1; y <= y0 + 3; y++) for (let x = x0 - 1; x <= x0 + 5; x++) if (x >= 0 && x < z.W) z.bloq[y * z.W + x] = 0;
         (z.puentes ??= []).push({ cx: x0 + 2.5, cy: y0 + 2.5 });
         return;
       }

@@ -606,6 +606,15 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   const esc = e.escala;
 
   if (!e.muerto) sombras(ctx, e, q, px, py, esc);
+  // los aliados llevan un aro en los pies (Thor dorado, invocados verdes): de noche un lobo enemigo se confundía con Thor
+  if (!e.muerto && (e as any).dueno) {
+    const thor = (e as any).invocaId === 'thor', c = thor ? '255,205,120' : '120,225,150', rr = 13 * Math.max(0.8, esc), kk = 0.5 + 0.2 * Math.sin(tiempo * 3 + e.x);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const ga = ctx.createRadialGradient(px, py, rr * 0.3, px, py, rr); ga.addColorStop(0, `rgba(${c},0)`); ga.addColorStop(0.75, `rgba(${c},${0.22 * kk})`); ga.addColorStop(1, `rgba(${c},0)`);
+    ctx.fillStyle = ga; ctx.beginPath(); ctx.ellipse(px, py, rr, rr / 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(${c},${0.55 * kk})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(px, py, rr * 0.82, rr * 0.41, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
   // la mitad de atrás del aura va antes del cuerpo
   if (e.tipo === 'heroe' && !e.muerto) auraHeroe(j, px, py, tiempo, true);
   let ok: boolean;

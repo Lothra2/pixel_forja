@@ -35,7 +35,7 @@ function empezarCine(acto: number, despues: () => void, clave = claveCine(acto))
   cine = { clave, acto, t: 0, despues }; estado = 'cine'; ui.izq = ui.der = null; E.clicIzq = false;
   Sonido.musica('intro');
 }
-import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, costoMana, DIR_VEC, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
+import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, costoMana, DIR_VEC, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, anotarMapas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, nivelHab, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad, volverAEmpezar } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
 import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA } from './mundo/actos';
@@ -72,6 +72,7 @@ function guardar() {
   if (!j) return;
   const d = j.heroe.d;
   d.vidaActual = Math.max(1, j.heroe.vida); d.manaActual = j.heroe.mana;
+  anotarMapas(j);
   // se guarda en el pueblo del acto (las zonas se regeneran al volver)
   const i = heroes.findIndex((h) => h.id === d.id);
   const copia: DatosHeroe = JSON.parse(JSON.stringify(d));

@@ -298,6 +298,20 @@ export interface Juego {
 // ------------------------------------------------------------------ zonas en memoria (no se regeneran mientras juegas)
 const zonasVivas = new Map<string, { z: Zona; monstruos: Monstruo[]; suelo: Suelo[]; manchas: Mancha[] }>();
 export const olvidarZonas = () => zonasVivas.clear();
+// El mapa descubierto se guarda con el héroe (campo opcional `mapas`: una tira de bits por zona, en base64). Para que
+// sirva al volver, cada zona sale siempre igual para el mismo héroe y ciclo (semilla fija). Partida nueva o ciclo nuevo: se borra.
+const empacarMapa = (e: Uint8Array) => { const b = new Uint8Array(Math.ceil(e.length / 8)); for (let i = 0; i < e.length; i++) if (e[i]) b[i >> 3] |= 1 << (i & 7); let s = ''; for (const v of b) s += String.fromCharCode(v); return e.length + ':' + btoa(s); };
+function desempacarMapa(t: string, e: Uint8Array) {
+  try { const i = t.indexOf(':'); if (+t.slice(0, i) !== e.length) return; const s = atob(t.slice(i + 1)); for (let k = 0; k < e.length; k++) if (s.charCodeAt(k >> 3) & (1 << (k & 7))) e[k] = 1; } catch { /* mapa viejo o roto: se descubre de nuevo */ }
+}
+/** Antes de guardar: anota en el héroe lo descubierto de cada zona visitada en esta sesión. */
+export function anotarMapas(j: Juego) {
+  const d = j.heroe.d as DatosHeroe & { mapas?: Record<string, string> };
+  const m = (d.mapas ??= {});
+  const una = (z: Zona) => { if (z.explorado.some((v) => v)) m[z.id] = (d.ciclo ?? 0) + '|' + empacarMapa(z.explorado); };
+  for (const v of zonasVivas.values()) una(v.z);
+  if (j.zona) una(j.zona);
+}
 /** Dureza de los ciclos más allá del Infierno (Nueva Partida+): +15 % de vida y daño por ciclo. */
 let durezaCiclo = 1;
 
@@ -327,8 +341,9 @@ export function entrarZona(j: Juego, zid: string, entrada: string) {
   const def = ZONAS[zid];
   let viva = zonasVivas.get(zid);
   if (!viva) {
-    const semilla = (hashTxt(j.heroe.d.id + zid) % 100000) + Math.floor(Math.random() * 1000);
+    const semilla = (hashTxt(j.heroe.d.id + zid) % 100000) + (hashTxt(zid + j.heroe.d.id + (j.heroe.d.ciclo ?? 0)) % 1000);
     const z = generarZona(def, semilla);
+    const visto = (j.heroe.d as any).mapas?.[zid]; if (typeof visto === 'string' && visto.startsWith((j.heroe.d.ciclo ?? 0) + '|')) desempacarMapa(visto.slice(visto.indexOf('|') + 1), z.explorado);
     viva = { z, monstruos: poblar(z, j.heroe.d), suelo: [], manchas: [] };
   }
   j.zona = viva.z; j.monstruos = viva.monstruos; j.suelo = viva.suelo; j.manchas = viva.manchas;
@@ -564,6 +579,8 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   if (v.muerto) return 0;
   // nada del héroe ni de sus aliados le pega a un aliado (Thor, invocados, escoltas)
   if (g.deHeroe && (v as Monstruo).dueno) return 0;
+  // y ningún aliado le pega al héroe, pase lo que pase con su blanco
+  if (v.tipo === 'heroe' && (g.fuente as Monstruo | undefined)?.dueno) return 0;
   const h = j.heroe;
   // ¿pega?
   if (!g.sinFallo && g.elem === 'fisico') {
