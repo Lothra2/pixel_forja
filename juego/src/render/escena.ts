@@ -248,6 +248,35 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     ctx.closePath(); ctx.fillStyle = `rgba(255,210,110,${0.14 + 0.3 * k})`; ctx.fill();
     ctx.strokeStyle = `rgba(255,240,180,${0.5 + 0.5 * k})`; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
   }
+  // aviso de las maniobras de los monstruos: círculo o carril en el piso que se llena hasta el momento del golpe
+  for (const m of j.monstruos) {
+    const mn = (m as any).man; if (!mn || m.muerto || mn.fase === 'recupera') continue;
+    const enAire = mn.tipo === 'salto' && mn.fase === 'accion';
+    if (mn.fase !== 'aviso' && !enAire) continue;
+    const k = enAire ? 1 : Math.min(1, mn.t / mn.aviso), pulso = 0.5 + 0.5 * Math.sin(tiempo * 18);
+    const rojo = `rgba(255,70,40,${0.1 + 0.22 * k})`, borde = `rgba(255,${150 - 70 * k},${90 - 50 * k},${0.55 + 0.4 * k * pulso})`;
+    const disco = (cx: number, cy: number, r: number) => {
+      ctx.beginPath(); for (let i = 0; i <= 28; i++) { const a = (i / 28) * Math.PI * 2; const [x, y] = aPant(cx + Math.cos(a) * r, cy + Math.sin(a) * r); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+      ctx.closePath(); ctx.fillStyle = rojo; ctx.fill(); ctx.strokeStyle = borde; ctx.lineWidth = 2; ctx.stroke();
+      // el relleno que crece marca cuánto falta
+      ctx.beginPath(); for (let i = 0; i <= 28; i++) { const a = (i / 28) * Math.PI * 2; const [x, y] = aPant(cx + Math.cos(a) * r * k, cy + Math.sin(a) * r * k); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+      ctx.closePath(); ctx.fillStyle = `rgba(255,120,60,${0.16 + 0.14 * k})`; ctx.fill();
+    };
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    if (mn.tipo === 'embestida') {
+      const w = m.radio + 0.45, L = mn.largo, c = Math.cos(mn.ang), sn = Math.sin(mn.ang), nx = -sn * w, ny = c * w;
+      const P = (d: number, lado: number) => aPant(m.x + c * d + nx * lado, m.y + sn * d + ny * lado);
+      const camino = (d1: number) => { ctx.beginPath(); const a = P(0, 1), b2 = P(d1, 1), c2 = P(d1 + w, 0), d2 = P(d1, -1), e2 = P(0, -1); ctx.moveTo(a[0], a[1]); ctx.lineTo(b2[0], b2[1]); ctx.lineTo(c2[0], c2[1]); ctx.lineTo(d2[0], d2[1]); ctx.lineTo(e2[0], e2[1]); ctx.closePath(); };
+      camino(L); ctx.fillStyle = rojo; ctx.fill(); ctx.strokeStyle = borde; ctx.lineWidth = 2; ctx.stroke();
+      camino(L * k); ctx.fillStyle = `rgba(255,120,60,${0.16 + 0.14 * k})`; ctx.fill();
+    } else if (mn.tipo === 'charcos') { for (const [x, y] of mn.puntos ?? []) disco(x, y, mn.radio); }
+    else if (mn.tipo === 'abanico') {
+      const R0 = (m.def.rango ?? 7), n = 7, ab = 0.2 * 3.4; ctx.beginPath(); const [x0, y0] = aPant(m.x, m.y); ctx.moveTo(x0, y0);
+      for (let i = 0; i <= 12; i++) { const a = mn.ang - ab + (i / 12) * ab * 2; const [x, y] = aPant(m.x + Math.cos(a) * R0, m.y + Math.sin(a) * R0); ctx.lineTo(x, y); }
+      ctx.closePath(); ctx.fillStyle = `rgba(255,90,50,${0.06 + 0.14 * k})`; ctx.fill(); ctx.strokeStyle = borde; ctx.lineWidth = 1.5; ctx.stroke(); void n;
+    } else disco(mn.x, mn.y, mn.radio);
+    ctx.restore();
+  }
   // lista de cosas a ordenar
   type Item = { prof: number; draw: () => void };
   const items: Item[] = [];
@@ -456,11 +485,11 @@ function umbralVivo(px: number, py: number, conArco: boolean, dest: { tipo?: str
     const forma = () => { ctx.beginPath(); ctx.moveTo(px - 20, py - 2); ctx.lineTo(px - 20, py - 58); ctx.quadraticCurveTo(px, py - 92, px + 20, py - 58); ctx.lineTo(px + 20, py - 2); ctx.closePath(); };
     // el velo: luz que ondula dentro del arco, más densa abajo, con hebras que suben
     ctx.save(); forma(); ctx.clip();
-    const gv = ctx.createLinearGradient(0, py - 90, 0, py); gv.addColorStop(0, rgba(0.08)); gv.addColorStop(0.6, rgba(0.15 + pulso * 0.05)); gv.addColorStop(1, rgba(0.27 + pulso * 0.08));
+    const gv = ctx.createLinearGradient(0, py - 90, 0, py); gv.addColorStop(0, rgba(0.05)); gv.addColorStop(0.6, rgba(0.09 + pulso * 0.03)); gv.addColorStop(1, rgba(0.15 + pulso * 0.05));
     ctx.fillStyle = gv; ctx.fillRect(px - 22, py - 94, 44, 94);
     for (let i = 0; i < 9; i++) {
       const x = px - 18 + ((i * 4.7 + Math.sin(t * 1.3 + i * 2.1 + sem) * 3) % 36), f = (t * (0.35 + (i % 3) * 0.12) + i * 0.37 + sem) % 1, y = py - f * 88, l = 10 + (i % 4) * 5;
-      const gh = ctx.createLinearGradient(0, y - l, 0, y); gh.addColorStop(0, rgba(0)); gh.addColorStop(0.5, rgba(0.5 * Math.sin(f * Math.PI))); gh.addColorStop(1, rgba(0));
+      const gh = ctx.createLinearGradient(0, y - l, 0, y); gh.addColorStop(0, rgba(0)); gh.addColorStop(0.5, rgba(0.32 * Math.sin(f * Math.PI))); gh.addColorStop(1, rgba(0));
       ctx.fillStyle = gh; ctx.fillRect(Math.round(x), y - l, 1.5, l);
     }
     // el brillo que cruza el velo de lado a lado
@@ -563,6 +592,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (e.muerto && (e as any).reventado) return;
   let [px, py] = aPant(e.x, e.y);
   py -= sobrePuente(j, e);
+  py -= (e as any).alto ?? 0; // en el aire durante un salto (maniobra de monstruo)
   // peso en el combate, solo en pantalla, a la medida de cada cuerpo (ver juego/sensacion.ts)
   if (!e.muerto) {
     const S = sensacionDe(e), [vx, vy] = DIR_VEC[e.dir] ?? [0, 0];

@@ -508,6 +508,11 @@ export const vivos = (j: Juego) => j.monstruos.filter((m) => !m.muerto);
 const enemigosDe = (j: Juego, deHeroe: boolean): Ent[] => (deHeroe ? j.monstruos.filter((m) => !m.muerto && !m.dueno && m.estado !== 'surgir') : [j.heroe, ...j.monstruos.filter((m) => m.dueno && !m.muerto)]);
 export function msg(j: Juego, txt: [string, string], color = '#e0d0a0') { j.mensajes.push({ txt, t: 0, color }); if (j.mensajes.length > 6) j.mensajes.shift(); }
 function numero(j: Juego, e: Ent, v: number, color: string, grande = false, menor = false) { j.numeros.push({ x: e.x + (menor ? (R() - 0.5) * 0.5 : 0), y: e.y, z: 60 * e.escala, txt: String(Math.round(v)), color, t: 0, grande, menor }); }
+/** Un letrero corto que flota sobre alguien (por qué no salió un poder, 'Aturdido'...). Uno por clave cada 1,2 s. */
+function letrero(j: Juego, e: Ent, txt: [string, string], color: string) {
+  const h = j.heroe, k = 'L' + txt[0]; if ((h.avisos[k] ?? -99) > j.t - 1.2) return; h.avisos[k] = j.t;
+  j.numeros.push({ x: e.x, y: e.y, z: 64 * e.escala, txt: txt[j.idi], color, t: 0 });
+}
 export function efecto(j: Juego, id: string, x: number, y: number, dir = 0, escala = 1, z = 0, dur?: number) { j.efectos.push({ id, x, y, t: 0, dir, escala, z, dur }); }
 export function particulas(j: Juego, x: number, y: number, n: number, tipo: Particula['tipo'], color: string, fuerza = 1, z = 30) {
   if (j.particulas.length > 900) return;
@@ -710,6 +715,148 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     if (m.vida <= 0) morirMonstruo(j, m, g);
   }
   return total;
+}
+
+// ------------------------------------------------------------------ maniobras de los monstruos
+// Además de caminar y pegar, cada tipo de enemigo tiene ataques especiales con aviso: se ve venir (marca en el piso,
+// el cuerpo se prepara), se puede esquivar saliendo de la marca, y si falla queda un momento expuesto.
+//   bruto: embestida (carga en línea; si choca con un muro queda aturdido) y pisotón (onda alrededor)
+//   enjambre: salto sobre la presa        común: golpazo (golpe cargado que pega en un círculo)
+//   tirador: abanico de proyectiles       mago e invocador: charcos que se quedan en el piso
+//   jefes y únicos: varias a la vez, más seguido, y se enfurecen al bajar de la mitad de la vida
+export interface Maniobra {
+  tipo: 'embestida' | 'pisoton' | 'salto' | 'golpazo' | 'charcos' | 'abanico';
+  fase: 'aviso' | 'accion' | 'recupera'; t: number; aviso: number; dur: number;
+  x: number; y: number; x0: number; y0: number; ang: number; radio: number; largo: number;
+  puntos?: [number, number][]; pegados?: Set<Ent>; hecho?: number;
+}
+const esMandon = (m: Monstruo) => !!(m.def.jefe || m.def.ia === 'jefe' || m.calidad >= 2);
+function maniobrasDe(m: Monstruo): Maniobra['tipo'][] {
+  const d = m.def;
+  if (d.fijo || d.ia === 'cobarde') return [];
+  const tira = d.ia === 'distancia' || d.ia === 'mago' || d.ia === 'invocador';
+  const out: Maniobra['tipo'][] = [];
+  if (d.ia === 'bruto') out.push('embestida', 'pisoton', 'golpazo');
+  else if (d.ia === 'enjambre') out.push('salto', 'golpazo');
+  else if (tira) out.push(d.ia === 'distancia' ? 'abanico' : 'charcos');
+  else if (d.ia === 'jefe' || d.jefe) { out.push('pisoton'); if (d.proyectil) out.push('abanico', 'charcos'); else out.push('embestida'); if (/arana|lobo|bestia/.test(d.id)) out.push('salto'); }
+  else out.push('golpazo');
+  if (esMandon(m)) { if (tira) { if (!out.includes('charcos')) out.push('charcos'); if (!out.includes('abanico') && d.proyectil) out.push('abanico'); } else if (!out.includes('pisoton')) out.push('pisoton'); }
+  return out;
+}
+const AVISO_MAN: Record<Maniobra['tipo'], number> = { embestida: 0.8, pisoton: 0.85, salto: 0.6, golpazo: 0.7, charcos: 0.9, abanico: 0.65 };
+function intentarManiobra(j: Juego, m: Monstruo, obj: Ent, dt: number): boolean {
+  const o = m as any, jefe = esMandon(m);
+  if ((globalThis as any).__sinManiobras) return false;
+  if (o.manCd === undefined) o.manCd = jefe ? entre(1.5, 3) : entre(2, 6);
+  if (o.manCd > 0) return false; void dt; // (la cuenta baja en actualizarMonstruo, también mientras pega)
+  if ((m as any).alerta > 0) return false;
+  const lista = maniobrasDe(m); if (!lista.length) { o.manCd = 999; return false; }
+  // los comunes no se pisan entre ellos: una maniobra nueva cada 1,4 s como mucho en toda la pelea
+  if (!jefe && j.t - ((j as any).manT ?? -9) < 1.4) { o.manCd = 0.4 + R() * 0.4; return false; }
+  const d = dist(m.x, m.y, obj.x, obj.y), ve = d < 2.5 || lineaLibre(j.zona, m.x, m.y, obj.x, obj.y);
+  const alc = m.radio + obj.radio + 0.75;
+  const sirve = (t: Maniobra['tipo']) => t === 'embestida' ? d > (jefe ? 1.4 : 3) && d < 8.5 && ve : t === 'pisoton' ? d < alc + 0.9 : t === 'salto' ? d > 2.2 && d < 7 && ve : t === 'golpazo' ? d <= alc + 0.2 : t === 'charcos' ? d < 9 && ve : d < (m.def.rango ?? 7) && d > 1.5 && ve;
+  const ok = lista.filter(sirve); if (!ok.length) { o.manCd = 0.35; return false; }
+  let tipo = elegir(ok); if (ok.length > 1 && tipo === o.manUlt) tipo = elegir(ok.filter((t) => t !== o.manUlt));
+  o.manUlt = tipo; o.manCd = (jefe ? entre(3.6, 5.6) : entre(6, 10)) * (m.fase >= 1 ? 0.7 : 1); (j as any).manT = j.t;
+  const ang = Math.atan2(obj.y - m.y, obj.x - m.x), esc = m.radio / 0.42;
+  const mn: Maniobra = { tipo, fase: 'aviso', t: 0, aviso: AVISO_MAN[tipo] * (jefe ? 1 : 1.1), dur: 0, x: obj.x, y: obj.y, x0: m.x, y0: m.y, ang, radio: 1.3, largo: 0 };
+  if (tipo === 'pisoton') { mn.x = m.x; mn.y = m.y; mn.radio = 1.9 + 0.55 * esc + (m.def.area ?? 0) * 0.3; }
+  if (tipo === 'golpazo') mn.radio = 1.15 + 0.2 * esc;
+  if (tipo === 'salto') mn.radio = 1.2 + 0.3 * esc;
+  if (tipo === 'embestida') mn.largo = Math.min(9, Math.max(5, d + 2.5));
+  if (tipo === 'charcos') { const n = jefe ? 4 : 2; mn.radio = jefe ? 1.5 : 1.25; mn.puntos = [[obj.x, obj.y]]; for (let k = 0; k < n; k++) { const a = R() * Math.PI * 2, r = entre(1.6, 3.4); mn.puntos.push([obj.x + Math.cos(a) * r, obj.y + Math.sin(a) * r]); } }
+  o.man = mn; m.dir = dirDe(obj.x - m.x, obj.y - m.y); m.camino = null;
+  efecto(j, 'pfx:fx_aviso', m.x, m.y, 0, 0.8 + 0.25 * esc, 46 * (m.escala ?? 1) * esc);
+  sonar(j, jefe ? 'rugido_jefe' : m.def.sonido === 'hueso' ? 'golpe_hueso' : 'grunido', m.x, m.y, jefe ? 0.7 : 0.5);
+  return true;
+}
+function golpeManiobra(j: Juego, m: Monstruo, k: number, aturdir = 0): Golpe {
+  const g: Golpe = { min: m.dano[0] * k, max: m.dano[1] * k, elem: 'fisico', deHeroe: false, fuente: m, sinFallo: true, extra: {} };
+  if (m.def.elem && m.def.elem !== 'fisico') g.extra![m.def.elem] = (m.dano[0] + m.dano[1]) * 0.25 * k;
+  if (aturdir) g.aturdir = aturdir;
+  return g;
+}
+function avanzarManiobra(j: Juego, m: Monstruo, mn: Maniobra, dt: number) {
+  const o = m as any, obj = m.objetivo && !m.objetivo.muerto ? m.objetivo : j.heroe, esc = m.radio / 0.42;
+  const fin = (cd = 0.5) => { o.man = undefined; o.alto = 0; m.acc = 'quieto'; m.t = 0; m.cd = Math.max(m.cd, cd); };
+  mn.t += dt;
+  if (mn.fase === 'aviso') {
+    const k = mn.t / mn.aviso, lanza = (mn.tipo === 'charcos' || mn.tipo === 'abanico') && hayLanzar(m);
+    // el cuerpo se prepara: el golpe queda armado arriba (media animación, lenta) o retrocede un paso antes de lanzarse
+    if (mn.tipo === 'embestida' || mn.tipo === 'salto') {
+      if (k < 0.7) { mn.ang = Math.atan2(obj.y - m.y, obj.x - m.x); if (mn.tipo === 'salto') { mn.x = obj.x; mn.y = obj.y; } }
+      m.dir = dirDe(Math.cos(mn.ang), Math.sin(mn.ang)); m.acc = 'quieto';
+      const bx = m.x - Math.cos(mn.ang) * 0.55 * dt, by = m.y - Math.sin(mn.ang) * 0.55 * dt; if (pasable(j.zona, bx, by)) { m.x = bx; m.y = by; }
+      if (R() < dt * 14) particulas(j, m.x, m.y, 1, 'humo', '#6a5a48', 0.5, 4);
+    } else { m.acc = lanza ? 'lanzar' : 'atacar'; m.dur = mn.aviso / 0.5; m.t = mn.t; if (mn.tipo === 'abanico') { mn.ang = Math.atan2(obj.y - m.y, obj.x - m.x); m.dir = dirDe(Math.cos(mn.ang), Math.sin(mn.ang)); } }
+    m.destello = Math.max(m.destello, k > 0.75 ? 0.05 : 0);
+    if (mn.t < mn.aviso) return;
+    mn.fase = 'accion'; mn.t = 0; mn.x0 = m.x; mn.y0 = m.y;
+    const rematar = () => { m.acc = lanza ? 'lanzar' : 'atacar'; m.dur = 0.5; m.t = 0.27; mn.fase = 'recupera'; mn.t = 0; };
+    if (mn.tipo === 'pisoton' || mn.tipo === 'golpazo') {
+      const fuerte = mn.tipo === 'pisoton';
+      for (const e of enemigosDe(j, false)) if (dist(e.x, e.y, mn.x, mn.y) < mn.radio + e.radio * 0.5) danar(j, e, golpeManiobra(j, m, fuerte ? 1.15 : 1.3, fuerte ? 50 : 0));
+      efecto(j, 'onda_aterrizaje', mn.x, mn.y, 0, mn.radio / 1.5); j.sacudida = Math.max(j.sacudida, fuerte ? 0.55 : 0.3);
+      particulas(j, mn.x, mn.y, fuerte ? 14 : 7, 'humo', '#6a5a48', 1.4, 6); sonar(j, fuerte ? 'explosion' : 'tajo', mn.x, mn.y, 0.7);
+      rematar(); mn.dur = fuerte ? 0.75 : 0.55; return;
+    }
+    if (mn.tipo === 'charcos') {
+      const el: Elemento = m.def.elem && m.def.elem !== 'fisico' ? m.def.elem : m.def.proyectil === 'fuego' ? 'fuego' : m.def.proyectil === 'hielo' ? 'frio' : 'veneno';
+      const fx = el === 'fuego' ? 'muro_llamas' : el === 'frio' ? 'nova_escarcha' : el === 'rayo' ? 'trueno' : el === 'luz' ? 'pilar_luz' : 'nube_veneno';
+      for (const [x, y] of mn.puntos ?? []) {
+        j.areas.push({ x, y, radio: mn.radio, dano: [m.dano[0] * 0.3, m.dano[1] * 0.3], elem: el, t: 0, dur: 3.6, tick: 0.5, prox: 0, deHeroe: false, efecto: fx === 'muro_llamas' ? 'llamas_suelo' : '', retraso: 0 });
+        efecto(j, fx, x, y, 0, mn.radio / 1.6, 0, 3.6); particulas(j, x, y, 6, el === 'fuego' ? 'brasa' : 'humo', el === 'fuego' ? '#ff7020' : el === 'frio' ? '#c0e8ff' : '#70b040', 1, 10);
+      }
+      sonar(j, el === 'fuego' ? 'fuego_lanzar' : el === 'frio' ? 'hielo_lanzar' : 'sombra', m.x, m.y, 0.8);
+      rematar(); mn.dur = 0.6; return;
+    }
+    if (mn.tipo === 'abanico') {
+      const n = esMandon(m) ? 7 : 5, pr = m.def.proyectil ?? 'flecha', e: Elemento = m.def.elem ?? 'fisico';
+      const g = golpeManiobra(j, m, 0.7); g.sinFallo = false; g.elem = pr === 'flecha' || pr === 'lanza' ? 'fisico' : e; g.extra = {};
+      for (let k2 = 0; k2 < n; k2++) { const a = mn.ang + (k2 - (n - 1) / 2) * 0.2; disparar(j, m, m.x + Math.cos(a) * 5, m.y + Math.sin(a) * 5, g, usosPfx.mon.has(m.def.id) && pr !== 'flecha' ? 'pfx:' + usosPfx.mon.get(m.def.id) : efectoProy(pr), pr === 'flecha' ? 11 : 7.5); }
+      sonar(j, pr === 'flecha' ? 'flecha' : pr === 'hielo' ? 'hielo_lanzar' : pr === 'fuego' ? 'fuego_lanzar' : 'sombra', m.x, m.y, 0.8);
+      rematar(); mn.dur = 0.6; return;
+    }
+    if (mn.tipo === 'salto') {
+      // cae un poco antes de la presa (no encima); si ahí no hay piso, se queda en golpe corto
+      const dd = Math.max(0.01, dist(m.x, m.y, mn.x, mn.y)), q = Math.max(0, dd - (m.radio + 0.5)) / dd;
+      mn.x = m.x + (mn.x - m.x) * q; mn.y = m.y + (mn.y - m.y) * q;
+      if (!pasable(j.zona, mn.x, mn.y) || !lineaLibre(j.zona, m.x, m.y, mn.x, mn.y)) { fin(0.3); return; }
+      mn.dur = 0.34 + dd * 0.035; m.acc = 'atacar'; m.dur = mn.dur * 2; m.t = 0; sonar(j, 'grunido', m.x, m.y, 0.5);
+    }
+    if (mn.tipo === 'embestida') { mn.pegados = new Set(); mn.hecho = 0; sonar(j, 'grunido', m.x, m.y, 0.8); }
+    return;
+  }
+  if (mn.fase === 'accion') {
+    if (mn.tipo === 'salto') {
+      const k = Math.min(1, mn.t / mn.dur);
+      m.x = mn.x0 + (mn.x - mn.x0) * k; m.y = mn.y0 + (mn.y - mn.y0) * k; o.alto = Math.sin(k * Math.PI) * (26 + 10 * esc); m.t = Math.min(m.t, m.dur * 0.5);
+      if (k < 1) return;
+      o.alto = 0;
+      for (const e of enemigosDe(j, false)) if (dist(e.x, e.y, m.x, m.y) < mn.radio + e.radio) danar(j, e, golpeManiobra(j, m, 1.25));
+      efecto(j, 'onda_aterrizaje', m.x, m.y, 0, mn.radio / 1.6); j.sacudida = Math.max(j.sacudida, 0.2 + 0.1 * esc); particulas(j, m.x, m.y, 8, 'humo', '#6a5a48', 1.2, 4); sonar(j, 'tajo', m.x, m.y, 0.6);
+      m.acc = 'atacar'; m.dur = 0.45; m.t = 0.25; mn.fase = 'recupera'; mn.t = 0; mn.dur = 0.5; return;
+    }
+    // embestida: corre en línea recta; al que agarra lo atropella, y si choca contra un muro queda aturdido
+    const v = Math.max(8.5, m.vel * 3.6), paso = v * dt, nx = m.x + Math.cos(mn.ang) * paso, ny = m.y + Math.sin(mn.ang) * paso;
+    m.acc = 'correr' as any; if (m.t >= m.dur) m.t = 0; m.dir = dirDe(Math.cos(mn.ang), Math.sin(mn.ang));
+    if (!pasable(j.zona, nx, ny)) {
+      efecto(j, 'pfx:fx_impacto_muro', m.x + Math.cos(mn.ang) * 0.5, m.y + Math.sin(mn.ang) * 0.5, 0, 1 + 0.3 * esc, 20); efecto(j, 'onda_aterrizaje', m.x, m.y, 0, 1);
+      j.sacudida = Math.max(j.sacudida, 0.5); sonar(j, 'explosion', m.x, m.y, 0.7); particulas(j, m.x, m.y, 12, 'humo', '#7a6a58', 1.6, 12);
+      if (!m.def.jefe) m.aturdido = 1.6; letrero(j, m, ['Aturdido', 'Stunned'], '#ffe080');
+      fin(0.8); return;
+    }
+    m.x = nx; m.y = ny; mn.hecho = (mn.hecho ?? 0) + paso;
+    if (R() < dt * 30) particulas(j, m.x, m.y, 1, 'humo', '#6a5a48', 0.7, 3);
+    for (const e of enemigosDe(j, false)) if (!mn.pegados!.has(e) && dist(e.x, e.y, m.x, m.y) < m.radio + e.radio + 0.3) { mn.pegados!.add(e); danar(j, e, golpeManiobra(j, m, 1.35, 60)); j.sacudida = Math.max(j.sacudida, 0.45); efecto(j, 'onda_aterrizaje', e.x, e.y, 0, 0.9); }
+    if (mn.hecho >= mn.largo) { mn.fase = 'recupera'; mn.t = 0; mn.dur = mn.pegados!.size ? 0.5 : 1.1; m.acc = 'quieto'; m.t = 0; }
+    return;
+  }
+  // recupera: termina el gesto y queda un momento quieto (la ventana para castigarlo)
+  if ((m.acc === 'atacar' || m.acc === 'lanzar') && m.t >= m.dur) { m.acc = 'quieto'; m.t = 0; }
+  if (mn.t >= mn.dur) fin(0.35);
 }
 
 /** El aliento de fuego de un monstruo: cono de `alcance` casillas y 90°, aviso de 0.6 s y chorro de 1.5 s. */
@@ -916,19 +1063,21 @@ export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj:
   if (!basico && n <= 0) return false;
   // auras: solo una activa a la vez; usarla la vuelve el aura activa
   if (hb.tipo === 'aura') { if (h.d.aura !== id) { h.d.aura = id; sonar(j, 'luz'); } return false; }
-  if ((h.recargas[id] ?? 0) > 0) return false;
+  if ((h.recargas[id] ?? 0) > 0) { letrero(j, h, [`Recargando ${Math.ceil(h.recargas[id])} s`, `Recharging ${Math.ceil(h.recargas[id])} s`], '#c0c0c0'); return false; }
   // requisitos de las mecánicas de clase
   if (hb.forma) {
     const ok = hb.forma === 'lobo' ? !!h.buffs.forma_lobo : hb.forma === 'oso' ? !!h.buffs.forma_oso : !!(h.buffs.forma_lobo || h.buffs.forma_oso);
     if (!ok) { aviso(j, hb.forma === 'lobo' ? ['Solo puedo hacerlo como lobo.', 'I can only do that as a wolf.'] : hb.forma === 'oso' ? ['Solo puedo hacerlo como oso.', 'I can only do that as a bear.'] : ['Tengo que estar transformado.', 'I must be transformed.']); return false; }
   }
-  if (hb.furia && h.furia < hb.furia) { aviso(j, ['Necesito más furia.', 'I need more fury.'], '#ff8060'); return false; }
+  if (hb.furia && h.furia < hb.furia) { aviso(j, ['Necesito más furia.', 'I need more fury.'], '#ff8060'); letrero(j, h, [`Furia ${Math.floor(h.furia)} de ${hb.furia}`, `Fury ${Math.floor(h.furia)} of ${hb.furia}`], '#ff8060'); return !alAire && !!obj && usarHabilidad(j, 'ataque', tx, ty, obj, alAire); }
   if (hb.id === 'descarga_prismatica' && !h.cargas.length) { aviso(j, ['No tengo cargas guardadas.', 'I have no stored charges.'], '#c0a0ff'); return false; }
   if (hb.id === 'picada' && !mios(j, 'halcon').length) { aviso(j, ['Mi halcón no está conmigo.', 'My hawk is not with me.']); return false; }
   const conFrascos = hb.tipo === 'bomba' && h.d.clase === 'alquimista' && !h.buffs.panacea_negra;
   if (conFrascos && h.frascos < 1) { aviso(j, ['No me quedan frascos.', 'I have no flasks left.'], '#ffb040'); return false; }
   const costo = basico ? 0 : costoMana(j, hb);
-  if (h.mana < costo) { if ((h.avisos.mana ?? -99) < j.t - 1.5) { h.avisos.mana = j.t; sonar(j, 'mana_falta'); msg(j, ['No tengo suficiente maná.', 'Not enough mana.'], '#8080ff'); } return false; }
+  if (h.mana < costo) { if ((h.avisos.mana ?? -99) < j.t - 1.5) { h.avisos.mana = j.t; sonar(j, 'mana_falta'); msg(j, ['No tengo suficiente maná.', 'Not enough mana.'], '#8080ff'); } letrero(j, h, ['Sin maná', 'No mana'], '#8090ff');
+    // un golpe de arma que no se puede pagar sale igual como golpe normal: el botón nunca se queda sin hacer nada
+    return hb.tipo === 'golpe' && !basico ? usarHabilidad(j, 'ataque', tx, ty, obj, alAire) : false; }
   const melee = hb.tipo === 'golpe' && !(basico && h.c.distancia);
   if (melee) {
     const alcanza = (m: Monstruo) => dist(h.x, h.y, m.x, m.y) <= rangoMelee(h) + m.radio;
@@ -1197,6 +1346,8 @@ function resolverHabilidad(j: Juego, parte?: number, cb?: { remate: boolean }) {
         const d = danar(j, obj, g);
         total += d;
         if (d > 0) ganarFuria(j, 5);
+        // el berserker vive de pegar: cada golpe normal que conecta le devuelve un poco de maná para su próximo golpe especial
+        if (d > 0 && basico && h.d.clase === 'berserker') h.mana = Math.min(h.c.manaMax, h.mana + 1.5);
         if (R() < 0.04) desgastar(j, 'arma');
         if (d > 0 && h.c.vivo) particulas(j, obj.x, obj.y, 8, h.c.vivo === 'fuego' ? 'brasa' : 'chispa', COLOR_ELEM[h.c.vivo], 1.2, 40);
       }
@@ -1807,6 +1958,7 @@ function actualizarHeroe(j: Juego, dt: number) {
 function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
   m.t += dt; m.destello = Math.max(0, m.destello - dt);
   if (m.muerto) { m.tMuerto += dt; return; }
+  if ((m as any).manCd > 0 && !(m as any).man && m.estado === 'perseguir') (m as any).manCd -= dt;
   actualizarMonstruo2(j, m, dt);
   // lo que se ve: entre quieto y caminar hace falta un mínimo de 0.2 s en cada estado (sin vaivén de un cuadro a otro)
   const o = m as any; o.tVis = (o.tVis ?? 0) + dt;
@@ -1821,6 +1973,8 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
   if (m.maldicion) { m.maldicion.t -= dt; if (m.maldicion.t <= 0) m.maldicion = undefined; }
   if (m.marca && m.marca > 0) { m.marca -= dt; if (Math.floor(m.marca * 2) !== Math.floor((m.marca + dt) * 2)) particulas(j, m.x, m.y, 1, 'pluma', '#ffc860', 0.3, 70 * m.escala); }
   if (m.dueno && m.tVida !== undefined) { m.tVida -= dt; if (m.tVida <= 0) { m.vida = 0; m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; despedidaInvocado(j, m); return; } }
+  // aturdirlo o congelarlo mientras se prepara le corta la maniobra
+  if ((m.congelado > 0 || m.aturdido > 0) && (m as any).man) { if ((m as any).man.fase !== 'recupera') (m as any).manCd = 2.5; (m as any).man = undefined; (m as any).alto = 0; }
   if (m.congelado > 0) { m.congelado -= dt; return; }
   if (m.aturdido > 0) { m.aturdido -= dt; m.acc = 'herido'; return; }
   if (m.frio > 0) m.frio -= dt;
@@ -1837,6 +1991,8 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
   // aliento de fuego (Ozmaren y el demonio alado): aviso con el cono en el piso y después el chorro, que se esquiva saliendo
   const al = (m as any).aliento as Aliento | undefined;
   if (al) { avanzarAliento(j, m, al, dt); return; }
+  const man = (m as any).man as Maniobra | undefined;
+  if (man) { if (m.dueno || j.heroe.muerto) { (m as any).man = undefined; (m as any).alto = 0; } else { avanzarManiobra(j, m, man, dt); return; } }
   if (m.acc === 'herido') { if (m.t >= m.dur) { m.acc = 'quieto'; m.t = 0; } return; }
   if (m.acc === 'atacar' || m.acc === 'lanzar') {
     if (!m.golpeo && m.t >= m.golpeEn) { m.golpeo = true; golpeMonstruo(j, m); }
@@ -1887,7 +2043,9 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
   if (m.pensar <= 0) {
     m.pensar = 0.5 + R() * 0.4;
     let mejor: Ent = h, bd = dh;
-    for (const o of j.monstruos) if (o.dueno && !o.muerto) { const d = dist(o.x, o.y, m.x, m.y); if (d < bd - 1) { bd = d; mejor = o; } }
+    // los jefes y únicos van por el héroe: solo se entretienen con Thor o un invocado si el héroe está bien lejos
+    const margen = esMandon(m) ? 5 : 1;
+    for (const o of j.monstruos) if (o.dueno && !o.muerto) { const d = dist(o.x, o.y, m.x, m.y); if (d < bd - margen) { bd = d; mejor = o; } }
     m.objetivo = mejor;
     if (dh > 22) { m.estado = 'deambular'; m.objetivo = null; return; }
   }
@@ -1955,6 +2113,12 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
     }
     if ((m as any).hablaT > 0) (m as any).hablaT -= dt; else m.habla = undefined;
   }
+  // los únicos y jefes de mazmorra también se enfurecen: a media vida aceleran y sueltan sus maniobras más seguido
+  if (!m.def.jefe && m.calidad >= 2 && m.fase === 0 && m.vida < m.vidaMax * 0.5) {
+    m.fase = 1; m.vel *= 1.15; m.cd = 0; (m as any).manCd = 0.6; efecto(j, 'grito_guerra', m.x, m.y, 0, 1.6); j.sacudida = Math.max(j.sacudida, 0.5); sonar(j, 'rugido_jefe', m.x, m.y);
+    msg(j, [`¡${m.nombre[0]} se enfurece!`, `${m.nombre[1] || m.nombre[0]} grows enraged!`], '#ff6040');
+  }
+  if (m.objetivo && !m.dueno && m.estado === 'perseguir' && intentarManiobra(j, m, m.objetivo, dt)) return;
   if (m.objetivo) pelear(j, m, m.objetivo, dt, lento);
 }
 
