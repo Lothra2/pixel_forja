@@ -512,6 +512,7 @@ En local: `npm run deportes -- public/kit_deportes` y después `npm run dev`. En
 - **Kachinuki (`kachinuki`):** pisotón, lanzamiento desde el agarre, reacción al rodillazo, codazo atrás, amagues, cabezazo, comer, tambalearse en el borde, caerse, y la burla y la victoria propias de cada uno.
 - **Fútbol:** espera, control, pase, vaselina, tiro, volea, cabezazo, barrida, conducción (`run_ball`, corre tocando la pelota), entrada, saque de banda y el arquero (espera, estirada, atajada alta, saque con la mano y de volea). Las patadas tienen zancada, pie de apoyo, carga, contacto y seguimiento, y el `impacto` cae en el cuadro del contacto con el `punto` del pie. Celebraciones de gol incluidas.
 - **Natación:** además, salir del agua por el borde (`swim_exit`).
+- **Fútbol Nekketsu (`anim/nekketsuFutbol.ts`, para Fútbol Familia GG):** los gestos del fútbol exagerados como en Kunio y Nintendo World Cup, para que se lean a 30 px. `nk_goal_run` (corre con los dos brazos arriba y gritando), `nk_goal_jump` (salta con los brazos arriba), `nk_banzai` (parado con los brazos arriba; el juego lo hace saltar), `nk_shoulder` (la carga con el hombro, con el cuerpo entero), `nk_punch` (el puñetazo desde atrás de la oreja hasta el brazo estirado), `nk_header` (salta, se arquea y se dobla sobre el balón), `nk_sprint` (el pique echado adelante) y `nk_shot` (el tiro fuerte, que despega del piso). Los brazos arriba usan el modo `load` del chibi, el mismo de levantar cosas: suben por los costados de la cabeza y se estiran hasta lo alto del pelo.
 
 ## Superhéroes
 

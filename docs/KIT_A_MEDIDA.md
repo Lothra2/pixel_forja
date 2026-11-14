@@ -66,7 +66,7 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `fx` | Efectos del catálogo general: `true` (los 56) o ids, bases y grupos. Ver abajo | No van |
 | `audio` | `{ "sfx": [...], "musica": [...], "ambientes": [...], "voces": [...] }` con los sonidos del motor, o `true` en cada sección. Ver abajo y [AUDIO.md](AUDIO.md) | No va |
 
-Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 205 del motor. Con `alias` salen con el nombre que use el juego (ver abajo). El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
+Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 213 del motor. Con `alias` salen con el nombre que use el juego (ver abajo). El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
 
 ### Packs sin pelotas (`sin_props`, lotes SP y SP2)
 
