@@ -145,7 +145,7 @@ export const PAISAJES: Paisaje[] = [
     k.poner(k.buscar(['comun'], ['portal_azul'])[0], 20, 22);
     k.poner(k.buscar(['campamento'], ['fogata', 'hoguera'])[0], 15, 15, 'grande');
     const carpas = k.buscar(['campamento'], ['carpa', 'tienda', 'pabell']);
-    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; k.poner(carpas[i % Math.max(1, carpas.length)], 15 + Math.cos(a) * 9, 15 + Math.sin(a) * 9); }
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; k.poner(carpas[i % Math.max(1, carpas.length)], 16.5 + Math.cos(a + 0.3) * 10.5, 16.5 + Math.sin(a + 0.3) * 10.5); }
     k.poner(k.buscar(['comun'], ['viaje', 'waypoint'])[0], 23, 7);
     k.poner(k.buscar(['comun', 'campamento'], ['baul', 'alijo', 'stash'])[0], 9, 22);
     k.regar(k.buscar(['campamento'], ['carro', 'carreta', 'caja', 'saco', 'barril', 'heno', 'estandarte', 'muñeco', 'maniqu', 'yunque', 'forja', 'leña']), 14, 4, 4, k.W - 1, k.H - 1);

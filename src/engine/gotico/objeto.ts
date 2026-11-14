@@ -1,6 +1,6 @@
 import { rng } from '../core/rng';
 import { claveBaja } from './clave_baja';
-import { pintarEscena, medirEscena, calidad, girarPiezas, type Escena, type Pieza, type Render, type Ambiente, type V3, caja, cilindro, elipsoide, esfera, palo, poliedro } from './render';
+import { pintarEscena, medirEscena, calidad, girarPiezas, masa, hueso, type Comp, type Escena, type Pieza, type Render, type Ambiente, type V3, caja, cilindro, elipsoide, esfera, palo, poliedro } from './render';
 
 /**
  * Cómo se define un asset del taller gótico: una función que arma las piezas 3D para una variante, un cuadro de
@@ -57,11 +57,36 @@ export type { V3, Pieza };
 
 const cache = new Map<string, Render>();
 export const REGISTRO: ObjetoDef[] = [];
-export function registrar(...defs: ObjetoDef[]) { for (const d of defs) { if (!REGISTRO.some((x) => x.id === d.id)) REGISTRO.push(conClaveBaja(d)); } }
+export function registrar(...defs: ObjetoDef[]) { for (const d of defs) { if (!REGISTRO.some((x) => x.id === d.id)) REGISTRO.push(conEscala(conClaveBaja(d))); } }
 /**
  * Personajes y monstruos (héroes, bestias, jefes, Thor) se pintan en clave baja (clave_baja.ts): su armado devuelve
  * siempre una escena con su `luz`, así cualquiera que lo pinte (el catálogo, el horneado del juego) la recibe.
  */
+/**
+ * Las edificaciones a escala de la gente: casas, chozas, carpas y pabellones salían con puertas más bajas que una persona.
+ * Se agrandan enteras (piezas y huella) al registrarlas, sin tocar cada armado.
+ */
+const ESCALA_OBRA: [RegExp, number][] = [[/^casa_/, 1.55], [/^camp_(carpa|carpa_grande|pabellon)$/, 1.5], [/^pue_(casa_en_llamas|casa_calcinada|ruina_derrumbada|puesto)$/, 1.5]];
+function escalarPiezas(ps: Pieza[], s: number): Pieza[] {
+  const P = (v: V3): V3 => [v[0] * s, v[1] * s, v[2] * s];
+  return ps.map((p): Pieza => {
+    if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => [n, d * s] as [V3, number]), pts: p.pts.map(P) };
+    if (p.k === 'cono') return { ...p, o: P(p.o), h: p.h * s, r0: p.r0 * s, r1: p.r1 * s };
+    if (p.k === 'elip') return { ...p, c: P(p.c), r: P(p.r) };
+    const comps = p.comps.map((q): Comp => (q.f === 'hueso'
+      ? hueso(P(q.a), P(q.b), q.r0 * s, q.r1 * s, { mat: q.mat, tono: q.tono, k: q.k === undefined ? undefined : q.k * s })
+      : { ...q, c: P(q.c), sc: P(q.sc), sr: q.sr * s, r: P(q.r), k: q.k === undefined ? undefined : q.k * s }));
+    return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave * s });
+  });
+}
+function conEscala(d: ObjetoDef): ObjetoDef {
+  const s = ESCALA_OBRA.find(([re]) => re.test(d.id))?.[1]; if (!s) return d;
+  const base = d.armar, H = (h: [number, number]): [number, number] => [Math.round(h[0] * s), Math.round(h[1] * s)];
+  d.armar = (v, f, a) => { const r = base(v, f, a); return Array.isArray(r) ? escalarPiezas(r, s) : { ...r, piezas: escalarPiezas(r.piezas, s) }; };
+  if (d.huella) d.huella = H(d.huella);
+  if (d.huellaPor) for (const k of Object.keys(d.huellaPor)) d.huellaPor[k] = H(d.huellaPor[k]);
+  return d;
+}
 function conClaveBaja(d: ObjetoDef): ObjetoDef {
   if (d.tema !== 'personajes' && d.tema !== 'monstruos') return d;
   const base = d.armar;

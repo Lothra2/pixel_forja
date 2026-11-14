@@ -1,6 +1,7 @@
 // Dibuja la zona: pisos, manchas, objetos y personajes por profundidad, poderes, partículas, luz, niebla y clima.
 import { nuevoCuadroSombras } from './luces';
 import { ctx, W, H, E } from '../nucleo/lienzo';
+import { Sonido } from '../audio/sonido';
 import { ZONAS } from '../mundo/actos';
 import { puntoSalida } from '../mundo/zona';
 import { esquivarHud, etiquetasMundo, hud } from '../ui/hud_rects';
@@ -212,7 +213,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   recolectar(j, tiempo, aPant, W, H);
   // explorar
   const btx = Math.floor(h.x / 5), bty = Math.floor(h.y / 5);
-  for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const X = btx + dx, Y = bty + dy; if (X >= 0 && Y >= 0 && X < z.tw && Y < z.th && dx * dx + dy * dy <= 10) z.explorado[Y * z.tw + X] = 1; }
+  for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const X = btx + dx, Y = bty + dy; if (X >= 0 && Y >= 0 && X < z.tw && Y < z.th && dx * dx + dy * dy <= 13) z.explorado[Y * z.tw + X] = 1; }
   // pisos visibles
   const f25 = Math.floor(tiempo * 25);
   const [wx0] = aMundo(0, 0), [, wy0] = aMundo(W, 0), [wx1] = aMundo(W, H), [, wy1] = aMundo(0, H);
@@ -226,6 +227,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
     dibujar(ctx, q, px, py);
   }
+  if (!(window as any).__sinMatiz) matizSuelo(j, bx0, bx1, by0, by1);
   // cavernas: la roca maciza se pinta negra encima del piso, por tramos de celdas seguidas (los peñascos del contorno van después, encima)
   if (z.hueco) {
     const hu = z.hueco, cx0 = Math.max(0, bx0 * 5), cx1 = Math.min(z.W - 1, bx1 * 5 + 4), cy0 = Math.max(0, by0 * 5), cy1 = Math.min(z.H - 1, by1 * 5 + 4);
@@ -239,6 +241,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     }
     ctx.fill();
   }
+  if (z.lluvia && z.tipo !== 'mazmorra' && !(window as any).__sinLluvia) lluviaSuelo(j, dt, tiempo, aPant, aMundo);
   // manchas
   for (const m of j.manchas) {
     const [px, py] = aPant(m.x, m.y); if (px < -60 || px > W + 60 || py < -40 || py > H + 40) continue;
@@ -471,6 +474,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   clima(j, dt, tiempo);
 }
 
+const nieblaBaja = document.createElement('canvas');
+const chispasPortal = new Map<number, { x: number; y: number; vx: number; vy: number; t: number; d: number }[]>();
 /**
  * El umbral de una salida, vivo: un sello de runas que gira en el piso, y donde no hay puerta un arco de luz con un velo
  * que ondula adentro, dos braseros de fuego de Doom en los pies, un haz que sube y motas en espiral. El color dice a
@@ -495,33 +500,65 @@ function umbralVivo(px: number, py: number, conArco: boolean, dest: { tipo?: str
     ctx.fillStyle = rgba(k); ctx.fillRect(Math.round(x) - 1, Math.round(y) - 2, 2, 4); ctx.fillRect(Math.round(x) - 2, Math.round(y) - (i % 2 ? 2 : 0), 4, 1);
   }
   if (conArco) {
-    const forma = () => { ctx.beginPath(); ctx.moveTo(px - 20, py - 2); ctx.lineTo(px - 20, py - 58); ctx.quadraticCurveTo(px, py - 92, px + 20, py - 58); ctx.lineTo(px + 20, py - 2); ctx.closePath(); };
-    // el velo: luz que ondula dentro del arco, más densa abajo, con hebras que suben
-    ctx.save(); forma(); ctx.clip();
-    const gv = ctx.createLinearGradient(0, py - 90, 0, py); gv.addColorStop(0, rgba(0.05)); gv.addColorStop(0.6, rgba(0.09 + pulso * 0.03)); gv.addColorStop(1, rgba(0.15 + pulso * 0.05));
-    ctx.fillStyle = gv; ctx.fillRect(px - 22, py - 94, 44, 94);
-    for (let i = 0; i < 9; i++) {
-      const x = px - 18 + ((i * 4.7 + Math.sin(t * 1.3 + i * 2.1 + sem) * 3) % 36), f = (t * (0.35 + (i % 3) * 0.12) + i * 0.37 + sem) % 1, y = py - f * 88, l = 10 + (i % 4) * 5;
-      const gh = ctx.createLinearGradient(0, y - l, 0, y); gh.addColorStop(0, rgba(0)); gh.addColorStop(0.5, rgba(0.32 * Math.sin(f * Math.PI))); gh.addColorStop(1, rgba(0));
-      ctx.fillStyle = gh; ctx.fillRect(Math.round(x), y - l, 1.5, l);
+    // el portal: un óvalo de pie con un remolino adentro (brazos en espiral que se tragan la luz hacia el ojo) y chispas que
+    // se desprenden del borde. Sin marco de piedra: el borde es energía viva que tiembla.
+    const cy = py - 46, RX = 23, RY = 42, giro = t * 2.6 + sem;
+    // resplandor de afuera
+    const gh = ctx.createRadialGradient(px, cy, 8, px, cy, 70); gh.addColorStop(0, rgba(0.22 + pulso * 0.08)); gh.addColorStop(0.55, rgba(0.07)); gh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gh; ctx.beginPath(); ctx.ellipse(px, cy, 44, 70, 0, 0, Math.PI * 2); ctx.fill();
+    // el fondo del óvalo: un pozo oscuro (tapa lo de atrás) y encima el remolino
+    ctx.save(); ctx.globalCompositeOperation = 'source-over';
+    const gf = ctx.createRadialGradient(px, cy, 0, px, cy, RY); gf.addColorStop(0, 'rgba(4,3,8,0.96)'); gf.addColorStop(0.7, `rgba(${c[0] >> 3},${c[1] >> 3},${c[2] >> 3},0.92)`); gf.addColorStop(1, `rgba(${c[0] >> 2},${c[1] >> 2},${c[2] >> 2},0.85)`);
+    ctx.fillStyle = gf; ctx.beginPath(); ctx.ellipse(px, cy, RX, RY, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.ellipse(px, cy, RX, RY, 0, 0, Math.PI * 2); ctx.clip();
+    // brazos del remolino: espirales que giran, cada una hecha de tramos que se afinan y se apagan hacia el ojo
+    for (let b = 0; b < 5; b++) {
+      const a0 = giro + (b / 5) * Math.PI * 2, vel = 1 + (b % 2) * 0.35;
+      for (let k = 0; k < 26; k++) {
+        const f = k / 26, f2 = (k + 1) / 26, r1 = 1 - f * 0.94, r2 = 1 - f2 * 0.94;
+        const a1 = a0 * vel + f * 5.4 + Math.sin(t * 1.7 + b + f * 4) * 0.18, a2 = a0 * vel + f2 * 5.4 + Math.sin(t * 1.7 + b + f2 * 4) * 0.18;
+        ctx.strokeStyle = b % 2 ? `rgba(255,250,235,${0.5 * (1 - f) + 0.08})` : rgba(0.85 * (1 - f * 0.8)); ctx.lineWidth = Math.max(0.8, (b % 2 ? 2 : 3.4) * (1 - f * 0.75));
+        ctx.beginPath(); ctx.moveTo(px + Math.cos(a1) * RX * r1, cy + Math.sin(a1) * RY * r1); ctx.lineTo(px + Math.cos(a2) * RX * r2, cy + Math.sin(a2) * RY * r2); ctx.stroke();
+      }
     }
-    // el brillo que cruza el velo de lado a lado
-    const bx = px - 30 + ((t * 26 + sem * 9) % 90); const gb = ctx.createLinearGradient(bx - 8, 0, bx + 8, 0); gb.addColorStop(0, 'rgba(255,255,255,0)'); gb.addColorStop(0.5, `rgba(255,255,255,${0.16 + pulso * 0.06})`); gb.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = gb; ctx.fillRect(bx - 8, py - 94, 16, 94);
+    // jirones que caen al ojo y el ojo mismo
+    for (let i = 0; i < 14; i++) {
+      const f = (t * (0.5 + (i % 4) * 0.13) + i * 0.071 + sem) % 1, a = giro * 1.4 + i * 2.39 + f * 4.2, r = 1 - f;
+      ctx.fillStyle = i % 3 ? rgba(0.9 * Math.sin(f * Math.PI)) : `rgba(255,255,255,${0.9 * Math.sin(f * Math.PI)})`;
+      ctx.fillRect(Math.round(px + Math.cos(a) * RX * r), Math.round(cy + Math.sin(a) * RY * r), i % 2 ? 2 : 1, i % 2 ? 2 : 1);
+    }
+    const go = ctx.createRadialGradient(px, cy, 0, px, cy, 9 + pulso * 3); go.addColorStop(0, 'rgba(255,255,255,0.95)'); go.addColorStop(0.4, rgba(0.7)); go.addColorStop(1, rgba(0));
+    ctx.fillStyle = go; ctx.fillRect(px - 13, cy - 13, 26, 26);
     ctx.restore();
-    // el marco: resplandor ancho, cuerpo de color y un filo blanco
-    for (const [w, col] of [[9, rgba(0.14 + pulso * 0.05)], [4, rgba(0.6 + pulso * 0.2)], [1.2, `rgba(255,250,235,${0.75 + pulso * 0.2})`]] as [number, string][]) {
-      ctx.lineWidth = w; ctx.strokeStyle = col; ctx.lineJoin = 'round';
-      ctx.beginPath(); ctx.moveTo(px - 20, py - 2); ctx.lineTo(px - 20, py - 58); ctx.quadraticCurveTo(px, py - 92, px + 20, py - 58); ctx.lineTo(px + 20, py - 2); ctx.stroke();
+    // el borde: tres pasadas (halo, color, filo blanco) sobre un óvalo que tiembla
+    for (const [w, col] of [[10, rgba(0.13 + pulso * 0.05)], [4.5, rgba(0.62 + pulso * 0.2)], [1.4, `rgba(255,250,235,${0.8 + pulso * 0.2})`]] as [number, string][]) {
+      ctx.lineWidth = w; ctx.strokeStyle = col; ctx.beginPath();
+      for (let i = 0; i <= 40; i++) { const a = (i / 40) * Math.PI * 2, d = 1 + 0.035 * Math.sin(a * 7 + t * 9 + sem) + 0.02 * Math.sin(a * 13 - t * 14); const x = px + Math.cos(a) * RX * d, y = cy + Math.sin(a) * RY * d; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+      ctx.closePath(); ctx.stroke();
     }
-    // la clave del arco: una gema que late
-    const gk = ctx.createRadialGradient(px, py - 76, 0, px, py - 76, 9 + pulso * 3); gk.addColorStop(0, 'rgba(255,255,255,0.95)'); gk.addColorStop(0.35, rgba(0.8)); gk.addColorStop(1, rgba(0));
-    ctx.fillStyle = gk; ctx.fillRect(px - 13, py - 89, 26, 26);
-    // el haz que sube por encima del arco
-    const gz = ctx.createLinearGradient(0, py - 150, 0, py - 70); gz.addColorStop(0, rgba(0)); gz.addColorStop(1, rgba(0.16 + pulso * 0.08));
-    ctx.fillStyle = gz; ctx.fillRect(px - 5, py - 150, 10, 80);
-    // dos braseros de fuego vivo en los pies del arco
-    if (!(window as any).__sinFuego) for (const sx of [-20, 20]) llamaViva(ctx, pal, px + sx, py + 1, 16, 34, dt, 0.9);
+    // rayitos que corren por el borde
+    for (let i = 0; i < 3; i++) {
+      const a = (t * (1.9 + i * 0.7) + i * 2.1 + sem) % (Math.PI * 2), l = 0.5 + 0.2 * Math.sin(t * 5 + i);
+      ctx.strokeStyle = `rgba(255,255,255,${0.7 + 0.3 * Math.sin(t * 23 + i * 5)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, cy, RX, RY, 0, a, a + l); ctx.stroke();
+    }
+    // chispas que el borde escupe hacia afuera y caen
+    const ch = (chispasPortal.get(sem) ?? chispasPortal.set(sem, []).get(sem)!);
+    if (ch.length < 46) for (let n = 0; n < 2; n++) if (Math.random() < 0.85) {
+      const a = Math.random() * Math.PI * 2, v = 28 + Math.random() * 60, tg = (Math.random() < 0.5 ? 1 : -1) * 34;
+      ch.push({ x: Math.cos(a) * RX, y: Math.sin(a) * RY, vx: Math.cos(a) * v - Math.sin(a) * tg, vy: Math.sin(a) * v + Math.cos(a) * tg - 12, t: 0, d: 0.35 + Math.random() * 0.7 });
+    }
+    for (let i = ch.length - 1; i >= 0; i--) {
+      const q = ch[i]; q.t += dt; if (q.t > q.d) { ch.splice(i, 1); continue; }
+      q.vy += 130 * dt; q.vx *= 1 - 1.2 * dt; q.x += q.vx * dt; q.y += q.vy * dt;
+      const k = 1 - q.t / q.d, X = Math.round(px + q.x), Y = Math.round(cy + q.y);
+      ctx.fillStyle = k > 0.6 ? `rgba(255,255,255,${k})` : rgba(k * 1.3); ctx.fillRect(X, Y, k > 0.5 ? 2 : 1, k > 0.5 ? 2 : 1);
+      // estela corta
+      ctx.fillStyle = rgba(k * 0.45); ctx.fillRect(Math.round(X - q.vx * 0.03), Math.round(Y - q.vy * 0.03), 1, 1);
+    }
+    // el haz que sube por encima y el fuego vivo en el pie
+    const gz = ctx.createLinearGradient(0, cy - RY - 60, 0, cy - RY + 6); gz.addColorStop(0, rgba(0)); gz.addColorStop(1, rgba(0.14 + pulso * 0.08));
+    ctx.fillStyle = gz; ctx.fillRect(px - 4, cy - RY - 60, 8, 66);
+    if (!(window as any).__sinFuego) llamaViva(ctx, pal, px, py + 3, 30, 22, dt, 0.75);
   }
   // motas en espiral y alguna chispa que salta
   for (let i = 0; i < 10; i++) {
@@ -784,14 +821,8 @@ function dibujarPortal(j: Juego, t: number) {
   const [px, py] = j.zona.tipo === 'pueblo' ? aPant(j.zona.entradas.portal[0] + 0.5, j.zona.entradas.portal[1] - 1) : aPant(p.x, p.y);
   // el portal vivo de la Forja: arco gótico con vórtice ámbar en el pueblo, grieta verde mar en la mazmorra, arco roto en
   // el infierno; la luz del piso va aparte, sumada en modo screen debajo del portal
-  const tipoP = tipoPortal(j);
-  const meta = objetoMeta('com_portal_vivo', tipoP) ?? objetoMeta('com_portal_azul', 'abierto');
-  if (meta) {
-    const i = Math.floor(t * 25 / meta.t) % meta.f.length, luzP = objetoMeta('com_portal_luz', tipoP);
-    if (luzP) { ctx.save(); ctx.globalCompositeOperation = 'screen'; dibujar(ctx, luzP.f[i % luzP.f.length], px, py); ctx.restore(); }
-    dibujar(ctx, meta.f[i], px, py);
-  }
-  else { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = '#4080ff80'; ctx.beginPath(); ctx.ellipse(px, py - 40, 18, 40, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+  // el mismo óvalo de remolino de las salidas: dorado si lleva al pueblo; en el pueblo, del color de la zona a la que vuelve
+  umbralVivo(px, py, true, j.zona.tipo === 'pueblo' ? ZONAS[(j as any).portalZona] : { tipo: 'pueblo' }, t, 0.5 + 0.5 * Math.sin(t * 3), 4.2, dtCuadro);
   picks.push({ tipo: 'portal', ref: p, x0: px - 22, y0: py - 90, x1: px + 22, y1: py + 6, prof: 1e9 });
 }
 
@@ -830,13 +861,24 @@ function dibujarLuz(j: Juego, t: number) {
   const conAncla = anclasCuadro.length > 0;
   let nc: CanvasRenderingContext2D = ctx;
   if (conAncla) { if (nieblaCv.width !== W || nieblaCv.height !== H) { nieblaCv.width = W; nieblaCv.height = H; } nc = nieblaCv.getContext('2d')!; nc.clearRect(0, 0, W, H); }
-  nc.fillStyle = '#000';
-  for (let by = 0; by < z.th; by++) for (let bx = 0; bx < z.tw; bx++) {
-    if (z.explorado[by * z.tw + bx] || !z.pisos[by * z.tw + bx]) continue;
+  // La máscara se arma chiquita (1/20) con una mancha redonda por baldosa tapada y se agranda suavizada: el borde de lo
+  // visto y el borde del mundo quedan como una penumbra de contorno irregular, no como rombos cortados a regla.
+  // Lo que no tiene piso también entra en la máscara: así el filo del mapa se funde en la oscuridad.
+  const NB = 20, nw = Math.ceil(W / NB) + 2, nh = Math.ceil(H / NB) + 2;
+  if (nieblaBaja.width !== nw || nieblaBaja.height !== nh) { nieblaBaja.width = nw; nieblaBaja.height = nh; }
+  const nb = nieblaBaja.getContext('2d')!; nb.clearRect(0, 0, nw, nh); nb.fillStyle = '#000';
+  const [fx0] = aMundo(0, 0), [, fy0] = aMundo(W, 0), [fx1] = aMundo(W, H), [, fy1] = aMundo(0, H);
+  let hay = false;
+  for (let by = Math.floor(fy0 / 5) - 2; by <= Math.ceil(fy1 / 5) + 2; by++) for (let bx = Math.floor(fx0 / 5) - 2; bx <= Math.ceil(fx1 / 5) + 2; bx++) {
+    const dentro = bx >= 0 && by >= 0 && bx < z.tw && by < z.th;
+    if (dentro && z.explorado[by * z.tw + bx] && z.pisos[by * z.tw + bx]) continue;
     const [px, py] = aPant(bx * 5 + 2.5, by * 5 + 2.5);
-    if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
-    nc.beginPath(); nc.moveTo(px, py - 41); nc.lineTo(px + 81, py); nc.lineTo(px, py + 41); nc.lineTo(px - 81, py); nc.closePath(); nc.fill();
+    if (px < -140 || px > W + 140 || py < -90 || py > H + 90) continue;
+    // cada mancha con su tamaño (sale de la baldosa, no cambia con el tiempo): el contorno no repite
+    const k = dentro && z.pisos[by * z.tw + bx] ? 0.92 + 0.3 * hashCelda(bx * 3 + 1, by * 7 + 2) : 0.95 + 0.6 * hashCelda(bx * 3 + 1, by * 7 + 2);
+    nb.beginPath(); nb.ellipse(px / NB + 1, py / NB + 1, (81 * k) / NB, (41 * k) / NB, 0, 0, Math.PI * 2); nb.fill(); hay = true;
   }
+  if (hay) { nc.save(); nc.imageSmoothingEnabled = true; nc.imageSmoothingQuality = 'high'; nc.drawImage(nieblaBaja, -NB, -NB, nw * NB, nh * NB); nc.restore(); }
   if (conAncla) {
     nc.globalCompositeOperation = 'destination-out';
     for (const a of anclasCuadro) { if (a.br) nc.drawImage(a.br, Math.round(a.px - a.q.ax), Math.round(a.py - a.q.ay)); else dibujar(nc, a.q, a.px, a.py); }
@@ -885,6 +927,141 @@ function brumaAncla(j: Juego) {
   ctx.restore();
 }
 
+// ------------------------------------------------------------------ el suelo no se repite
+// Las baldosas de piso son 3 o 4 variantes por tema: solas, se nota la cuadrícula. Encima va (1) un matiz propio de cada
+// zona, una textura de un pixel por celda con manchas grandes y medianas más claras, más oscuras, más cálidas o más frías,
+// que se estira sobre todo el mapa y multiplica el piso, y (2) detalles sueltos por celda (piedritas, grietas, matas,
+// astillas) que salen de la posición: ninguna parte del mapa se ve igual a otra.
+let matizDe = '', matizCv: HTMLCanvasElement | null = null;
+const PISO_VERDE = /pasto|selva|pantano|par_suelo|musgo/;
+function matizSuelo(j: Juego, bx0: number, bx1: number, by0: number, by1: number) {
+  const z = j.zona, clave = z.id + ':' + z.semilla;
+  if (matizDe !== clave || !matizCv) {
+    matizDe = clave; matizCv = document.createElement('canvas'); matizCv.width = z.W; matizCv.height = z.H;
+    const g = matizCv.getContext('2d')!, im = g.createImageData(z.W, z.H), r = rng(z.semilla * 31 + 7);
+    const campo = (esc: number) => { const gw = Math.ceil(z.W / esc) + 2, gh = Math.ceil(z.H / esc) + 2, gr = Float32Array.from({ length: gw * gh }, () => r()); return (x: number, y: number) => { const fx = x / esc, fy = y / esc, ix = Math.floor(fx), iy = Math.floor(fy), u = fx - ix, v = fy - iy, su = u * u * (3 - 2 * u), sv = v * v * (3 - 2 * v); const a = gr[iy * gw + ix], b = gr[iy * gw + ix + 1], c = gr[(iy + 1) * gw + ix], d = gr[(iy + 1) * gw + ix + 1]; return a + (b - a) * su + (c - a + (a - b - c + d) * su) * sv; }; };
+    const grande = campo(11), medio = campo(4.3), fino = campo(1.7), calor = campo(15);
+    for (let y = 0; y < z.H; y++) for (let x = 0; x < z.W; x++) {
+      const v = 0.5 * grande(x, y) + 0.32 * medio(x, y) + 0.18 * fino(x, y), luz = 0.74 + 0.4 * v, c = calor(x, y) - 0.5, o = (y * z.W + x) * 4;
+      im.data[o] = Math.min(255, 255 * luz * (1 + c * 0.16)); im.data[o + 1] = Math.min(255, 255 * luz); im.data[o + 2] = Math.min(255, 255 * luz * (1 - c * 0.18)); im.data[o + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+  }
+  ctx.save();
+  const [ox, oy] = aPant(0, 0);
+  ctx.globalCompositeOperation = 'multiply'; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.setTransform(ctx.getTransform().multiply(new DOMMatrix([16, 8, -16, 8, ox, oy])));
+  ctx.drawImage(matizCv, 0, 0);
+  ctx.restore();
+  // detalles sueltos: se pintan una vez por baldosa en un lienzo propio y después solo se copian
+  for (let by = by0; by <= by1; by++) for (let bx = bx0; bx <= bx1; bx++) {
+    if (!z.pisos[by * z.tw + bx]) continue;
+    const [px, py] = aPant(bx * 5 + 2.5, by * 5 + 2.5); if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
+    const c = detalleBaldosa(z, bx, by); if (c) ctx.drawImage(c, Math.round(px) - 88, Math.round(py) - 48);
+  }
+}
+const detalles = new Map<number, HTMLCanvasElement | null>(); let detallesDe = '';
+function detalleBaldosa(z: Juego['zona'], bx: number, by: number): HTMLCanvasElement | null {
+  const clave = z.id + ':' + z.semilla; if (detallesDe !== clave) { detallesDe = clave; detalles.clear(); }
+  const idx = by * z.tw + bx; if (detalles.has(idx)) return detalles.get(idx)!;
+  const p = z.pisos[idx]!; let c: HTMLCanvasElement | null = null, g: CanvasRenderingContext2D | null = null;
+  if (!/agua|lava|arcano|pentagrama|madera|baldosa/.test(p.id)) for (let cy = by * 5; cy < by * 5 + 5; cy++) for (let cx = bx * 5; cx < bx * 5 + 5; cx++) {
+    const dens = 0.17, h = hashCelda(cx * 1.37 + 5, cy * 0.91 + 3); if (h > dens) continue;
+    if (z.bloq[cy * z.W + cx] === 2 || (z.hueco && z.hueco[cy * z.W + cx])) continue;
+    if (!g) { c = document.createElement('canvas'); c.width = 176; c.height = 96; g = c.getContext('2d')!; }
+    const h2 = hashCelda(cx * 7.1, cy * 3.3), h3 = hashCelda(cx * 2.3 + 9, cy * 5.7);
+    const lx = cx + 0.2 + h2 * 0.6 - (bx * 5 + 2.5), ly = cy + 0.2 + h3 * 0.6 - (by * 5 + 2.5);
+    const X = Math.round(88 + (lx - ly) * 16), Y = Math.round(48 + (lx + ly) * 8), t = h / dens;
+    if (t < 0.34) {
+      // piedritas: dos o tres, con su luz arriba y su sombra abajo
+      for (let i = 0; i < 2 + (h2 > 0.5 ? 1 : 0); i++) { const dx = Math.round((hashCelda(cx + i * 3.1, cy) - 0.5) * 12), dy = Math.round((hashCelda(cx, cy + i * 4.7) - 0.5) * 6), w = 2 + (i === 0 && h3 > 0.4 ? 1 : 0); g.fillStyle = 'rgba(0,0,0,0.42)'; g.fillRect(X + dx, Y + dy + 1, w, 1); g.fillStyle = 'rgba(210,200,180,0.34)'; g.fillRect(X + dx, Y + dy, w, 1); }
+    } else if (t < 0.6) {
+      // grieta: una línea quebrada fina
+      g.strokeStyle = 'rgba(0,0,0,0.36)'; g.lineWidth = 1; g.beginPath(); g.moveTo(X - 6, Y + 0.5); g.lineTo(X - 2, Y + (h2 > 0.5 ? 2.5 : -1.5)); g.lineTo(X + 3, Y + 0.5); g.lineTo(X + 7, Y + (h3 > 0.5 ? -1.5 : 2.5)); g.stroke();
+    } else if (t < 0.85 && PISO_VERDE.test(p.id)) {
+      // mata de pasto: tres hebras
+      for (let i = -1; i <= 1; i++) { g.fillStyle = i ? 'rgba(96,112,62,0.5)' : 'rgba(150,160,96,0.55)'; g.fillRect(X + i * 2, Y - 3 - (i ? 0 : 1), 1, 3 + (i ? 0 : 1)); }
+    } else {
+      // mancha: un parche apenas más oscuro o más claro, de borde irregular
+      g.fillStyle = h2 > 0.5 ? 'rgba(0,0,0,0.16)' : 'rgba(230,215,185,0.07)';
+      g.beginPath(); g.ellipse(X, Y, 7 + h3 * 9, 3 + h3 * 4, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.ellipse(X + 5, Y + 2, 4 + h2 * 5, 2 + h2 * 2, 0, 0, Math.PI * 2); g.fill();
+    }
+  }
+  detalles.set(idx, c); return c;
+}
+// ------------------------------------------------------------------ la lluvia
+// Lluvia de verdad, en dos capas. En el piso: charcos fijos del mapa que reflejan y se llenan de ondas, y cada gota que
+// cae revienta en una coronita con salpicaduras. En el aire: dos cortinas de agua a distinta distancia que el viento
+// inclina por ráfagas, una bruma baja y, cada tanto, un relámpago que blanquea todo con su trueno.
+const salpicones: { x: number; y: number; t: number; d: number; g: number }[] = [];
+const chorros: { x: number; y: number; v: number; l: number; c: number }[] = [];
+let rafaga = 0, relampago = 0, proxRayo = 9 + Math.random() * 14;
+const hashCelda = (x: number, y: number) => { const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return h - Math.floor(h); };
+function lluviaSuelo(j: Juego, dt: number, t: number, aP: (x: number, y: number) => [number, number], aM: (x: number, y: number) => [number, number]) {
+  const z = j.zona;
+  const piso = (wx: number, wy: number) => { const cx = Math.floor(wx), cy = Math.floor(wy); return cx >= 0 && cy >= 0 && cx < z.W && cy < z.H && !!z.pisos[Math.floor(cy / 5) * z.tw + Math.floor(cx / 5)] && z.bloq[cy * z.W + cx] !== 2 && !(z.hueco && z.hueco[cy * z.W + cx]); };
+  // charcos: salen del mapa (siempre en el mismo sitio), solo sobre piso libre
+  const [wx0] = aM(0, 0), [, wy0] = aM(W, 0), [wx1] = aM(W, H), [, wy1] = aM(0, H);
+  ctx.save();
+  for (let cy = Math.max(0, Math.floor(wy0)); cy <= Math.min(z.H - 1, Math.ceil(wy1)); cy++) for (let cx = Math.max(0, Math.floor(wx0)); cx <= Math.min(z.W - 1, Math.ceil(wx1)); cx++) {
+    const h = hashCelda(cx, cy); if (h > 0.02 || z.bloq[cy * z.W + cx] || !piso(cx, cy)) continue;
+    const [px, py] = aP(cx + 0.5, cy + 0.5); if (px < -40 || px > W + 40 || py < -20 || py > H + 20) continue;
+    const r = 9 + h * 600, gr = ctx.createRadialGradient(px, py, 0, px, py, r);
+    gr.addColorStop(0, 'rgba(24,34,52,0.62)'); gr.addColorStop(0.75, 'rgba(28,40,60,0.5)'); gr.addColorStop(1, 'rgba(28,40,60,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+    // el reflejo del cielo y las ondas de las gotas que le caen
+    ctx.strokeStyle = `rgba(150,175,215,${0.16 + 0.1 * Math.sin(t * 2 + h * 900)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(px - r * 0.2, py - r * 0.12, r * 0.45, r * 0.16, 0, Math.PI, Math.PI * 1.9); ctx.stroke();
+    for (let k = 0; k < 2; k++) { const f = (t * (0.9 + k * 0.35) + h * 500 + k * 0.5) % 1, rr = r * (0.15 + f * 0.7); ctx.strokeStyle = `rgba(170,195,230,${0.4 * (1 - f)})`; ctx.beginPath(); ctx.ellipse(px + (k ? r * 0.25 : -r * 0.2), py + (k ? -r * 0.08 : r * 0.06), rr, rr * 0.5, 0, 0, Math.PI * 2); ctx.stroke(); }
+  }
+  // gotas que revientan en el piso
+  const porSeg = (E.tactil ? 170 : 300) * (0.75 + 0.5 * rafaga);
+  for (let n = porSeg * dt + Math.random(); n >= 1; n--) {
+    const sx = Math.random() * W, sy = Math.random() * H, [wx, wy] = aM(sx, sy);
+    if (piso(wx, wy)) salpicones.push({ x: wx, y: wy, t: 0, d: 0.22 + Math.random() * 0.14, g: Math.random() });
+  }
+  for (let i = salpicones.length - 1; i >= 0; i--) {
+    const s = salpicones[i]; s.t += dt; if (s.t >= s.d) { salpicones.splice(i, 1); continue; }
+    const [px, py] = aP(s.x, s.y), f = s.t / s.d, X = Math.round(px), Y = Math.round(py);
+    if (f < 0.25) { ctx.fillStyle = 'rgba(225,235,255,0.85)'; ctx.fillRect(X - 1, Y - 1, 2, 2); }
+    else {
+      // la corona: un aro que se abre y dos o tres gotitas que saltan y vuelven a caer
+      const k = (f - 0.25) / 0.75, r = 2 + k * (4 + s.g * 3);
+      ctx.strokeStyle = `rgba(190,208,240,${0.6 * (1 - k)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(X, Y, r, r * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = `rgba(225,235,255,${0.8 * (1 - k)})`; const alto = Math.sin(k * Math.PI) * (4 + s.g * 4);
+      ctx.fillRect(Math.round(X - 2 - k * 4), Math.round(Y - alto), 1, 1); ctx.fillRect(Math.round(X + 2 + k * 4), Math.round(Y - alto * 0.8), 1, 1); if (s.g > 0.5) ctx.fillRect(X, Math.round(Y - alto * 1.3), 1, 2);
+    }
+  }
+  ctx.restore();
+}
+function lluviaAire(dt: number, t: number) {
+  // el viento sopla por ráfagas: inclina las gotas y las apura
+  rafaga = Math.max(0, Math.min(1, 0.5 + 0.5 * Math.sin(t * 0.37) + 0.3 * Math.sin(t * 1.3 + 2)));
+  const n = E.tactil ? 190 : 340, incl = 0.16 + 0.3 * rafaga;
+  while (chorros.length < n) chorros.push({ x: Math.random() * (W + 300), y: Math.random() * H, v: 0.7 + Math.random() * 0.6, l: 10 + Math.random() * 14, c: Math.random() < 0.3 ? 1 : 0 });
+  ctx.save(); ctx.lineCap = 'butt';
+  for (const capa of [0, 1]) {
+    ctx.strokeStyle = capa ? `rgba(205,218,245,${0.34 + 0.1 * rafaga})` : 'rgba(150,165,200,0.2)'; ctx.lineWidth = capa ? 1.5 : 1; ctx.beginPath();
+    for (const g of chorros) {
+      if (g.c !== capa) continue;
+      const v = (capa ? 980 : 720) * g.v * (0.85 + 0.35 * rafaga);
+      if (!capa || true) { g.y += v * dt; g.x -= v * incl * dt; }
+      if (g.y > H + 20) { g.y = -20 - Math.random() * 40; g.x = Math.random() * (W + 300); }
+      const l = g.l * (capa ? 1.7 : 1);
+      ctx.moveTo(g.x, g.y); ctx.lineTo(g.x - l * incl, g.y + l);
+    }
+    ctx.stroke();
+  }
+  // bruma de agua que barre baja con cada ráfaga
+  if (rafaga > 0.55) { const a = (rafaga - 0.55) * 0.16, x = W - ((t * 220) % (W + 500)); const gb = ctx.createLinearGradient(x, 0, x + 380, 0); gb.addColorStop(0, 'rgba(170,185,215,0)'); gb.addColorStop(0.5, `rgba(170,185,215,${a})`); gb.addColorStop(1, 'rgba(170,185,215,0)'); ctx.fillStyle = gb; ctx.fillRect(x, 0, 380, H); }
+  // relámpago: dos fogonazos seguidos y el trueno un instante después
+  proxRayo -= dt;
+  if (proxRayo <= 0) { proxRayo = 14 + Math.random() * 22; relampago = 0.5; setTimeout(() => Sonido.efecto('trueno', { vol: 0.35 + Math.random() * 0.2 }), 350 + Math.random() * 900); }
+  if (relampago > 0) {
+    relampago -= dt; const k = relampago > 0.42 ? 1 : relampago > 0.34 ? 0.15 : relampago > 0.26 ? 0.8 : Math.max(0, relampago / 0.26) * 0.5;
+    ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(190,205,255,${0.32 * k})`; ctx.fillRect(0, 0, W, H);
+  }
+  ctx.restore();
+}
 // clima: lluvia, nieve, ceniza y niebla
 const gotas: { x: number; y: number; v: number }[] = [];
 const bancos: { x: number; y: number; r: number; v: number }[] = [];
@@ -902,6 +1079,7 @@ function clima(j: Juego, dt: number, t: number) {
     }
     ctx.restore();
   }
+  if (z.lluvia && z.tipo !== 'mazmorra') { if (!(window as any).__sinLluvia) lluviaAire(dt, t); return; }
   const tipo = z.lluvia ? 'lluvia' : z.nieve ? 'nieve' : z.ceniza ? 'ceniza' : null;
   if (!tipo || z.tipo === 'mazmorra' || (tipo === 'lluvia' && pf.lluvia) || (tipo === 'nieve' && pf.nieve)) return;
   const n = tipo === 'lluvia' ? 160 : 110;

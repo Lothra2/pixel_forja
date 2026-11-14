@@ -314,9 +314,10 @@ export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: nu
   // Khamer-Ul no tiene sombra: es su maldición
   if ((e as any).def?.sprite === 'jefe_rey_sin_sombra') return;
   // sombra de contacto, siempre: ancla los pies al piso
+  // (solo un roce bajo los pies: la sombra de verdad es la silueta proyectada de más abajo, que ahora está siempre)
   const rr = (e.radio / 0.45) * 0.9 * esc;
-  ctx.save(); ctx.globalAlpha = 0.32; ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.ellipse(px, py, rr * 11, rr * 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.globalAlpha = q.img ? 0.2 : 0.32; ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.ellipse(px, py, rr * (q.img ? 6.5 : 11), rr * (q.img ? 2.8 : 5), 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   if (!q.img) return;
   // sombras suavizadas: cada luz fija tiene su sombra por entidad, que gira y se estira despacio (~150 ms) y aparece
   // o se apaga con fundido, así no saltan de una luz a otra al caminar ni titilan con el fuego
@@ -342,6 +343,10 @@ export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: nu
   for (const v of est.s.values()) { const n = Math.hypot(v.gx, v.gy) || 1; lista.push({ gx: v.gx / n, gy: v.gy / n, len: v.len, a: v.a }); }
   lista.sort((x, y) => y.a - x.a); lista.length = Math.min(lista.length, 3);
   if (sol > 0) lista.push({ gx: 0.55, gy: -0.83, len: 0.85, a: sol * 0.7 });
+  // sin luces cerca igual hay sombra: la del cielo (luna, resplandor), con la misma caída que traen horneada los objetos
+  // del mapa. Se apaga a medida que las luces fijas mandan, para no sumar una sombra de más junto a una fogata.
+  const fuertes = lista.reduce((t, v) => t + v.a, 0);
+  if (fuertes < 0.6) lista.push({ gx: 0.93, gy: 0.36, len: 0.8, a: 0.5 * (1 - fuertes / 0.6) });
   if (!lista.length) return;
   if (!silueta(q, '#000')) return;
   const n = lista.length;

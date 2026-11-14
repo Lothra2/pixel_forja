@@ -69,6 +69,8 @@ export function dibujarClimaPfx(ctx: CanvasRenderingContext2D, j: Juego, W: numb
   if (!pfxListo()) return r;
   if (zonaId !== j.zona.id + ':' + j.zona.semilla) armar(j);
   for (const id of clima) {
+    // la lluvia y la tormenta ahora las pinta el juego (escena.ts: gotas con viento, salpicaduras, charcos y relámpagos)
+    if ((id === 'fx_lluvia' || id === 'fx_tormenta') && j.zona.lluvia && j.zona.tipo !== 'mazmorra') continue;
     const e = efectoPfx(id); if (!e) continue;
     // en mosaico a escala 2, cada tesela con su propio tiempo para que no se note la repetición
     const tw = 640, th = 360, alfa = ALFA[id] ?? 0.4;

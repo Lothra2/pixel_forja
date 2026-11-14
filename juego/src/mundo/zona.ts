@@ -1091,6 +1091,7 @@ function pueblo(def: DefZona, semilla: number): Zona {
   z.entradas.portal = [Math.round(cx0 - 3), Math.round(cy0 + 5)];
   if (def.tema === 'paramo') sueloParamo(k, [[cx0 / 5, cy0 / 5]]);
   void r;
+  z.explorado.fill(1); // el campamento se conoce entero desde que llegas
   return z;
 }
 
