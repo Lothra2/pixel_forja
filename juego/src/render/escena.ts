@@ -226,6 +226,19 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
     dibujar(ctx, q, px, py);
   }
+  // cavernas: la roca maciza se pinta negra encima del piso, por tramos de celdas seguidas (los peñascos del contorno van después, encima)
+  if (z.hueco) {
+    const hu = z.hueco, cx0 = Math.max(0, bx0 * 5), cx1 = Math.min(z.W - 1, bx1 * 5 + 4), cy0 = Math.max(0, by0 * 5), cy1 = Math.min(z.H - 1, by1 * 5 + 4);
+    ctx.fillStyle = '#050403'; ctx.beginPath();
+    for (let y = cy0; y <= cy1; y++) for (let x = cx0; x <= cx1; x++) {
+      if (!hu[y * z.W + x]) continue;
+      let x2 = x; while (x2 < cx1 && hu[y * z.W + x2 + 1]) x2++;
+      const a = aPant(x, y), b2 = aPant(x2 + 1, y), c = aPant(x2 + 1, y + 1), d = aPant(x, y + 1);
+      if (!(b2[0] < -40 || d[0] > W + 40 || c[1] < -20 || a[1] > H + 20)) { ctx.moveTo(a[0], a[1] - 1); ctx.lineTo(b2[0] + 1, b2[1]); ctx.lineTo(c[0], c[1] + 1); ctx.lineTo(d[0] - 1, d[1]); ctx.closePath(); }
+      x = x2;
+    }
+    ctx.fill();
+  }
   // manchas
   for (const m of j.manchas) {
     const [px, py] = aPant(m.x, m.y); if (px < -60 || px > W + 60 || py < -40 || py > H + 40) continue;

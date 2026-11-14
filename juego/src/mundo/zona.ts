@@ -30,6 +30,8 @@ export interface Zona {
   entradas: Record<string, [number, number]>;
   spawns: Spawn[];
   explorado: Uint8Array;
+  /** Cavernas: celdas de roca maciza dentro de baldosas con piso (se pintan de negro; los peñascos del borde van encima). */
+  hueco?: Uint8Array;
   semilla: number;
   lluvia?: boolean; niebla?: number; ceniza?: boolean; nieve?: boolean;
   /** Puntos especiales: npc, cofre, santuario, piedra de viaje, baúl... */
@@ -82,6 +84,8 @@ interface Tematica {
   /** Otros pares de muros (x, y) para que no todas las mazmorras del tema se vean iguales: se elige uno por zona. */
   murosAlt?: [[string, string[]], [string, string[]]][];
   deco?: Sel[]; vinetas?: string[];
+  /** Caverna orgánica: cámaras irregulares y túneles que serpentean, con peñascos por todo el contorno (en vez de cuartos rectos con muros). */
+  organica?: boolean;
   /** Mazmorra de islas: sin muros, los cuartos son islas con borde de precipicio y los pasillos son puentes sobre el vacío. */
   islas?: { borde: string; puente: string; vacio?: Sel[]; mapa?: Record<string, string> };
   /** Mazmorra con vías: los pasillos llevan rieles (rectos, curvas y fin de vía) y a veces una vagoneta. */
@@ -197,6 +201,7 @@ const TEMATICAS: Record<string, Tematica> = {
     grande: [{ t: ['cueva'], p: ['columna'], s: ['cue2_'] }, { t: ['cueva'], p: ['cue2_columna', 'cue2_pilar_roca', 'cue2_hongo_gigante', 'cue2_campamento', 'cue2_sima'] }],
     luces: [{ t: ['cueva'], p: ['antorcha', 'hongos'], s: ['cue2_'] }, { t: ['cueva'], p: ['cue2_drusa', 'cue2_cristal_gigante', 'cue2_hongos_luz'] }],
     deco: [{ t: ['cueva'], p: ['cue2_lago_negro'] }],
+    organica: true,
     muroX: ['cue_muro', ['x', 'x_alta']], muroY: ['cue_muro', ['y', 'y_alta']],
   },
   // acto 6: la ciudad ahogada (afuera) y su catedral (adentro). Mezclan lo nuevo de la Forja con lo que existe
@@ -816,6 +821,92 @@ function sembrar(k: Constructor, n: number, evitar: [number, number][]) {
   }
 }
 
+// ------------------------------------------------------------------ cavernas orgánicas
+/**
+ * Cava una caverna a nivel de celda sobre el esqueleto de cuartos y enlaces: cada cuarto es una cámara de borde irregular
+ * (elipse deformada con ruido), cada enlace un túnel curvo de ancho variable con nichos, más algún lazo extra para que no
+ * sea un solo pasillo. Dos pasadas de autómata redondean. Reescribe `suelo` y `sala` (por baldosa) y devuelve las celdas abiertas.
+ */
+function cavarCueva(k: Constructor, cuartos: number[][], enlaces: [number[], number[]][], suelo: Uint8Array, sala: Uint8Array, conJefe: boolean): Uint8Array {
+  const z = k.z, r = k.r, { W, H, tw, th } = z;
+  let ab = new Uint8Array(W * H); const nuc = new Uint8Array(W * H);
+  const n1 = ruido2(r, W, H, 6), n2 = ruido2(r, W, H, 2.5);
+  const disco = (m: Uint8Array, cx: number, cy: number, rad: number) => {
+    for (let y = Math.floor(cy - rad); y <= cy + rad; y++) for (let x = Math.floor(cx - rad); x <= cx + rad; x++)
+      if (x >= 2 && y >= 2 && x < W - 2 && y < H - 2 && Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= rad) m[y * W + x] = 1;
+  };
+  const centro = (c: number[]): [number, number] => [(c[0] + c[2] / 2) * 5, (c[1] + c[3] / 2) * 5];
+  const radios = cuartos.map((c, i) => { const jefe = conJefe && i === cuartos.length - 1; return [Math.max(jefe ? 12.5 : 5.5, c[2] * 2.7), Math.max(jefe ? 12.5 : 5.5, c[3] * 2.7)]; });
+  cuartos.forEach((c, i) => {
+    const [cx, cy] = centro(c), [rx, ry] = radios[i], punta = i === 0 || i === cuartos.length - 1;
+    for (let y = Math.floor(cy - ry - 3); y <= cy + ry + 3; y++) for (let x = Math.floor(cx - rx - 3); x <= cx + rx + 3; x++) {
+      if (x < 2 || y < 2 || x >= W - 2 || y >= H - 2) continue;
+      const d = Math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry), n = n1[y * W + x] * 0.65 + n2[y * W + x] * 0.35;
+      if (d < 0.8 + (n - 0.5) * 0.8) ab[y * W + x] = 1;
+    }
+    // el centro (escalera, piedra de viaje, jefe y su tesoro) siempre queda despejado
+    disco(ab, cx, cy + 1, conJefe && i === cuartos.length - 1 ? 10 : punta ? 4.6 : 3.2); disco(nuc, cx, cy + 1, conJefe && i === cuartos.length - 1 ? 10 : punta ? 4.6 : 3.2);
+  });
+  // lazos: algún cuarto se une además con otro cercano que no era su vecino en la cadena
+  const unidos = (a: number[], b: number[]) => enlaces.some(([p, q]) => (p === a && q === b) || (p === b && q === a));
+  for (const a of cuartos) if (r() < 0.4) {
+    let mejor: number[] | null = null, bd = 34;
+    for (const b of cuartos) { if (b === a || unidos(a, b)) continue; const [ax, ay] = centro(a), [bx, by] = centro(b), d = Math.hypot(ax - bx, ay - by); if (d < bd) { bd = d; mejor = b; } }
+    if (mejor) enlaces.push([a, mejor]);
+  }
+  for (const [a, b] of enlaces) {
+    const [ax, ay] = centro(a), [bx, by] = centro(b), dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1;
+    const off = (r() - 0.5) * L * 0.55, mx = (ax + bx) / 2 - (dy / L) * off, my = (ay + by) / 2 + (dx / L) * off;
+    const pasos = Math.ceil(L * 2), fase = r() * 6.28, f2 = 5 + r() * 6;
+    for (let i = 0; i <= pasos; i++) {
+      const t = i / pasos, u = 1 - t, x = u * u * ax + 2 * u * t * mx + t * t * bx, y = u * u * ay + 2 * u * t * my + t * t * by;
+      disco(ab, x, y, 2.8 + 0.9 * Math.sin(t * f2 + fase)); disco(nuc, x, y, 2);
+      // nichos y ensanches a los lados del túnel
+      if (r() < 0.03) disco(ab, x + (r() - 0.5) * 9, y + (r() - 0.5) * 9, 2.2 + r() * 1.8);
+    }
+  }
+  for (let it = 0; it < 2; it++) {
+    const o = ab.slice();
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      let c = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && !ab[(y + dy) * W + x + dx]) c++;
+      if (c >= 5) o[y * W + x] = 0; else if (c <= 2) o[y * W + x] = 1;
+    }
+    ab = o;
+  }
+  for (let i = 0; i < W * H; i++) if (nuc[i]) ab[i] = 1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (x < 2 || y < 2 || x >= W - 2 || y >= H - 2) ab[y * W + x] = 0;
+  suelo.fill(0); sala.fill(0);
+  for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) {
+    let hay = false; for (let y = by * 5; y < by * 5 + 5 && !hay; y++) for (let x = bx * 5; x < bx * 5 + 5; x++) if (ab[y * W + x]) { hay = true; break; }
+    if (!hay) continue;
+    suelo[by * tw + bx] = 1;
+    const px = bx * 5 + 2.5, py = by * 5 + 2.5;
+    if (cuartos.some((c, i) => { const [cx, cy] = centro(c); return Math.hypot((px - cx) / radios[i][0], (py - cy) / radios[i][1]) < 0.85; })) sala[by * tw + bx] = 1;
+  }
+  return ab;
+}
+/** Peñascos por todo el contorno de la caverna: altos donde la roca queda detrás del piso (se ve de frente) y bajos donde queda delante (para no tapar). */
+function bordeCueva(k: Constructor, ab: Uint8Array) {
+  const z = k.z, r = k.r, { W, H } = z;
+  const pen = REGISTRO.find((d) => d.id === 'cue_penasco'); if (!pen) return;
+  const cub = new Uint8Array(W * H);
+  const op = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && !!ab[y * W + x];
+  const de = (pre: string) => { const vs = pen.variantes.filter((v) => v.startsWith(pre)); return vs[Math.floor(r() * vs.length)]; };
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    if (ab[y * W + x] || cub[y * W + x]) continue;
+    let borde = false; for (let dy = -1; dy <= 1 && !borde; dy++) for (let dx = -1; dx <= 1; dx++) if (op(x + dx, y + dy)) { borde = true; break; }
+    if (!borde) continue;
+    const atras = op(x + 1, y) || op(x, y + 1) || op(x + 1, y + 1);
+    if (atras) {
+      k.poner(pen, x - 0.2 + r() * 0.4, y - 0.2 + r() * 0.4, de(r() < 0.7 ? 'alta' : 'media'), true);
+      for (let dy = 0; dy <= 1; dy++) for (let dx = 0; dx <= 1; dx++) if (x + dx < W && y + dy < H && !(dx && dy)) cub[(y + dy) * W + x + dx] = 1;
+    } else if (r() < 0.8) {
+      k.poner(pen, x + 0.3, y + 0.3, de(r() < 0.12 ? 'media' : 'baja'), true);
+      cub[y * W + x] = 1; if (r() < 0.5 && x + 1 < W) cub[y * W + x + 1] = 1;
+    }
+  }
+}
+
 // ------------------------------------------------------------------ mazmorra
 function mazmorra(def: DefZona, semilla: number): Zona {
   const z = nuevaZona(def, semilla), k = new Constructor(z), t = tematica(def.tema), r = k.r;
@@ -832,11 +923,13 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   }
   // ordenar en cadena (el primero es la entrada, el último el fondo) uniendo cada cuarto con el más cercano ya unido
   const orden = [cuartos.shift()!];
+  const enlaces: [number[], number[]][] = [];
   while (cuartos.length) {
     let bi = 0, bj = 0, bd = Infinity;
     cuartos.forEach((c, i) => orden.forEach((o, j) => { const d = Math.abs(c[0] + c[2] / 2 - o[0] - o[2] / 2) + Math.abs(c[1] + c[3] / 2 - o[1] - o[3] / 2); if (d < bd) { bd = d; bi = i; bj = j; } }));
     const c = cuartos.splice(bi, 1)[0];
     const o = orden[bj];
+    enlaces.push([o, c]);
     // pasillo en L
     let x = Math.floor(o[0] + o[2] / 2), y = Math.floor(o[1] + o[3] / 2);
     const X = Math.floor(c[0] + c[2] / 2), Y = Math.floor(c[1] + c[3] / 2);
@@ -857,16 +950,23 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   }
   const sala = new Uint8Array(tw * th);
   for (const [x, y, w, h] of orden) for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) { suelo[j * tw + i] = 1; sala[j * tw + i] = 1; }
+  const abierto = t.organica ? cavarCueva(k, orden, enlaces, suelo, sala, !!def.jefe) : null;
   const manchas = ruido2(r, tw, th, 3);
   for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) if (suelo[by * tw + bx]) {
     const m = manchas[by * tw + bx];
     k.piso(m > 0.66 ? t.parches[1] : m < 0.22 ? t.parches[2] : t.piso, bx, by);
     for (let y = by * 5; y < by * 5 + 5; y++) for (let x = bx * 5; x < bx * 5 + 5; x++) z.bloq[y * z.W + x] = 0;
   }
+  if (abierto) {
+    // la roca maciza dentro de las baldosas con piso: no se pasa y se pinta negra; el contorno lleva peñascos
+    z.hueco = new Uint8Array(z.W * z.H);
+    for (let y = 0; y < z.H; y++) for (let x = 0; x < z.W; x++) if (!abierto[y * z.W + x] && suelo[Math.floor(y / 5) * tw + Math.floor(x / 5)]) { z.bloq[y * z.W + x] = 1; z.hueco[y * z.W + x] = 1; }
+    bordeCueva(k, abierto);
+  }
   // muros: en los bordes de atrás (hacia -x y -y) de cada baldosa con suelo
   const opcionesMuro: [[string, string[]], [string, string[]]][] = [[t.muroX ?? ['mon_muro', ['izq']], t.muroY ?? ['mon_muro', ['der']]], ...(t.murosAlt ?? [])];
   const [[mx, vx], [my, vy]] = opcionesMuro[Math.floor(r() * opcionesMuro.length)];
-  const defX = t.islas ? undefined : REGISTRO.find((d) => d.id === mx), defY = t.islas ? undefined : REGISTRO.find((d) => d.id === my);
+  const defX = t.islas || abierto ? undefined : REGISTRO.find((d) => d.id === mx), defY = t.islas || abierto ? undefined : REGISTRO.find((d) => d.id === my);
   if (t.islas) islas(k, t.islas, suelo, sala);
   if (t.rieles) rieles(k, suelo, sala);
   for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) {
@@ -893,7 +993,8 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     for (const [fx, fy] of [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]]) k.poner(g.d, Math.floor((c[0] + c[2] * fx) * 5), Math.floor((c[1] + c[3] * fy) * 5));
   }
   // con islas o vías, los pasillos (puentes y rieles) quedan libres de adornos
-  const enSuelo = (x: number, y: number) => !!(t.islas || t.rieles ? sala : suelo)[Math.floor(y / 5) * tw + Math.floor(x / 5)];
+  const enSuelo = abierto ? (x: number, y: number) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!abierto[(Math.floor(y) + dy) * z.W + Math.floor(x) + dx]) return false; return true; }
+    : (x: number, y: number) => !!(t.islas || t.rieles ? sala : suelo)[Math.floor(y / 5) * tw + Math.floor(x / 5)];
   k.regar(t.disperso, Math.floor(area / 160), 1, 1, z.W - 1, z.H - 1, enSuelo);
   k.regar(t.luces, Math.floor(area / 500), 1, 1, z.W - 1, z.H - 1, enSuelo);
   k.regar(t.deco, Math.floor(area / 2500), 1, 1, z.W - 1, z.H - 1, enSuelo);

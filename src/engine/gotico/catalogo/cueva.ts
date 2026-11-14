@@ -126,6 +126,32 @@ registrar(
     },
   },
   {
+    // Peñascos sueltos para el borde de las cuevas orgánicas: el juego los riega por todo el contorno de la caverna
+    // (altos donde la roca queda detrás del piso, bajos donde queda delante) y entre todos arman una pared irregular.
+    id: 'cue_penasco', nombre: ['Peñasco de cueva', 'Cave crag'], tema: 'cueva',
+    variantes: ['alta_a', 'alta_b', 'alta_c', 'alta_d', 'alta_e', 'media_a', 'media_b', 'media_c', 'baja_a', 'baja_b', 'baja_c', 'baja_d'], huella: [2, 2], bloquea: false,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [];
+      const alta = v.startsWith('alta'), media = v.startsWith('media');
+      // cada variante sale distinta: se adelanta el azar según su letra
+      for (let i = (v.charCodeAt(v.length - 1) - 96) * 11 + (alta ? 3 : media ? 5 : 0); i > 0; i--) a.r();
+      if (alta || media) {
+        const alto = alta ? 104 + a.r() * 44 : 52 + a.r() * 22, g = a.r() * PI, L = 19 + a.r() * 8, q = (a.r() - 0.5) * 14;
+        // un contrafuerte quebrado, con una segunda hoja más baja cruzada: nunca queda como tabla
+        muroRoca(a, ps, [[-Math.cos(g) * L, -Math.sin(g) * L], [q * Math.sin(g), -q * Math.cos(g)], [Math.cos(g) * L, Math.sin(g) * L]], alto, 18);
+        const g2 = g + PI / 2 + (a.r() - 0.5) * 0.8;
+        muroRoca(a, ps, [[-Math.cos(g2) * 15, -Math.sin(g2) * 15], [Math.cos(g2) * 15, Math.sin(g2) * 15]], alto * (0.55 + a.r() * 0.3), 15);
+        for (let i = 0; i < 5; i++) { const t = a.r() * 2 * PI, d = 18 + a.r() * 10; bloque(a, ps, Math.cos(t) * d, Math.sin(t) * d, 6 + a.r() * 7, 'cue_roca', 0.9, 2); }
+      } else {
+        const n = 3 + Math.floor(a.r() * 3);
+        for (let i = 0; i < n; i++) { const t = a.r() * 2 * PI, d = a.r() * 17; bloque(a, ps, Math.cos(t) * d, Math.sin(t) * d * 0.9, 9 + a.r() * 8, a.r() < 0.25 ? 'cue_caliza' : 'cue_roca', 0.8 + a.r() * 0.5, 2); }
+        if (a.r() < 0.4) estal(a, ps, (a.r() - 0.5) * 16, (a.r() - 0.5) * 16, 12 + a.r() * 12, 3 + a.r() * 2);
+      }
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+  {
     id: 'cue_muro_esquina', nombre: ['Esquina de cueva', 'Cave wall corner'], tema: 'cueva', variantes: ['interior', 'exterior', 'interior_alta'], huella: [4, 4], bloquea: true,
     armar: (v, _f, a) => {
       const ps: Pieza[] = [];
