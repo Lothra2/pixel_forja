@@ -238,7 +238,10 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   recolectar(j, tiempo, aPant, W, H);
   // explorar
   const btx = Math.floor(h.x / 5), bty = Math.floor(h.y / 5);
-  for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const X = btx + dx, Y = bty + dy; if (X >= 0 && Y >= 0 && X < z.tw && Y < z.th && dx * dx + dy * dy <= 13) z.explorado[Y * z.tw + X] = 1; }
+  // (a campo abierto se ve lejos: el radio cubre la pantalla, unas 30 casillas. Con 18 el mundo era una isla alumbrada
+  //  en medio de una pantalla negra. Bajo tierra se sigue descubriendo de a poco: 22 casillas)
+  const rv = (window as any).__rv ?? (z.tipo === 'mazmorra' ? 20 : 38);
+  for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) { const X = btx + dx, Y = bty + dy; if (X >= 0 && Y >= 0 && X < z.tw && Y < z.th && dx * dx + dy * dy <= rv) z.explorado[Y * z.tw + X] = 1; }
   // pisos visibles
   const f25 = Math.floor(tiempo * 25);
   const [wx0] = aMundo(0, 0), [, wy0] = aMundo(W, 0), [wx1] = aMundo(W, H), [, wy1] = aMundo(0, H);
