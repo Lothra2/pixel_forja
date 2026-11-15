@@ -7,7 +7,7 @@
 // Todo en tamaños de dedo (44 pt o más), lejos de los bordes laterales (notch e isla) y respetando el área segura.
 import { ctx, W, H, E, ESCALA, SEGURO } from '../nucleo/lienzo';
 import { texto, T, TT, dentro, icono, envolver as envolverT, TITULO } from './comun';
-import { ui, alternar, glifoHab, orbeHud, recursoClase, objetivoTxt, COLOR_POCION, cambiarAgresivo } from './juego_ui';
+import { ui, alternar, discoHab, orbeHud, recursoClase, objetivoTxt, COLOR_POCION, cambiarAgresivo } from './juego_ui';
 import { hud, type Rect } from './hud_rects';
 import { MISIONES } from '../mundo/actos';
 import { habilidadDe, costoMana, usarPocion, caminarA, type Juego } from '../juego/mundo';
@@ -109,9 +109,8 @@ function medallon(cx: number, cy: number, d: number, o: Med = {}) {
   // el vidrio
   ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI * 2); ctx.clip();
   { const g = ctx.createRadialGradient(cx - ri * 0.25, cy - ri * 0.3, ri * 0.05, cx, cy, ri * 1.05); g.addColorStop(0, aclarar(col, 0.22)); g.addColorStop(0.45, col); g.addColorStop(0.85, oscurecer(col, 0.6)); g.addColorStop(1, oscurecer(col, 0.82)); ctx.fillStyle = g; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2); }
-  // el glifo: sombra abajo y resplandor del color de la habilidad
-  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 0; ctx.shadowOffsetY = Math.max(1, d * 0.025); ctx.globalAlpha = 0.55; glifoHab(o.hb, cx, cy, ri * 1.9, true); ctx.restore();
-  ctx.save(); if (!o.apagado) { ctx.shadowColor = aclarar(col, 0.55); ctx.shadowBlur = d * 0.16; } glifoHab(o.hb, cx, cy, ri * 1.9, !!o.apagado); ctx.restore();
+  // el icono pintado entero: el fondo de su elemento y el glifo con volumen (antes iba un glifo plano sobre un disco gris)
+  discoHab(o.hb, cx, cy, ri, !!o.apagado);
   // volumen: sombra interior en el borde y brillo de vidrio arriba
   { const g = ctx.createRadialGradient(cx, cy, ri * 0.62, cx, cy, ri); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.6)'); ctx.fillStyle = g; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2); }
   { const g = ctx.createLinearGradient(0, cy - ri, 0, cy - ri * 0.1); g.addColorStop(0, 'rgba(255,246,224,0.3)'); g.addColorStop(1, 'rgba(255,246,224,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx, cy - ri * 0.52, ri * 0.74, ri * 0.42, 0, 0, Math.PI * 2); ctx.fill(); }

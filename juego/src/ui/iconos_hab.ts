@@ -307,7 +307,7 @@ function silueta(ctx: C2, glifo: string) {
 }
 
 function fondo(c: C2, hb: Habilidad, e: { luz: string; medio: string; hondo: string }, T: number) {
-  const R = rnd(hash(hb.id)), col = hb.color ?? e.medio;
+  const R = rnd(hash(hb.id ?? hb.glifo ?? 'x')), col = hb.color ?? e.medio;
   const g = c.createRadialGradient(T * 0.5, T * 0.42, T * 0.05, T * 0.5, T * 0.5, T * 0.78); g.addColorStop(0, mezcla(col, e.luz, 0.25)); g.addColorStop(0.5, mezcla(col, e.hondo, 0.45)); g.addColorStop(1, mezcla(e.hondo, '#000000', 0.5));
   c.fillStyle = g; c.fillRect(0, 0, T, T);
   c.save(); c.globalCompositeOperation = 'lighter';
@@ -369,8 +369,9 @@ function glifo(hb: Habilidad, e: { luz: string; medio: string; hondo: string }, 
 }
 
 /** El icono de una habilidad, pintado y guardado. `s` es el lado con que se va a dibujar (se pinta al doble). */
-export function iconoPintado(hb: Habilidad, s: number, apagado = false, redondo = false, soloGlifo = false): HTMLCanvasElement {
-  const T = Math.max(32, Math.round(s * 2)), clave = `${hb.id}|${T}|${apagado ? 1 : 0}${redondo ? 1 : 0}${soloGlifo ? 1 : 0}`;
+export function iconoPintado(hb: Habilidad, s: number, apagado = false, redondo = false, soloGlifo = false, sinMarco = false): HTMLCanvasElement {
+  // (los botones del HUD táctil pasan también seudo-habilidades sin id: el escudo de Calmo, el golpe)
+  const T = Math.max(32, Math.round(s * 2)), clave = `${hb.id ?? ''}~${hb.glifo}~${hb.color}|${T}|${apagado ? 1 : 0}${redondo ? 1 : 0}${soloGlifo ? 1 : 0}${sinMarco ? 1 : 0}`;
   let cv = cache.get(clave); if (cv) return cv;
   cv = document.createElement('canvas'); cv.width = cv.height = T; const c = cv.getContext('2d')!;
   const e = ELEM[hb.elem] ?? ELEM.fisico;
@@ -379,8 +380,9 @@ export function iconoPintado(hb: Habilidad, s: number, apagado = false, redondo 
   // el resplandor del elemento por detrás del glifo
   if (!apagado) { c.save(); c.globalCompositeOperation = 'lighter'; const tin = document.createElement('canvas'); tin.width = tin.height = T; const ct = tin.getContext('2d')!; ct.drawImage(gl, 0, 0); ct.globalCompositeOperation = 'source-in'; ct.fillStyle = e.luz; ct.fillRect(0, 0, T, T);
     const r = T / 18; c.globalAlpha = 0.045; for (let a = 0; a < 12; a++) c.drawImage(tin, Math.cos(a * 0.5236) * r, Math.sin(a * 0.5236) * r); c.restore(); }
-  const m = soloGlifo ? 0 : T * 0.06; c.drawImage(gl, m, m, T - 2 * m, T - 2 * m);
-  if (!soloGlifo) marco(c, T, !!hb.definitiva, redondo, e);
+  // (en un botón redondo las puntas de un arma en diagonal se salían del círculo: ahí el glifo va al 80 %)
+  const m = soloGlifo ? T * 0.1 : redondo ? T * 0.13 : T * 0.06; c.drawImage(gl, m, m, T - 2 * m, T - 2 * m);
+  if (!soloGlifo && !sinMarco) marco(c, T, !!hb.definitiva, redondo, e);
   if (apagado) { c.save(); c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(14,12,12,0.66)'; c.fillRect(0, 0, T, T); c.globalCompositeOperation = 'saturation'; c.fillStyle = '#808080'; c.fillRect(0, 0, T, T); c.restore(); }
   cache.set(clave, cv); return cv;
 }

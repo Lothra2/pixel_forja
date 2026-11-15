@@ -63,6 +63,11 @@ export function orbeHud(tipo: string, k: number, x: number, y: number, s: number
 }
 /** Solo el glifo de la habilidad, centrado en (cx, cy), sin fondo ni marco. */
 export const glifoHab = (hb: Habilidad, cx: number, cy: number, s: number, apagado = false) => iconoHab(hb, cx - s / 2, cy - s / 2, s, apagado, true, true);
+/** El icono entero en un disco de radio r (fondo de su elemento y glifo, sin marco: el botón redondo pone su aro). */
+export function discoHab(hb: Habilidad, cx: number, cy: number, r: number, apagado = false) {
+  const cv = iconoPintado(hb, r * 2, apagado, true, false, true), su = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = true; (ctx as any).imageSmoothingQuality = 'high';
+  ctx.drawImage(cv, cx - r, cy - r, r * 2, r * 2); ctx.imageSmoothingEnabled = su;
+}
 export function iconoHab(hb: Habilidad, x: number, y: number, s: number, apagado = false, redondo = false, soloGlifo = false) {
   // el icono se pinta una vez (al doble de tamaño) y después se copia: fondo según el elemento, el glifo con volumen,
   // contorno y brillo, y el marco de bronce (ver iconos_hab.ts)
