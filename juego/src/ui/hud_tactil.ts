@@ -185,6 +185,7 @@ function habsArco(j: Juego): (string | null)[] {
 }
 
 export function dibujarHudTactil(j: Juego, t: number) {
+  (window as any).__toques = toques;
   for (const k of CLAVES) delete hud[k];
   toques.length = 0;
   // con un panel abierto no se dibuja nada encima (los paneles tienen su X y se cierran tocando fuera)

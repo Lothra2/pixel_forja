@@ -38,10 +38,13 @@ parentPort!.on('message', (job: any) => {
     } else if (job.tipo === 'retrato') {
       // como retratoHeroe del motor, pero sin sombra: el juego le pone la suya con sus luces
       const h = HEROES.find((x: any) => x.id === job.id), k = 2.4;
-      const LUZ: Record<string, string> = { berserker: '#ff6020', templario: '#ffe090', arcanista: '#70b0ff', cazadora: '#a0c0ff', nigromante: '#60e080', monje: '#ffb040', druida: '#80e060', alquimista: '#c060ff' };
+      // (la luz de color de cada clase bañaba el cuerpo entero y le lavaba la ropa: el berserker parecía desnudo.
+      //  Ahora lo alumbra la fogata, cálida y más corta; el color de la clase lo ponen las partículas de la pantalla)
+      const LUZ_FOGATA = '#ffd0a0';
+      const LUZ: Record<string, string> = { berserker: '#ff6020', templario: '#ffe090', arcanista: '#70b0ff', cazadora: '#a0c0ff', nigromante: '#60e080', monje: '#ffb040', druida: '#80e060', alquimista: '#c060ff' }; void LUZ;
       for (let f = 0; f < job.cuadros; f++) {
         const e = personajeEscena({ ...h.cuerpo, alto: (h.cuerpo.alto ?? 1) * k }, h.niveles[job.nivel], 'so', 'presentar', f);
-        const r = pintarEscena({ ...e, resplandor: e.resplandor ?? { c: [20 * k, -8 * k, 6 * k], r: 70 * k, color: LUZ[h.id] ?? '#ffb060' }, ss: 2, sinSombra: true });
+        const r = pintarEscena({ ...e, resplandor: e.resplandor ?? { c: [20 * k, -8 * k, 6 * k], r: 46 * k, color: LUZ_FOGATA }, ss: 2, sinSombra: true });
         out.push(recortar(r.img, r.ancla[0], r.ancla[1]));
       }
     } else if (job.tipo === 'objeto') {

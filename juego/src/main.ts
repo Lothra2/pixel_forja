@@ -299,7 +299,7 @@ function controlar(jj: Juego, dt: number) {
     } else if (!h.objetivo) { (h as any).usarDer = false; (h as any).usarId = null; }
   }
   // agresivo: si está quieto, sin orden ni camino, le pega solo al enemigo más cercano dentro de su alcance (sin perseguir)
-  if ((h.d as any).agresivo && !h.objetivo && !h.camino && !h.destino && !h.recoger && !h.usar && !h.hablar && !(h as any).salida && h.acc !== 'atacar' && h.acc !== 'lanzar' && jj.zona.tipo !== 'pueblo' && !E.izq && !E.der) {
+  if ((h.d as any).agresivo && !(ui as any).colaHab && !h.objetivo && !h.camino && !h.destino && !h.recoger && !h.usar && !h.hablar && !(h as any).salida && h.acc !== 'atacar' && h.acc !== 'lanzar' && jj.zona.tipo !== 'pueblo' && !E.izq && !E.der) {
     const lejos = !!h.c.distancia, alc = lejos ? 9 : h.c.tipoArma === 'lanza' || h.c.tipoArma === 'alabarda' || h.c.tipoArma === 'guadana' ? 2.0 : 1.4;
     let best: Monstruo | null = null, bd = 1e9;
     for (const m of jj.monstruos) {
@@ -353,8 +353,14 @@ function controlar(jj: Juego, dt: number) {
     const tx = best ? best.x : h.x + vx * 3, ty = best ? best.y : h.y + vy * 3;
     usarHabilidad(jj, id, tx, ty, best, !best && melee);
   };
-  if ((ui as any).tactilHabId) { const id = (ui as any).tactilHabId as string; (ui as any).tactilHabId = null; tactil(id, false, true); }
-  if ((ui as any).tactilHab) { const lado = (ui as any).tactilHab as 'izq' | 'der'; (ui as any).tactilHab = null; tactil(h.d[lado], lado === 'der', false); }
+  // un toque en un poder nunca se pierde: si el héroe está a mitad de un golpe o de un lanzamiento (en Agresivo, casi
+  // siempre), el pedido queda en espera hasta 1.2 s y sale apenas termina; el poder pedido manda sobre el golpe automático
+  const enGolpe = () => h.acc === 'atacar' || h.acc === 'lanzar' || !!h.salto;
+  const pedir = (id: string, der: boolean, porId: boolean) => { if (enGolpe() && id !== 'ataque' && !(window as any).__sinCola) { (ui as any).colaHab = { id, der, porId, t: jj.t }; h.objetivo = null; } else { (ui as any).colaHab = null; tactil(id, der, porId); } };
+  if ((ui as any).tactilHabId) { const id = (ui as any).tactilHabId as string; (ui as any).tactilHabId = null; pedir(id, false, true); }
+  if ((ui as any).tactilHab) { const lado = (ui as any).tactilHab as 'izq' | 'der'; (ui as any).tactilHab = null; pedir(h.d[lado], lado === 'der', lado === 'der'); }
+  { const q = (ui as any).colaHab as { id: string; der: boolean; porId: boolean; t: number } | null;
+    if (q) { if (jj.t - q.t > 1.2 || h.muerto) (ui as any).colaHab = null; else if (!enGolpe()) { (ui as any).colaHab = null; h.objetivo = null; tactil(q.id, q.der, true); } } }
   // perseguir y atacar
   if (h.objetivo) {
     const m = h.objetivo;

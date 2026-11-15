@@ -1084,6 +1084,7 @@ export const esDistancia = (j: Juego, hb: Habilidad) => hb.tipo !== 'golpe' && h
  */
 export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj: Monstruo | null, alAire = false): boolean {
   fxInvocar = null;
+  (globalThis as any).__usos?.push(id);
   const h = j.heroe;
   if (h.muerto || h.acc === 'atacar' || h.acc === 'lanzar' || h.salto) return false;
   if (j.zona.tipo === 'pueblo') return false;
