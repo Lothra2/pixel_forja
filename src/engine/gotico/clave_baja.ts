@@ -33,8 +33,11 @@ const BASE: Iluminacion = {
   // el metal responde aunque el resto quede en penumbra: placa y oro destellan en sus facetas y todo lo que tiene algo
   // de brillo (malla, hueso pulido) agarra un hilo de contraluz en los cantos
   metal: { brillo: 0.6, esp: 3.0, exp: 12, filo: 0.18, borde: 1.1, ancho: 1.2, piso: 0.24 },
-  ao: { radio: 3, fuerza: 0.45 },
-  linea: { k: 0.62, kLuz: 0.2, dentro: 0.4, salto: 2.5 },
+  ao: { radio: 3, fuerza: 0.5 },
+  linea: { k: 0.66, kLuz: 0.22, dentro: 0.5, salto: 2.2 },
+  // la superficie: relieve de material, aristas y hendiduras, y dos tonos intermedios en vez de tres (el paso de la luz
+  // a la sombra se marca: pintura, no plastilina)
+  relieve: 1, cavidad: 1, tonos: 2,
   satura: 1.18,
   // la piel agarra un poco de luz propia y su sombra tira a rojo oscuro: la cara se lee aunque el héroe mire al piso
   piel: { sombra: '#3a1a18', satura: 1.06, luz: 0.07 },

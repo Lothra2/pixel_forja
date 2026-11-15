@@ -421,6 +421,19 @@ export interface Iluminacion {
    * profundidad de más de `salto` unidades (el brazo delante del torso, la cabeza sobre el pecho); necesita `ao`.
    */
   linea?: { k: number; kLuz?: number; color?: string; dentro?: number; salto?: number };
+  /**
+   * Relieve de material: la normal se perturba con el grano de cada superficie (poros en la piel, trama y pliegues en la
+   * tela, grano del cuero, golpes de martillo en la placa, astillas en el hueso), así la luz se quiebra en la superficie
+   * en vez de resbalar pareja como sobre plastilina. 1 = lo normal; 0 o ausente, sin relieve.
+   */
+  relieve?: number;
+  /**
+   * Aristas y hendiduras: donde las normales vecinas se abren (un canto, un nudillo, el borde de una placa) el pixel se
+   * aclara, y donde se cierran (un pliegue, una junta, entre dos músculos) se oscurece. Es lo que da el dibujo interior.
+   */
+  cavidad?: number;
+  /** Tonos intermedios entre cada par de colores de la rampa (3 por omisión; 2 o 1 marcan más el escalón de luz a sombra). */
+  tonos?: number;
   /** Saturación final de todo lo que no emite (1 = igual). */
   satura?: number;
   /** La piel (materiales cu_piel*): su sombra tira a este color (sangre bajo la piel) y su color se satura `satura`. */
@@ -659,13 +672,14 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   const techo = L?.techo ? { ...L.techo, rgb: rgb(L.techo.color ?? '#8a8070') } : null;
   const prin = L?.principal ? { rgb: rgb(L.principal.color), k: L.principal.tinte ?? 0.8, pos: L.principal.pos, alcance: L.principal.alcance ?? 60, foco: L.principal.foco } : null;
   // la oclusión necesita la profundidad, la normal y el punto de cada pixel
-  const ao = L?.ao, conProf = !!ao || !!L?.linea?.dentro, prof = conProf ? new Float32Array(W * H).fill(NaN) : null, nrm = conProf ? new Float32Array(W * H * 3) : null, pun = conProf ? new Float32Array(W * H * 3) : null;
+  const ao = L?.ao, conProf = !!ao || !!L?.linea?.dentro || !!L?.cavidad, prof = conProf ? new Float32Array(W * H).fill(NaN) : null, nrm = conProf ? new Float32Array(W * H * 3) : null, pun = conProf ? new Float32Array(W * H * 3) : null;
   const rell = L?.relleno ? { ...L.relleno, d: norm(L.relleno.dir), rgb: rgb(L.relleno.color), k: L.relleno.tinte ?? 0.8 } : null;
   // por sub-muestra: material, brillo, punto, cuánto la toca la luz de borde y qué parte del brillo es de la principal
   // y del relleno (para teñir con sus colores)
   const sm: { mat: string; s: number; p: V3; b: number; cp: number; cr: number; n: V3; t: number }[] = [];
   const luzPropia = borde?.contorno || L?.metal || L?.linea || L?.satura !== undefined ? new Uint8Array(W * H) : null;
   const pielPx = L?.piel?.ao !== undefined && L.ao ? new Uint8Array(W * H) : null;
+  const lRel = L?.relieve ?? 0;
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
     const cand = grilla[Math.floor(py / G) * gw + Math.floor(px / G)];
     const i = (py * W + px) * 4;
@@ -689,7 +703,23 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
       const matId = hit.mat ?? hit.p.mat;
       const m = MATERIALES[matId] ?? MATERIALES.piedra;
       const p = add(o, VISTA, hit.t);
-      const n = hit.n;
+      let n = hit.n;
+      if (lRel > 0 && !m.emite) {
+        const [kb, eb, tipo] = relieveDe(matId);
+        if (kb > 0) {
+          const q = m.local ? enPieza(hit, p) : p, d = 0.28;
+          const alt = (x: number, y: number, z: number) => {
+            let v = fbm(x * eb, y * eb, z * eb);
+            if (tipo === 1) v += 0.22 * Math.sin((x + y) * 1.5 + ruido(x * 0.4, y * 0.4, z * 0.4) * 5) + 0.035 * Math.sin(z * 4.4); // tela: pliegues que caen y trama
+            else if (tipo === 2) v = v * 0.6 + 0.4 * ruido(x * eb * 3.1, y * eb * 3.1, z * eb * 3.1); // cuero: poro fino
+            else if (tipo === 3) v = Math.floor(v * 4) / 4 * 0.7 + v * 0.3; // placa: facetas de martillo
+            return v;
+          };
+          const h0 = alt(q[0], q[1], q[2]), g: V3 = [(alt(q[0] + d, q[1], q[2]) - h0) / d, (alt(q[0], q[1] + d, q[2]) - h0) / d, (alt(q[0], q[1], q[2] + d) - h0) / d];
+          const gn = dot(g, n), k = kb * lRel;
+          n = norm([n[0] - (g[0] - n[0] * gn) * k, n[1] - (g[1] - n[1] * gn) * k, n[2] - (g[2] - n[2] * gn) * k]);
+        }
+      }
       const tono = (hit.tono ?? 0) + (hit.p.tono ?? 0);
       let s: number, bb = 0, cp = 0, cr = 0;
       if (m.emite) {
@@ -770,7 +800,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     const m = MATERIALES[matId] ?? MATERIALES.piedra;
     const R = rampa(m, matId);
     // la rampa con 3 tonos intermedios entre cada par de colores (paleta de 256 de la época) y trama suave
-    const SUB = 3, pos = Math.max(0, Math.min(0.999, s)) * (R.length - 1) * SUB + (trama(px, py) - 0.5) * 0.9 * (m.trama ?? 1);
+    const SUB = L?.tonos ?? 3, pos = Math.max(0, Math.min(0.999, s)) * (R.length - 1) * SUB + (trama(px, py) - 0.5) * 0.9 * (m.trama ?? 1);
     const kk = Math.max(0, Math.min((R.length - 1) * SUB, Math.round(pos))), k0 = Math.floor(kk / SUB), fr = (kk - k0 * SUB) / SUB;
     const ca = R[k0], cb = R[Math.min(R.length - 1, k0 + 1)];
     let r = ca[0] + (cb[0] - ca[0]) * fr, g = ca[1] + (cb[1] - ca[1]) * fr, b = ca[2] + (cb[2] - ca[2]) * fr;
@@ -804,12 +834,40 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     if (pielPx && matId.startsWith('cu_piel')) pielPx[py * W + px] = 1;
     img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = 255;
   }
+  if (L?.cavidad && prof) cavidad(img, prof, nrm!, luzPropia, W, H, L.cavidad);
   if (ao && prof) oclusionPantalla(img, prof, nrm!, pun!, luzPropia, W, H, ax, ay, z0, ao, pielPx, L?.piel?.ao ?? 1);
   if (borde?.contorno && luzPropia) contornoBorde(img, luzPropia, borde.d, borde.rgb, borde.contorno, !!borde.alto, L?.principal ? norm(L.principal.dir) : undefined);
   if (lMetal && luzPropia) sinSal(img, luzPropia);
   if (L?.satura !== undefined && L.satura !== 1) for (let q = 0; q < W * H; q++) { const o = q * 4; if (img.data[o + 3] !== 255 || luzPropia?.[q]) continue; const y = 0.2126 * img.data[o] + 0.7152 * img.data[o + 1] + 0.0722 * img.data[o + 2]; for (let t = 0; t < 3; t++) img.data[o + t] = Math.max(0, Math.min(255, y + (img.data[o + t] - y) * L.satura)); }
   if (L?.linea) lineaSilueta(img, luzPropia, prof, L.linea);
   return { img, ancla: [ax, ay] };
+}
+
+/** Relieve de cada material: [fuerza, escala del grano, tipo (0 grano, 1 tela, 2 cuero, 3 placa)]. */
+const relieves = new Map<string, [number, number, number]>();
+function relieveDe(id: string): [number, number, number] {
+  let r = relieves.get(id); if (r) return r;
+  r = /pelo|barba|ojo|fuego|llama|magia|sangre|agua/.test(id) ? [0, 1, 0]
+    : /piel/.test(id) ? [0.3, 1.0, 0]
+    : /tela|lino|lana|tunica|capa|habito|seda|venda|tabardo|ropa|trapo/.test(id) ? [1.0, 0.9, 1]
+    : /cuero|piel_curtida|pelaje|correa|bota/.test(id) ? [0.95, 1.6, 2]
+    : /placa|metal|hierro|acero|oro|bronce|plata|malla|cobre/.test(id) ? [0.7, 0.75, 3]
+    : /hueso|cuerno|madera|piedra|roca/.test(id) ? [0.9, 1.3, 0]
+    : [0.65, 1.1, 0];
+  relieves.set(id, r); return r;
+}
+/** Aristas y hendiduras (ver Iluminacion.cavidad): curvatura en pantalla a partir de las normales vecinas. */
+function cavidad(img: Raster, prof: Float32Array, nrm: Float32Array, luzPropia: Uint8Array | null, W: number, H: number, k: number) {
+  const d = img.data, RX: V3 = [0.7071, -0.7071, 0], RY: V3 = [0.4082, 0.4082, -0.8165], f = new Float32Array(W * H);
+  const ok = (j: number, j0: number) => !Number.isNaN(prof[j]) && Math.abs(prof[j] - prof[j0]) < 1.6;
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const j = y * W + x; if (Number.isNaN(prof[j]) || luzPropia?.[j]) continue;
+    const a = j - 1, b = j + 1, c = j - W, e = j + W; let cv = 0;
+    if (ok(a, j) && ok(b, j)) cv += (nrm[b * 3] - nrm[a * 3]) * RX[0] + (nrm[b * 3 + 1] - nrm[a * 3 + 1]) * RX[1];
+    if (ok(c, j) && ok(e, j)) cv += (nrm[e * 3] - nrm[c * 3]) * RY[0] + (nrm[e * 3 + 1] - nrm[c * 3 + 1]) * RY[1] + (nrm[e * 3 + 2] - nrm[c * 3 + 2]) * RY[2];
+    f[j] = cv;
+  }
+  for (let j = 0; j < W * H; j++) { const cv = f[j]; if (!cv) continue; const m = cv > 0 ? 1 + Math.min(0.3, cv * 0.34) * k : 1 - Math.min(0.42, -cv * 0.5) * k; d[j * 4] = Math.min(255, d[j * 4] * m); d[j * 4 + 1] = Math.min(255, d[j * 4 + 1] * m); d[j * 4 + 2] = Math.min(255, d[j * 4 + 2] * m); }
 }
 
 /**

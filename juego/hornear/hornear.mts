@@ -30,6 +30,9 @@ interface Job { id_job: number; grupo: string; clave: string; tipo: string; [k: 
 const jobs: Job[] = [];
 let nid = 0;
 const ACCS = ['quieto', 'caminar', 'correr', 'atacar', 'lanzar', 'herido', 'morir'];
+/** Cada cuánto del cuadro del motor se hornea un cuadro de andar: 0.5 = el doble de cuadros (monstruos y bestias); los jefes, 2/3. */
+const PASO_ANDAR = 0.5, PASO_ANDAR_JEFE = 2 / 3;
+const andar = (acc: string) => acc === 'caminar' || acc === 'correr';
 const CORREN = new Set(['necrofago', 'diablillo', 'chacal', 'cazacabezas']);
 if (GRUPOS.includes('h')) for (const h of HEROES) {
   if (SOLO && !SOLO.includes(h.id)) continue;
@@ -41,7 +44,9 @@ if (GRUPOS.includes('m')) for (const m of [...MONSTRUOS, ...extras.MONSTRUOS_EXT
     if (acc === 'lanzar' && !m.magia) continue;
     // correr solo para los humanoides con carrera propia (los demás caminan más rápido con la misma pisada)
     if (acc === 'correr' && !CORREN.has(m.id)) continue;
-    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'm', clave: `${m.id}/${acc}/${dir}`, tipo: 'personaje', cuerpo: m.cuerpo, equipo: m.equipo, dir, acc, cuadros: CUADROS[acc] });
+    // (caminar y correr van al doble de cuadros que el motor trae, con los intermedios: 16 por ciclo en vez de 8)
+    const paso = acc === 'caminar' || acc === 'correr' ? PASO_ANDAR : 1;
+    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'm', clave: `${m.id}/${acc}/${dir}`, tipo: 'personaje', cuerpo: m.cuerpo, equipo: m.equipo, dir, acc, cuadros: Math.round(CUADROS[acc] / paso), paso });
   }
 }
 if (GRUPOS.includes('n')) for (const n of Object.values(NPCS) as any[]) {
@@ -58,7 +63,8 @@ if (GRUPOS.includes('b')) for (const bs of BESTIAS as any[]) {
   if (SOLO && !SOLO.includes(bs.id)) continue;
   for (const acc of ['quieto', 'caminar', 'correr', 'atacar', 'lanzar', 'herido', 'morir', 'especial']) {
     const id = `mon_${bs.id}_${acc}`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue;
-    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'b', clave: `${bs.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
+    const paso = andar(acc) ? PASO_ANDAR : 1;
+    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'b', clave: `${bs.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: Math.round((d.cuadros ?? 1) / paso), paso });
   }
 }
 // retratos grandes de cada clase en su pose de presentación (selección e intro)
@@ -74,7 +80,8 @@ if (GRUPOS.includes('j')) for (const jf of JEFES as any[]) {
   if (SOLO && !SOLO.includes(jf.id)) continue;
   for (const acc of ['quieto', 'caminar', 'atacar', 'lanzar', 'herido', 'morir', 'especial']) {
     const id = `jefe_${jf.id}_${acc}`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue;
-    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'j', clave: `jefe_${jf.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
+    const paso = andar(acc) ? PASO_ANDAR_JEFE : 1;
+    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'j', clave: `jefe_${jf.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: Math.round((d.cuadros ?? 1) / paso), paso });
   }
 }
 // el paso fino: caminar (y correr, quien lo tenga) en los ocho rumbos intermedios, 'r22.5', 'r67.5'..., para todo lo que
@@ -84,16 +91,16 @@ const DIRS_FINOS = [1, 3, 5, 7, 9, 11, 13, 15].map((k) => 'r' + k * 22.5);
 if (GRUPOS.includes('f')) {
   for (const m of [...MONSTRUOS, ...extras.MONSTRUOS_EXTRA]) {
     if (SOLO && !SOLO.includes(m.id)) continue;
-    for (const acc of ['caminar', 'correr']) { if (acc === 'correr' && !CORREN.has(m.id)) continue; for (const dir of DIRS_FINOS) jobs.push({ id_job: nid++, grupo: 'f', clave: `${m.id}/${acc}/${dir}`, tipo: 'personaje', cuerpo: m.cuerpo, equipo: m.equipo, dir, acc, cuadros: CUADROS[acc] }); }
+    for (const acc of ['caminar', 'correr']) { if (acc === 'correr' && !CORREN.has(m.id)) continue; for (const dir of DIRS_FINOS) jobs.push({ id_job: nid++, grupo: 'f', clave: `${m.id}/${acc}/${dir}`, tipo: 'personaje', cuerpo: m.cuerpo, equipo: m.equipo, dir, acc, cuadros: Math.round(CUADROS[acc] / PASO_ANDAR), paso: PASO_ANDAR }); }
   }
   for (const bs of BESTIAS as any[]) {
     if (SOLO && !SOLO.includes(bs.id)) continue;
-    for (const acc of ['caminar', 'correr']) { const id = `mon_${bs.id}_${acc}`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue; for (const dir of DIRS_FINOS) jobs.push({ id_job: nid++, grupo: 'f', clave: `${bs.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 }); }
+    for (const acc of ['caminar', 'correr']) { const id = `mon_${bs.id}_${acc}`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue; for (const dir of DIRS_FINOS) jobs.push({ id_job: nid++, grupo: 'f', clave: `${bs.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: Math.round((d.cuadros ?? 1) / PASO_ANDAR), paso: PASO_ANDAR }); }
   }
   for (const jf of JEFES as any[]) {
     if (SOLO && !SOLO.includes(jf.id)) continue;
     const id = `jefe_${jf.id}_caminar`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue;
-    for (const dir of DIRS_FINOS) jobs.push({ id_job: nid++, grupo: 'f', clave: `jefe_${jf.id}/caminar/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
+    for (const dir of DIRS_FINOS) jobs.push({ id_job: nid++, grupo: 'f', clave: `jefe_${jf.id}/caminar/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: Math.round((d.cuadros ?? 1) / PASO_ANDAR_JEFE), paso: PASO_ANDAR_JEFE });
   }
 }
 const objMeta: Record<string, any> = {};

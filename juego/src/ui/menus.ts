@@ -1,7 +1,7 @@
 // Fuera del juego: intro, menú principal, elegir y crear héroe, opciones y pantalla de carga.
 import { cuadrosDeFirma, retratoVivo, RETRATO_K } from '../motor/pintor';
 import { equipoVisual, firmaVisual, cuerpoDe } from '../juego/heroe';
-import { ctx, W, H, E } from '../nucleo/lienzo';
+import { ctx, W, H, E, vistaActual, fijarVista } from '../nucleo/lienzo';
 import { texto, T, TT, IDI, boton, dentro, envolver, TITULO, fijarIdioma } from './comun';
 import { cuadrosHeroe, cuadrosPiso, variantePiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
 import { generarPaisaje, type MapaGotico } from '../../../src/engine/gotico/index';
@@ -13,7 +13,7 @@ import { R, rng } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 import { dibujarPortada, tituloFijo, dibujarCarta, prepararCarta } from './portada';
 
-export interface Opciones { general: number; musica: number; efectos: number; horror: number; idioma: 0 | 1; brillo: number }
+export interface Opciones { general: number; musica: number; efectos: number; horror: number; idioma: 0 | 1; brillo: number; vista?: number }
 export const opciones: Opciones = { general: 0.8, musica: 0.6, efectos: 0.8, horror: 0.8, idioma: 0, brillo: 1 };
 export function cargarOpciones() { try { Object.assign(opciones, JSON.parse(localStorage.getItem('marca.opciones') ?? '{}')); } catch { /* nada */ } fijarIdioma(opciones.idioma); aplicarVolumen(); }
 export function guardarOpciones() { try { localStorage.setItem('marca.opciones', JSON.stringify(opciones)); } catch { /* nada */ } }
@@ -505,7 +505,7 @@ const opcP = { agarra: '' };
 export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
   const chico = H < 520;
   if (fondo) { fondoVigilia(t, W / 2, H * 0.62, 320); brasas(t, 22); } else { ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fillRect(0, 0, W, H); }
-  const fh = chico ? 30 : 44, w = Math.min(W - 24, chico ? 560 : 600), cab = chico ? 44 : 74, pie = chico ? 46 : 70, h = Math.min(H - 12, cab + fh * 7 + (chico ? 10 : 34) + pie), x = Math.round(W / 2 - w / 2), y = Math.round(H / 2 - h / 2);
+  const fh = chico ? 30 : 44, w = Math.min(W - 24, chico ? 560 : 600), cab = chico ? 44 : 74, pie = chico ? 46 : 70, h = Math.min(H - 12, cab + fh * 8 + (chico ? 10 : 34) + pie), x = Math.round(W / 2 - w / 2), y = Math.round(H / 2 - h / 2);
   const pant: Record<string, [number, number]> = ((window as any).__pantalla = {});
   // la losa: esquinas cortadas, hierro oscuro, doble filo de oro y rombos en los cuatro costados
   const c = 14, losa = (m: number) => { ctx.beginPath(); ctx.moveTo(x + c + m, y + m); ctx.lineTo(x + w - c - m, y + m); ctx.lineTo(x + w - m, y + c + m); ctx.lineTo(x + w - m, y + h - c - m); ctx.lineTo(x + w - c - m, y + h - m); ctx.lineTo(x + c + m, y + h - m); ctx.lineTo(x + m, y + h - c - m); ctx.lineTo(x + m, y + c + m); ctx.closePath(); };
@@ -540,8 +540,8 @@ export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
   vara(T('Brillo', 'Brightness'), 'brillo');
   yy += chico ? 4 : 12; rayaOro(x + 40, yy - (chico ? 2 : 6), w - 80, 0.5); yy += chico ? 2 : 6;
   // llave de dos posiciones: la elegida al rojo, la otra apagada
-  const llave = (nom: string, ops: [string, string], cual: number, id: string): number | null => {
-    rotulo(nom); let r: number | null = null; const tw = Math.min(150, (w * 0.56 - (chico ? 30 : 40)) / 2), th = fh - (chico ? 6 : 12), ty = yy + (fh - th) / 2;
+  const llave = (nom: string, ops: string[], cual: number, id: string): number | null => {
+    rotulo(nom); let r: number | null = null; const tw = Math.min(150, (w * 0.56 - (chico ? 30 : 40) - (ops.length - 2) * 8) / ops.length), th = fh - (chico ? 6 : 12), ty = yy + (fh - th) / 2;
     ops.forEach((o, q) => { const bx = vx + q * (tw + 8), sel2 = q === cual, enc = dentro(bx, ty, tw, th);
       const gg = ctx.createLinearGradient(0, ty, 0, ty + th); gg.addColorStop(0, sel2 ? '#5a2a10' : '#1e1812'); gg.addColorStop(1, sel2 ? '#2a1206' : '#0c0a08'); ctx.fillStyle = gg; ctx.fillRect(bx, ty, tw, th);
       ctx.strokeStyle = sel2 ? '#f0b858' : enc ? '#a08450' : '#4e4028'; ctx.lineWidth = 1; ctx.strokeRect(bx + 0.5, ty + 0.5, tw - 1, th - 1);
@@ -553,6 +553,9 @@ export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
   };
   const li = llave(T('Idioma', 'Language'), ['Español', 'English'], IDI ? 1 : 0, 'idioma');
   if (li !== null) { opciones.idioma = li as 0 | 1; fijarIdioma(opciones.idioma); guardarOpciones(); E.clicIzq = false; }
+  // la vista: cuánto se acerca la cámara (el héroe y el mundo más grandes; se ve menos alrededor)
+  const lv = llave(T('Vista', 'View'), [T('Lejos', 'Far'), T('Cerca', 'Near'), T('Muy cerca', 'Closest')], vistaActual(), 'vista');
+  if (lv !== null) { opciones.vista = lv; guardarOpciones(); fijarVista(lv); E.clicIzq = false; }
   const completa = typeof document !== 'undefined' && !!document.fullscreenElement;
   const lp = llave(T('Pantalla', 'Screen'), [T('Ventana', 'Window'), T('Completa', 'Full')], completa ? 1 : 0, 'pantalla');
   if (lp !== null) { E.clicIzq = false; try { if (lp === 0) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch { /* nada */ } }

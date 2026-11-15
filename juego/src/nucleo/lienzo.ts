@@ -13,11 +13,24 @@ function leerSeguro() {
     SEGURO.l = parseFloat(c.paddingLeft) || 0; SEGURO.r = parseFloat(c.paddingRight) || 0; SEGURO.t = parseFloat(c.paddingTop) || 0; SEGURO.b = parseFloat(c.paddingBottom) || 0;
   } catch { /* nada */ }
 }
+/**
+ * La vista: cuánto se acerca la cámara. 0 = clásica (unos 640 puntos de alto: se ve mucho mundo y el héroe queda chico),
+ * 1 = cerca (×1,3), 2 = muy cerca (×1,6: el héroe ocupa casi el doble). Todo el lienzo se acerca, también los menús.
+ * Se guarda con las opciones.
+ */
+const ZOOMS = [1, 1.3, 1.6];
+let vista = 0;
+try { vista = Math.max(0, Math.min(2, JSON.parse(localStorage.getItem('marca.opciones') ?? '{}').vista ?? 0)); } catch { /* nada */ }
+export const vistaActual = () => vista;
+export function fijarVista(v: number) { vista = Math.max(0, Math.min(2, v | 0)); ajustar(); }
 export function ajustar() {
   leerSeguro();
   const ww = window.innerWidth, wh = window.innerHeight;
   // altura lógica cerca de 620 (como los juegos de 800x600): en pantallas grandes se agranda
-  const k = Math.max(wh / 640, 0.78);
+  const k0 = Math.max(wh / 640, 0.78);
+  // (el acercamiento no pasa de lo que deja un lienzo de 680 × 400: menos que eso los paneles no entran)
+  const zoom = Math.max(1, Math.min(ZOOMS[vista] ?? 1, ww / k0 / 680, wh / k0 / 400));
+  const k = k0 * zoom;
   const h = wh / k;
   const w = ww / k;
   W = Math.round(Math.min(Math.max(w, 640), 1600));
@@ -29,8 +42,8 @@ export function ajustar() {
   // pixel art no sale desparejo ni titila con la cámara. Solo si el alto lógico queda en un rango jugable (480 a 780) y,
   // en pantallas táctiles, si no achica el juego: en el teléfono el texto ya va justo y se queda con la escala de antes.
   const dpr = window.devicePixelRatio || 1, dw = Math.round(ww * dpr), dh = Math.round(wh * dpr);
-  const ke = Math.max(1, Math.round(dh / 600));
-  const entero = ww >= wh && dh / ke >= 480 && dh / ke <= 780 && dw / ke >= 760 && (ke / dpr >= k * 0.95 || !(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)) && !(window as unknown as { __sinEntero?: boolean }).__sinEntero;
+  const ke = Math.max(1, Math.round((dh * zoom) / 600));
+  const entero = ww >= wh && dh / ke >= 480 / zoom && dh / ke <= 780 / zoom && dw / ke >= (zoom > 1 ? 680 : 760) && (ke / dpr >= k * 0.95 || !(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)) && !(window as unknown as { __sinEntero?: boolean }).__sinEntero;
   if (entero) { W = Math.min(1600, Math.floor(dw / ke)); H = Math.floor(dh / ke); ESCALA = ke / dpr; }
   lienzo.width = W; lienzo.height = H;
   lienzo.style.width = `${entero ? (W * ke) / dpr : Math.floor(W * ESCALA)}px`;

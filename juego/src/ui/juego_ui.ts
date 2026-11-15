@@ -405,6 +405,14 @@ export function dibujarArriba(j: Juego, encima: Monstruo | null) {
   let y = E.tactil ? Math.min(H * 0.6, (hud.rastreo ? hud.rastreo[1] + hud.rastreo[3] : disposicion().orbes[1] + 120) + 16 + 18 * Math.max(0, j.mensajes.length - 1)) : ag && !ui.izq ? ag[1] - 12 : H - BAR_H - 30;
   const y0 = y;
   ctx.font = '14px Georgia, serif'; let anchoM = 0;
+  // una placa oscura detrás de los mensajes: sueltos sobre el piso no se leían (y se confundían con la escena)
+  if (j.mensajes.length) {
+    const maxF = E.tactil ? Math.max(120, disposicion().mini[0] - mx - 16) : 1e9; let aw = 0, vis = 0;
+    for (const m of j.mensajes) { aw = Math.max(aw, Math.min(maxF, ctx.measureText(TT(m.txt)).width)); vis = Math.max(vis, Math.min(1, 7 - m.t)); }
+    const n = j.mensajes.length, px0 = mx - 9, py0 = y - 18 * (n - 1) - 16, pw = aw + 18, ph = 18 * n + 8;
+    ctx.save(); ctx.globalAlpha = Math.max(0, vis) * 0.62; const gp = ctx.createLinearGradient(px0, 0, px0 + pw, 0); gp.addColorStop(0, 'rgba(6,5,4,1)'); gp.addColorStop(0.8, 'rgba(6,5,4,0.85)'); gp.addColorStop(1, 'rgba(6,5,4,0)'); ctx.fillStyle = gp; ctx.fillRect(px0, py0, pw + 30, ph);
+    ctx.globalAlpha = Math.max(0, vis) * 0.7; ctx.fillStyle = '#8a6c3a'; ctx.fillRect(px0, py0, 2, ph); ctx.restore();
+  }
   for (let i = j.mensajes.length - 1; i >= 0; i--) {
     const m = j.mensajes[i];
     ctx.globalAlpha = Math.min(1, 7 - m.t);
@@ -424,6 +432,8 @@ function mensajesTactil(j: Juego) {
   let y = (hud.rastreo ? hud.rastreo[1] + hud.rastreo[3] : P.orbes[1] + P.orbes[3] + Lp(22)) + Lp(8) + tam;
   const y0 = y - tam; let anchoM = 0;
   const ultimos = j.mensajes.slice(-3);
+  // la placa oscura detrás (con la caja del cuadro anterior: el texto se mide al dibujarlo)
+  if (ultimos.length && hud.mensajes) { const [bx, by, bw, bh] = hud.mensajes, vis = Math.max(0, Math.min(1, 6 - Math.min(...ultimos.map((m) => m.t)))); ctx.save(); ctx.globalAlpha = 0.6 * vis; ctx.fillStyle = '#060504'; ctx.fillRect(bx - 6, by - 4, bw + 12, bh + 6); ctx.globalAlpha = 0.7 * vis; ctx.fillStyle = '#8a6c3a'; ctx.fillRect(bx - 6, by - 4, 2, bh + 6); ctx.restore(); }
   for (const m of ultimos) {
     ctx.globalAlpha = Math.max(0, Math.min(1, 6 - m.t));
     // no bajan hasta el cartel de consejos, si está
@@ -972,7 +982,8 @@ function panelHabs(j: Juego, x: number, y: number) {
     if (bloqueado) { ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(ix, iy, ICONO, ICONO); }
     if (hb.tipo === 'pasiva') { ctx.strokeStyle = bloqueado ? '#303848' : '#7c94ff'; ctx.lineWidth = 1; ctx.strokeRect(ix + 2.5, iy + 2.5, ICONO - 5, ICONO - 5); }
     if (puede) { ctx.save(); ctx.globalAlpha = 0.55 + Math.sin(t * 5) * 0.35; ctx.strokeStyle = '#ffe070'; ctx.lineWidth = 2; ctx.strokeRect(ix - 1, iy - 1, ICONO + 2, ICONO + 2); ctx.restore(); }
-    if (sobre) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(ix - 0.5, iy - 0.5, ICONO + 1, ICONO + 1); encima = hb; encimaY = iy + ICONO / 2; }
+    // (en táctil no hay ratón que pase por encima: el primer toque fija la ficha del poder para leerla y el segundo actúa)
+    if (sobre || (E.tactil && habFija === hb.id)) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(ix - 0.5, iy - 0.5, ICONO + 1, ICONO + 1); if (sobre || !encima) { encima = hb; encimaY = iy + ICONO / 2; } }
     // nivel
     if (n > 0 || puede) {
       const extra = n > 0 ? h.c.mas_habilidades : 0;
@@ -983,7 +994,8 @@ function panelHabs(j: Juego, x: number, y: number) {
     }
     if (sobre && E.clicIzq) {
       E.clicIzq = false;
-      if (puede) aprender(j, hb);
+      if (E.tactil && habFija !== hb.id) { habFija = hb.id; Sonido.efecto('click'); }
+      else if (puede) aprender(j, hb);
       // tocar un poder ya aprendido lo pone en el botón Poder (en táctil no había otra forma de elegirlo)
       else if (n > 0 && hb.tipo !== 'pasiva') ponerEnPoder(j, hb);
       else if (n > 0) { Sonido.efecto('click'); msg(j, ['Es una pasiva: está siempre activa, no hace falta usarla.', 'It is a passive: always on, no need to use it.'], '#c0b090'); }
@@ -994,7 +1006,7 @@ function panelHabs(j: Juego, x: number, y: number) {
   const py = y + PANEL_H - 22;
   ctx.fillStyle = '#1a1510'; ctx.fillRect(x + 10, py - 14, PANEL_W - 20, 22);
   texto(`${T('Puntos', 'Points')}: ${d.puntosHab}`, x + 18, py + 1, { tam: 13, color: d.puntosHab ? '#ffd060' : '#a09070', negrita: !!d.puntosHab });
-  texto(d.puntosHab ? (E.tactil ? T('Toca un icono que brilla', 'Tap a glowing icon') : T('Clic en un icono que brilla', 'Click a glowing icon')) : E.tactil ? T('Toca un poder para ponerlo en Poder', 'Tap a skill to set it as Skill') : T('Clic en un poder: va al botón derecho', 'Click a skill: goes to right button'), x + PANEL_W - 18, py + 1, { tam: 11, alin: 'right', color: '#807060' });
+  texto(d.puntosHab ? (E.tactil ? T('Toca para leer, otra vez para aprender', 'Tap to read, again to learn') : T('Clic en un icono que brilla', 'Click a glowing icon')) : E.tactil ? T('Toca para leer, otra vez para usarlo', 'Tap to read, again to equip') : T('Clic en un poder: va al botón derecho', 'Click a skill: goes to right button'), x + PANEL_W - 18, py + 1, { tam: 11, alin: 'right', color: '#807060' });
   if (encima) tooltipAl(lineasHab(j, encima, true), x - 6, encimaY);
 }
 /** Tooltip pegado a la izquierda de x (para paneles del lado derecho), centrado en y. */
@@ -1073,11 +1085,13 @@ function lineasHab(j: Juego, hb: Habilidad, conSiguiente: boolean): [string, str
   if (puedeAprender(d, hb)) l.push([base === 0 ? T('Clic para aprender', 'Click to learn') : T('Clic para subir un nivel', 'Click to raise a level'), '#ffd060']);
   return l;
 }
+/** El poder cuya ficha quedó fijada con un toque (táctil): se lee antes de aprenderlo o de ponerlo en un botón. */
+let habFija: string | null = null;
 function panelElegir(j: Juego, x: number, y: number) {
   const h = j.heroe;
   const lista: Habilidad[] = [ATAQUE, ...habilidadesDe(h.d.clase).filter((hb) => (h.d.habs[hb.id] ?? 0) > 0 && hb.tipo !== 'pasiva' && (ui.elegirLado === 'der' || hb.tipo !== 'aura'))];
   marco(x, y, PANEL_W, PANEL_H); titulo(ui.elegirLado === 'izq' ? T('Botón izquierdo', 'Left button') : T('Botón derecho', 'Right button'), x, y, PANEL_W);
-  texto(T('Pasa el ratón y pulsa F1-F10 para un atajo', 'Hover and press F1-F10 for a hotkey'), x + 160, y + 52, { alin: 'center', tam: 11, color: '#a09070' });
+  texto(E.tactil ? T('Toca un poder para leer qué hace; tócalo otra vez para ponerlo', 'Tap a skill to read it; tap again to equip it') : T('Pasa el ratón para leerlo; F1-F10 le pone un atajo', 'Hover to read it; F1-F10 sets a hotkey'), x + 160, y + 52, { alin: 'center', tam: 11, color: '#a09070' });
   let encima: Habilidad | null = null, ey = 0;
   lista.forEach((hb, i) => {
     const xx = x + 16 + (i % 6) * 48, yy = y + 64 + Math.floor(i / 6) * 50, s = 42;
@@ -1085,9 +1099,11 @@ function panelElegir(j: Juego, x: number, y: number) {
     if (hb.definitiva) { ctx.strokeStyle = '#ffb040'; ctx.lineWidth = 1; ctx.strokeRect(xx - 1.5, yy - 1.5, s + 3, s + 3); }
     if (hb.id === h.d[ui.elegirLado]) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(xx - 0.5, yy - 0.5, s + 1, s + 1); }
     const fk = h.d.atajos.indexOf(hb.id); if (fk >= 0) texto(`F${fk + 1}`, xx + 2, yy + s - 2, { tam: 10, color: '#ffd060' });
+    if (E.tactil && habFija === hb.id) { ctx.strokeStyle = '#ffe070'; ctx.lineWidth = 2; ctx.strokeRect(xx - 2, yy - 2, s + 4, s + 4); if (!encima) { encima = hb; ey = yy + s / 2; } }
     if (dentro(xx, yy, s, s)) {
       encima = hb; ey = yy + s / 2;
-      if (E.clicIzq) { h.d[ui.elegirLado] = hb.id; ui.der = null; E.clicIzq = false; Sonido.efecto('click'); recalc(j); }
+      if (E.clicIzq && E.tactil && habFija !== hb.id) { habFija = hb.id; E.clicIzq = false; Sonido.efecto('click'); }
+      else if (E.clicIzq) { h.d[ui.elegirLado] = hb.id; ui.der = null; E.clicIzq = false; habFija = null; Sonido.efecto('click'); recalc(j); }
       for (let k = 1; k <= 10; k++) if (pulso('F' + k)) { h.d.atajos = h.d.atajos.map((a) => (a === hb.id ? null : a)); h.d.atajos[k - 1] = hb.id; }
     }
   });

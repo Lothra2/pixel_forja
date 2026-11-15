@@ -29,7 +29,8 @@ parentPort!.on('message', (job: any) => {
   try {
     const out: Cuadro[] = [];
     if (job.tipo === 'personaje') {
-      for (let f = 0; f < job.cuadros; f++) {
+      for (let i = 0; i < job.cuadros; i++) {
+        const f = i * (job.paso ?? 1);
         const r = pintarEscena({ ...personajeEscena(job.cuerpo, job.equipo, job.dir, job.acc, f), sinSombra: true });
         const c = recortar(r.img, r.ancla[0], r.ancla[1]);
         c.hoja = extra.hojaDe(esqueleto, aPantalla, job.cuerpo, job.equipo, job.dir, job.acc, f);
@@ -51,7 +52,7 @@ parentPort!.on('message', (job: any) => {
       for (let f = 0; f < job.cuadros; f++) { const r = pintarObjeto(job.id, job.v, f, job.seed); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
     } else if (job.tipo === 'bestia') {
       const d = objeto(job.id);
-      for (let f = 0; f < job.cuadros; f++) { const a = d.armar(job.v, f, herramientas(1)); const esc = Array.isArray(a) ? { piezas: a } : a; const r = pintarEscena({ ...esc, sinSombra: true }); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
+      for (let i = 0; i < job.cuadros; i++) { const f = i * (job.paso ?? 1); const a = d.armar(job.v, f, herramientas(1)); const esc = Array.isArray(a) ? { piezas: a } : a; const r = pintarEscena({ ...esc, sinSombra: true }); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
     } else if (job.tipo === 'poder') {
       for (let f = 0; f < job.cuadros; f++) { const r = pintarPoder(job.id, job.dir, f); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
     } else if (job.tipo === 'piso') {
