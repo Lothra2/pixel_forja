@@ -14,7 +14,7 @@ const VER = 'v18';
  */
 export const FINO_RUMBOS = 16;
 const finos = new Map<string, Cuadro[]>();
-let firmaFinos = '';
+let firmaFinos = '', claseFina = '';
 /** Los cuadros finos de caminar o correr para el rumbo k (0..15, de a 22.5°, 0 = 'se'), si ya están pintados para el héroe que se ve. */
 export const cuadrosFinos = (acc: string, k: number): Cuadro[] | null => (firmaFinos === firmaVivos ? finos.get(acc + '@' + k) ?? null : null);
 const DIRS = ['s', 'so', 'o', 'no', 'n', 'ne', 'e', 'se'];
@@ -71,8 +71,9 @@ const ultima = (clase: string) => { try { return localStorage.getItem('pintor.ul
 
 /** Pide los cuadros para este cuerpo y equipo. firma 'base' = usar lo horneado. */
 export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma: string, dirPref = 's') {
-  if (firma === firmaActual) return;
-  firmaActual = firma;
+  // (el equipo de salida es 'base' para todas las clases: ahí manda la clase, que el paso fino sí es distinto)
+  if (firma === firmaActual && (firma !== 'base' || claseFina === clase)) return;
+  firmaActual = firma; claseFina = clase;
   const yo = ++trabajo;
   for (const o of obreros) o.terminate();
   obreros = [];
