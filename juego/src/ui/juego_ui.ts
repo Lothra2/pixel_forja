@@ -1,5 +1,6 @@
 // La interfaz dentro del juego: barra de abajo con orbes, cinturón y habilidades; inventario, ficha, habilidades,
 // cofre, tiendas, diálogos, piedras de viaje, misiones, mapa y menú.
+import { iconoPintado } from './iconos_hab';
 import { ctx, W, H, E, pulso, ESCALA } from '../nucleo/lienzo';
 import { barraInferior, orbe, zonasBarra, ladoOrbe, barraJefe, cursores, cartelMuerte, panelInventario, EQUIPO as EQUIPO_HUD, CELDA_INV, BOLSA as BOLSA_HUD, type ObjetoInv } from '../../../src/engine/gotico/hud';
 import { aLoot, arma3dDe } from './loot';
@@ -63,82 +64,11 @@ export function orbeHud(tipo: string, k: number, x: number, y: number, s: number
 /** Solo el glifo de la habilidad, centrado en (cx, cy), sin fondo ni marco. */
 export const glifoHab = (hb: Habilidad, cx: number, cy: number, s: number, apagado = false) => iconoHab(hb, cx - s / 2, cy - s / 2, s, apagado, true, true);
 export function iconoHab(hb: Habilidad, x: number, y: number, s: number, apagado = false, redondo = false, soloGlifo = false) {
-  ctx.save();
-  const g = ctx.createRadialGradient(x + s / 2, y + s / 2, 2, x + s / 2, y + s / 2, s * 0.7);
-  g.addColorStop(0, apagado ? '#303030' : hb.color); g.addColorStop(1, '#0a0806');
-  // redondo (botones táctiles): solo el fondo de color en círculo y el glifo, sin el marco cuadrado
-  if (soloGlifo) { /* sin fondo */ }
-  else if (redondo) { ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x + s / 2, y + s / 2, s / 2, 0, Math.PI * 2); ctx.fill(); }
-  else {
-    ctx.fillStyle = g; ctx.fillRect(x, y, s, s);
-    ctx.strokeStyle = '#000'; ctx.strokeRect(x + 0.5, y + 0.5, s - 1, s - 1);
-    ctx.strokeStyle = apagado ? '#3a3a3a' : '#a08850'; ctx.strokeRect(x + 1.5, y + 1.5, s - 3, s - 3);
-  }
-  ctx.translate(x + s / 2, y + s / 2); const k = s / 48; ctx.scale(k, k);
-  ctx.strokeStyle = apagado ? '#606060' : '#fff6e0'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  const L = (pts: number[]) => { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]); ctx.stroke(); };
-  switch (hb.glifo) {
-    case 'hacha': L([-10, 14, 8, -10]); ctx.beginPath(); ctx.arc(8, -10, 9, -1.2, 1.4); ctx.fill(); break;
-    case 'espada': L([-12, 12, 12, -12]); L([-6, 2, 2, 10]); break;
-    case 'doble': L([-14, 10, 4, -10]); L([-4, 14, 14, -6]); break;
-    case 'triple': L([-14, 8, 2, -12]); L([-6, 12, 10, -8]); L([2, 14, 14, 0]); break;
-    case 'salto': L([-14, 12, -4, -10, 6, 4, 14, -12]); break;
-    case 'giro': ctx.beginPath(); ctx.arc(0, 0, 12, 0, 5); ctx.stroke(); L([12, 0, 14, -8]); break;
-    case 'craneo': ctx.beginPath(); ctx.arc(0, -3, 11, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#000'; ctx.fillRect(-7, -5, 5, 5); ctx.fillRect(2, -5, 5, 5); ctx.fillStyle = ctx.strokeStyle; ctx.fillRect(-6, 7, 12, 6); break;
-    case 'boca': ctx.beginPath(); ctx.ellipse(0, 0, 13, 8, 0, 0, Math.PI * 2); ctx.stroke(); L([-8, -3, -4, 3, 0, -3, 4, 3, 8, -3]); break;
-    case 'puno': ctx.fillRect(-9, -9, 18, 16); ctx.fillStyle = '#000'; for (let i = 0; i < 3; i++) ctx.fillRect(-6 + i * 5, -9, 1, 8); break;
-    case 'escudo': ctx.beginPath(); ctx.moveTo(-12, -13); ctx.lineTo(12, -13); ctx.lineTo(10, 4); ctx.lineTo(0, 14); ctx.lineTo(-10, 4); ctx.closePath(); ctx.stroke(); break;
-    case 'onda': for (let r = 5; r <= 15; r += 5) { ctx.beginPath(); ctx.arc(0, 4, r, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); } break;
-    case 'gota': ctx.beginPath(); ctx.moveTo(0, -14); ctx.quadraticCurveTo(12, 6, 0, 12); ctx.quadraticCurveTo(-12, 6, 0, -14); ctx.fill(); break;
-    case 'piel': ctx.beginPath(); ctx.moveTo(-12, -10); ctx.lineTo(12, -10); ctx.lineTo(8, 12); ctx.lineTo(-8, 12); ctx.closePath(); ctx.stroke(); L([-6, -4, 6, 6]); break;
-    case 'rayo': L([4, -14, -4, 0, 4, 0, -4, 14]); break;
-    case 'cruz': L([0, -14, 0, 14]); L([-10, -4, 10, -4]); break;
-    case 'flecha': L([-12, 12, 12, -12]); L([4, -12, 12, -12, 12, -4]); break;
-    case 'sol': ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill(); for (let a = 0; a < 8; a++) L([Math.cos(a * 0.785) * 9, Math.sin(a * 0.785) * 9, Math.cos(a * 0.785) * 14, Math.sin(a * 0.785) * 14]); break;
-    case 'manos': L([-8, 12, -8, -6, -2, -12]); L([8, 12, 8, -6, 2, -12]); break;
-    case 'espina': for (let a = 0; a < 6; a++) L([0, 0, Math.cos(a) * 13, Math.sin(a) * 13]); break;
-    case 'llama': ctx.beginPath(); ctx.moveTo(0, -14); ctx.quadraticCurveTo(12, 0, 6, 12); ctx.lineTo(-6, 12); ctx.quadraticCurveTo(-12, 0, 0, -14); ctx.fill(); break;
-    case 'ojo': ctx.beginPath(); ctx.ellipse(0, 0, 13, 7, 0, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill(); break;
-    case 'martillo': L([-10, 12, 6, -4]); ctx.fillRect(0, -14, 12, 10); break;
-    case 'bola': case 'meteoro': ctx.beginPath(); ctx.arc(2, 2, 9, 0, Math.PI * 2); ctx.fill(); L([-4, -4, -14, -14]); break;
-    case 'muro': for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(i * 9 - 4, 12); ctx.quadraticCurveTo(i * 9, -16, i * 9 + 4, 12); ctx.fill(); } break;
-    case 'cristal': ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(6, 0); ctx.lineTo(0, 14); ctx.lineTo(-6, 0); ctx.closePath(); ctx.fill(); break;
-    case 'nova': for (let a = 0; a < 8; a++) L([Math.cos(a * 0.785) * 5, Math.sin(a * 0.785) * 5, Math.cos(a * 0.785) * 14, Math.sin(a * 0.785) * 14]); break;
-    case 'orbe': ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(-3, -3, 3, 0, Math.PI * 2); ctx.fill(); break;
-    case 'copo': for (let a = 0; a < 3; a++) L([Math.cos(a * 1.047) * 13, Math.sin(a * 1.047) * 13, -Math.cos(a * 1.047) * 13, -Math.sin(a * 1.047) * 13]); break;
-    case 'chispa': L([-12, 4, -4, -4, 0, 6, 6, -6, 12, 2]); break;
-    case 'nube': ctx.beginPath(); ctx.arc(-6, 0, 7, 0, Math.PI * 2); ctx.arc(4, -3, 8, 0, Math.PI * 2); ctx.arc(8, 4, 6, 0, Math.PI * 2); ctx.fill(); break;
-    case 'abanico': for (let a = -2; a <= 2; a++) L([0, 12, a * 6, -12]); break;
-    case 'lluvia': for (let i = -2; i <= 2; i++) L([i * 6, -12, i * 6 - 3, 4]); break;
-    case 'lanza': L([-13, 13, 13, -13]); ctx.beginPath(); ctx.moveTo(13, -13); ctx.lineTo(5, -9); ctx.lineTo(9, -5); ctx.fill(); break;
-    case 'pluma': ctx.beginPath(); ctx.ellipse(0, 0, 5, 14, 0.6, 0, Math.PI * 2); ctx.stroke(); L([-8, 10, 8, -10]); break;
-    case 'alma': ctx.beginPath(); ctx.arc(0, -4, 8, 0, Math.PI * 2); ctx.fill(); L([-6, 4, -8, 14]); L([6, 4, 8, 14]); break;
-    case 'hueso': L([-10, 10, 10, -10]); for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(s * 11, -s * 11, 3, 0, Math.PI * 2); ctx.fill(); } break;
-    case 'espiral': ctx.beginPath(); for (let a = 0; a < 12; a += 0.2) ctx.lineTo(Math.cos(a) * a * 1.2, Math.sin(a) * a * 1.2); ctx.stroke(); break;
-    case 'arco': ctx.beginPath(); ctx.arc(-6, 0, 14, -1.2, 1.2); ctx.stroke(); L([-1, -13, -1, 13]); break;
-    case 'mano': ctx.fillRect(-8, -2, 16, 12); for (let i = 0; i < 4; i++) ctx.fillRect(-8 + i * 4.5, -12, 3, 10); break;
-    case 'reloj': ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke(); L([0, 0, 0, -8]); L([0, 0, 6, 3]); break;
-    case 'garra': for (let i = -1; i <= 1; i++) L([i * 7, 12, i * 7 + 4, -12]); break;
-    case 'corazon': ctx.beginPath(); ctx.moveTo(0, 12); ctx.bezierCurveTo(-16, 0, -10, -16, 0, -6); ctx.bezierCurveTo(10, -16, 16, 0, 0, 12); ctx.fill(); break;
-    case 'viento': for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(-13, i * 7); ctx.quadraticCurveTo(4, i * 7 - 6, 13, i * 7); ctx.stroke(); } break;
-    case 'grieta': L([-12, -12, -4, -2, -8, 4, 4, 12]); break;
-    case 'raiz': L([0, -14, 0, 4, -8, 14]); L([0, 4, 8, 14]); L([0, -4, -8, 2]); break;
-    case 'arbol': ctx.beginPath(); ctx.arc(0, -4, 10, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(-2, 4, 4, 10); break;
-    case 'frasco': ctx.beginPath(); ctx.arc(0, 4, 9, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(-3, -12, 6, 10); break;
-    case 'racimo': for (const [a, b] of [[-6, 4], [6, 4], [0, -6]]) { ctx.beginPath(); ctx.arc(a, b, 6, 0, Math.PI * 2); ctx.fill(); } break;
-    case 'torre': ctx.fillRect(-6, -6, 12, 18); ctx.fillRect(-10, -10, 20, 5); L([0, -10, 12, -14]); break;
-    case 'moneda': ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke(); texto('G', -4, 5, { tam: 13, color: '#fff6e0', sombra: false }); break;
-    case 'corona': ctx.beginPath(); ctx.moveTo(-13, 9); ctx.lineTo(-13, -7); ctx.lineTo(-6, 1); ctx.lineTo(0, -12); ctx.lineTo(6, 1); ctx.lineTo(13, -7); ctx.lineTo(13, 9); ctx.closePath(); ctx.fill(); ctx.fillRect(-13, 11, 26, 3); break;
-    case 'estrella': ctx.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 6 : 14, a = -Math.PI / 2 + i * Math.PI / 5; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); ctx.fill(); break;
-    case 'campana': ctx.beginPath(); ctx.moveTo(-11, 8); ctx.quadraticCurveTo(-10, -13, 0, -13); ctx.quadraticCurveTo(10, -13, 11, 8); ctx.closePath(); ctx.fill(); ctx.fillRect(-13, 8, 26, 3); ctx.beginPath(); ctx.arc(0, 13, 3, 0, Math.PI * 2); ctx.fill(); break;
-    case 'ala': for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-12, 10 - i * 2); ctx.quadraticCurveTo(-2, -4 - i * 3, 13 - i * 3, -12 + i * 6); ctx.stroke(); } break;
-    case 'colmillo': for (const sx of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sx * 11, -12); ctx.quadraticCurveTo(sx * 2, -10, sx * 4, 13); ctx.quadraticCurveTo(sx * 9, 0, sx * 11, -12); ctx.fill(); } break;
-    case 'loto': for (let a = -2; a <= 2; a++) { ctx.save(); ctx.rotate(a * 0.5); ctx.beginPath(); ctx.ellipse(0, -4, 4, 10, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); } L([-13, 10, 13, 10]); break;
-    case 'cepo': ctx.beginPath(); ctx.arc(0, 2, 12, Math.PI, 0); ctx.stroke(); for (let i = -2; i <= 2; i++) L([i * 5, 2, i * 5 + 1, -5]); L([-14, 6, 14, 6]); break;
-    case 'tumba': ctx.beginPath(); ctx.moveTo(-9, 13); ctx.lineTo(-9, -4); ctx.arc(0, -4, 9, Math.PI, 0); ctx.lineTo(9, 13); ctx.stroke(); L([0, -6, 0, 6]); L([-4, -2, 4, -2]); break;
-    default: ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
-  }
-  ctx.restore();
+  // el icono se pinta una vez (al doble de tamaño) y después se copia: fondo según el elemento, el glifo con volumen,
+  // contorno y brillo, y el marco de bronce (ver iconos_hab.ts)
+  const cv = iconoPintado(hb, s, apagado, redondo, soloGlifo);
+  const su = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = true; (ctx as any).imageSmoothingQuality = 'high';
+  ctx.drawImage(cv, x, y, s, s); ctx.imageSmoothingEnabled = su;
 }
 
 // ------------------------------------------------------------------ barra de abajo
