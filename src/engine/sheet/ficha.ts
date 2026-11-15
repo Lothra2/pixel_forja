@@ -49,7 +49,7 @@ export const PIXEL_CHARS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP
 export type EyeStyle = 'round' | 'big' | 'small';
 export type MouthStyle = 'smile' | 'line' | 'open' | 'grin';
 
-export type PresetName = 'chibi' | 'juvenil' | 'realista';
+export type PresetName = 'chibi' | 'juvenil' | 'realista' | 'kunio';
 
 export interface Proportions {
   preset: PresetName;

@@ -46,7 +46,7 @@ export const nkGoalJump: AnimDef = {
     const L = c.L, u = c.u;
     const crouch = P(c, { torso: 16, legs: feet(c, 0.7, 0.3), arms: { near: { shoulder: 30, elbow: 120, spread: 12 }, far: { shoulder: 30, elbow: 120, spread: 12 } }, hands: fists, face: joy, support: 'both' });
     const star = (a: number, tilt: number) => P(c, { torso: -8, air: a * u, roll: tilt, freeArms: true, legs: { near: { x: 0.75 * L, y: 0.72 * L, toe: -10 }, far: { x: -0.75 * L, y: 0.72 * L, toe: 50 } },
-      arms: { near: { shoulder: 128, elbow: 0, spread: 80 }, far: { shoulder: -128, elbow: 0, spread: 80 } }, hands: palms, head: { dx: 0, dy: 0, tilt: -8 }, face: { eyes: 'happy', mouth: 'shout' } });
+      arms: { near: { shoulder: 100, elbow: 80, spread: 70, spread2: 12 }, far: { shoulder: -100, elbow: -80, spread: 70, spread2: 12 } }, hands: palms, head: { dx: 0, dy: 0, tilt: -8 }, face: { eyes: 'happy', mouth: 'shout' }, fit: true });
     const fall = P(c, { torso: 4, air: 3 * u, legs: { near: { x: 0.25 * L, y: L - 0.5, toe: 20 }, far: { x: -0.25 * L, y: L - 0.5, toe: 20 } }, arms: { near: { shoulder: 70, elbow: 40, spread: 50 }, far: { shoulder: -70, elbow: 40, spread: 50 } }, hands: fists, face: joy });
     return [crouch, crouch, star(7, 6), star(10, 10), star(9, -6), fall, crouch, crouch];
   },
@@ -58,7 +58,10 @@ export const nkBanzai: AnimDef = {
   build: (c) => {
     // (el brazo corto no sube más que el hombro: lo que se ve es el balancín, un brazo arriba y el otro abajo, con el cuerpo ladeado)
     const pump = (side: 1 | -1) => P(c, { torso: -8, roll: side * 16, freeArms: true, legs: feet(c, 0.25, 0.34),
-      arms: { near: { shoulder: 92 + side * 34, elbow: 0, spread: 80 }, far: { shoulder: -92 + side * 34, elbow: 0, spread: 80 } },
+      // (el brazo de arriba hace la "L": codo afuera y puño arriba junto a la cabeza; el otro va al pecho)
+      arms: side > 0
+        ? { near: { shoulder: 100, elbow: 80, spread: 70, spread2: 10 }, far: { shoulder: -40, elbow: -100, spread: 30 } }
+        : { near: { shoulder: 40, elbow: 100, spread: 30 }, far: { shoulder: -100, elbow: -80, spread: 70, spread2: 10 } },
       hands: palms, head: { dx: 0, dy: 0, tilt: side * 10 }, face: { eyes: 'happy', mouth: 'shout' }, support: 'both' });
     const load = P(c, { torso: 12, legs: feet(c, 0.6, 0.3), arms: { near: { shoulder: 35, elbow: 120, spread: 14 }, far: { shoulder: 35, elbow: 120, spread: 14 } }, hands: fists, face: joy, support: 'both' });
     return [load, pump(1), pump(1), load, pump(-1), pump(-1)];

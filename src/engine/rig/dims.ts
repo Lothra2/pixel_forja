@@ -30,6 +30,13 @@ type Base = Omit<Dims, 'cell' | 'groundY' | 'pivot' | 'u'>;
 
 const PRESETS: Record<PresetName, Record<CellSize, Base>> = {
   // cabezón: la cabeza es casi la mitad de la altura
+  // el muñeco de Kunio medido del Papá redibujado a mano: la misma cabezota, el mismo tronco, y las piernas un 60 % más
+  // largas con zapatos grandes. Los brazos casi no cambian: lo que cuenta la patada y la zancada son las piernas.
+  kunio: {
+    32: { headW: 15, torsoW: 8, torsoH: 6, pantsRows: 2, legUpper: 4, legLower: 4, legT: 3, hipSpread: 3, armUpper: 3, armLower: 3, armT: 2, hand: 2, footLen: 4, footH: 2 },
+    48: { headW: 22, torsoW: 12, torsoH: 9, pantsRows: 3, legUpper: 5, legLower: 5, legT: 4, hipSpread: 4, armUpper: 4, armLower: 4, armT: 2, hand: 3, footLen: 6, footH: 3 },
+    64: { headW: 29, torsoW: 16, torsoH: 12, pantsRows: 4, legUpper: 8, legLower: 8, legT: 5, hipSpread: 5, armUpper: 5, armLower: 5, armT: 4, hand: 4, footLen: 8, footH: 4 },
+  },
   chibi: {
     32: { headW: 14, torsoW: 7, torsoH: 6, pantsRows: 2, legUpper: 3, legLower: 2, legT: 2, hipSpread: 3, armUpper: 3, armLower: 2, armT: 2, hand: 2, footLen: 3, footH: 1 },
     48: { headW: 20, torsoW: 10, torsoH: 9, pantsRows: 3, legUpper: 4, legLower: 4, legT: 3, hipSpread: 4, armUpper: 4, armLower: 3, armT: 2, hand: 3, footLen: 4, footH: 2 },

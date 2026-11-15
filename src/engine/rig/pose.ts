@@ -23,6 +23,9 @@ export interface Arm {
   /** flexión del codo (grados, + dobla hacia adelante) */
   elbow: number;
   spread?: number;
+  /** Apertura propia del antebrazo (de frente). Sin esto usa la del brazo. Con el brazo abierto al costado y el antebrazo
+   *  en 0 queda la "L" del festejo: el codo afuera y el puño arriba, junto a la cabeza. */
+  spread2?: number;
 }
 
 export type PropKind =

@@ -330,15 +330,15 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
       else spreadDeg = Math.max(spreadDeg, 50 + (Math.min(up, 180) - 115) * 0.2);
     }
     const sp = spreadDeg * r;
-    const seg = (ang: number, len: number) => {
+    const seg = (ang: number, len: number, sp: number) => {
       const fwd = Math.sin(ang * r) * Math.cos(sp) * len, down = Math.cos(ang * r) * Math.cos(sp) * len, out = Math.sin(sp) * len;
       if (side) return local(fwd, -down);
       const P = view === 'front' ? P_FRONT : -P_FRONT;
       const outSign = (far ? -1 : 1) * sign;
       return rot(diag ? [out * outSign * DIAG_Z + fwd * DIAG_X, down + fwd * P * DIAG_Z] : [out * outSign, down + fwd * P], theta);
     };
-    const mid = add(root, seg(shoulder, d.armUpper));
-    const end = add(mid, seg(shoulder + a.elbow, d.armLower));
+    const mid = add(root, seg(shoulder, d.armUpper, sp));
+    const end = add(mid, seg(shoulder + a.elbow, d.armLower, a.spread2 === undefined ? sp : a.spread2 * r));
     return { root, mid, end };
   };
 
