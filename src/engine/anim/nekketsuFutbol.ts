@@ -13,40 +13,56 @@ import { shotP } from './footballPremium';
 
 const joy = { eyes: 'happy' as const, mouth: 'grin' as const };
 const fury = { eyes: 'angry' as const, mouth: 'shout' as const };
-/** Los dos brazos arriba en V, con las palmas abiertas: adelante de la cara de lado y a los costados de la cabeza de frente, que si no la cabeza del chibi los tapa. */
-const up = (w: number): Pose['arms'] => ({ near: { shoulder: 150 + w, elbow: 25, spread: 55 }, far: { shoulder: 154 - w, elbow: 25, spread: 55 } }) as Pose['arms'];
 const palms = { near: 'palma' as const, far: 'palma' as const };
 
-/** El festejo de Nintendo World Cup: corre con los dos brazos arriba, el pecho afuera y gritando. */
+/**
+ * Los festejos, con los brazos del tamaño de siempre (nada de estirarlos sobre la cabeza, que en este muñeco se ve mal). Lo
+ * que festeja es el cuerpo: el avioncito que se ladea, el salto en estrella y el puño que bombea con todo el tronco.
+ */
+const fists = {};
+
+/** La corrida del gol: el avioncito, con los brazos en cruz, ladeándose de un lado al otro y gritando. */
 export const nkGoalRun: AnimDef = {
   name: 'nk_goal_run', pack: 'football', fps: 14, loop: true, steady: true, hairTrail: -1,
   events: run.events,
-  build: (c) => run.build(c).map((p, i) => ({
-    ...p, torso: -8, freeArms: true, arms: up(i % 4 < 2 ? 8 : -8), hands: palms,
-    head: { ...p.head, tilt: -10 }, face: i % 4 < 2 ? joy : { eyes: 'happy' as const, mouth: 'shout' as const },
-  })),
+  build: (c) => run.build(c).map((p, i) => {
+    const bank = i % 8 < 4 ? 1 : -1;
+    return {
+      ...p, torso: 20, roll: bank * 16, freeArms: true,
+      // de lado los brazos en cruz quedan tapados por el cuerpo: ahí corre bombeando los puños bien arriba
+      arms: c.view === 'side'
+        ? { near: { shoulder: p.arms.near.shoulder * 1.6 + 30, elbow: 115, spread: 10 }, far: { shoulder: p.arms.far.shoulder * 1.6 + 30, elbow: 115, spread: 10 } }
+        : { near: { shoulder: 92 + bank * 14, elbow: 0, spread: 78 }, far: { shoulder: -92 + bank * 14, elbow: 0, spread: 78 } }, hands: c.view === 'side' ? {} : palms,
+      head: { ...p.head, tilt: bank * 8 }, face: i % 4 < 2 ? joy : { eyes: 'happy' as const, mouth: 'shout' as const },
+    };
+  }),
 };
 
-/** ¡Banzai! Salta en el sitio con los brazos arriba y las piernas recogidas, una y otra vez. */
+/** El salto del gol: se agacha con los puños al pecho y explota en estrella, brazos y piernas abiertos, dos veces. */
 export const nkGoalJump: AnimDef = {
   name: 'nk_goal_jump', pack: 'football', fps: 12, loop: true,
   events: [{ type: 'despegue', phase: 1 / 8 }, { type: 'aterriza', phase: 6 / 8 }],
   build: (c) => {
     const L = c.L, u = c.u;
-    const crouch = P(c, { torso: 14, legs: feet(c, 0.6, 0.26), arms: { near: { shoulder: -35, elbow: 30, spread: 20 }, far: { shoulder: -35, elbow: 30, spread: 20 } }, face: joy, support: 'both' });
-    const rise = P(c, { torso: -6, air: 5 * u, freeArms: true, legs: { near: { x: 0.1 * L, y: L - 0.4, toe: 40 }, far: { x: -0.1 * L, y: L - 0.4, toe: 40 } }, arms: up(0), hands: palms, face: { eyes: 'happy', mouth: 'shout' } });
-    const apex = P(c, { torso: -10, air: 10 * u, freeArms: true, legs: { near: { x: 0.32 * L, y: 0.52 * L, toe: 20 }, far: { x: -0.3 * L, y: 0.58 * L, toe: 50 } },
-      arms: up(8), hands: palms, head: { dx: 0, dy: 0, tilt: -12 }, face: { eyes: 'happy', mouth: 'shout' } });
-    const fall = P(c, { torso: -2, air: 4 * u, freeArms: true, legs: { near: { x: 0.12 * L, y: L - 0.5, toe: 25 }, far: { x: -0.12 * L, y: L - 0.5, toe: 25 } }, arms: up(-6), hands: palms, face: joy });
-    return keyed(8, [[0, crouch], [1, crouch, 'out'], [2, rise], [3, apex, 'hold'], [4, apex], [5, fall], [6, crouch, 'out'], [7, crouch]], true);
+    const crouch = P(c, { torso: 16, legs: feet(c, 0.7, 0.3), arms: { near: { shoulder: 30, elbow: 120, spread: 12 }, far: { shoulder: 30, elbow: 120, spread: 12 } }, hands: fists, face: joy, support: 'both' });
+    const star = (a: number, tilt: number) => P(c, { torso: -8, air: a * u, roll: tilt, freeArms: true, legs: { near: { x: 0.75 * L, y: 0.72 * L, toe: -10 }, far: { x: -0.75 * L, y: 0.72 * L, toe: 50 } },
+      arms: { near: { shoulder: 128, elbow: 0, spread: 80 }, far: { shoulder: -128, elbow: 0, spread: 80 } }, hands: palms, head: { dx: 0, dy: 0, tilt: -8 }, face: { eyes: 'happy', mouth: 'shout' } });
+    const fall = P(c, { torso: 4, air: 3 * u, legs: { near: { x: 0.25 * L, y: L - 0.5, toe: 20 }, far: { x: -0.25 * L, y: L - 0.5, toe: 20 } }, arms: { near: { shoulder: 70, elbow: 40, spread: 50 }, far: { shoulder: -70, elbow: 40, spread: 50 } }, hands: fists, face: joy });
+    return [crouch, crouch, star(7, 6), star(10, 10), star(9, -6), fall, crouch, crouch];
   },
 };
 
-/** Parado con los dos brazos arriba, gritando el gol: se balancea en las rodillas y abre y cierra la boca (el juego lo hace saltar). */
+/** Parado gritando el gol: se agacha con los puños al pecho y se abre en cruz ladeado a un lado y al otro, como un balancín (el juego lo hace saltar). */
 export const nkBanzai: AnimDef = {
-  name: 'nk_banzai', pack: 'football', fps: 10, loop: true,
-  build: (c) => [0, 1, 0, 1].map((b, i) => P(c, { torso: -6 + b * 2, freeArms: true, legs: feet(c, 0.12 + b * 0.22, 0.24), arms: up(i < 2 ? 6 : -6), hands: palms,
-    head: { dx: 0, dy: 0, tilt: i < 2 ? -6 : 6 }, face: b ? joy : { eyes: 'happy' as const, mouth: 'shout' as const }, support: 'both' })),
+  name: 'nk_banzai', pack: 'football', fps: 9, loop: true,
+  build: (c) => {
+    // (el brazo corto no sube más que el hombro: lo que se ve es el balancín, un brazo arriba y el otro abajo, con el cuerpo ladeado)
+    const pump = (side: 1 | -1) => P(c, { torso: -8, roll: side * 16, freeArms: true, legs: feet(c, 0.25, 0.34),
+      arms: { near: { shoulder: 92 + side * 34, elbow: 0, spread: 80 }, far: { shoulder: -92 + side * 34, elbow: 0, spread: 80 } },
+      hands: palms, head: { dx: 0, dy: 0, tilt: side * 10 }, face: { eyes: 'happy', mouth: 'shout' }, support: 'both' });
+    const load = P(c, { torso: 12, legs: feet(c, 0.6, 0.3), arms: { near: { shoulder: 35, elbow: 120, spread: 14 }, far: { shoulder: 35, elbow: 120, spread: 14 } }, hands: fists, face: joy, support: 'both' });
+    return [load, pump(1), pump(1), load, pump(-1), pump(-1)];
+  },
 };
 
 /** La carga con el hombro (el codazo de Kunio): se tira con el cuerpo entero, el antebrazo por delante. */
