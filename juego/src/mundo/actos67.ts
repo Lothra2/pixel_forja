@@ -96,4 +96,20 @@ Object.assign(ENTRADA_ZONA, {
   a7_escaleras: ['Cada escalón tiene un nombre grabado. El último está en blanco.', 'Every step bears a carved name. The last one is blank.'],
   a7_trono: ['El Trono Sediento te estaba esperando. Siempre te estuvo esperando.', 'The Thirsting Throne was waiting for you. It was always waiting.'],
 } as Record<string, [string, string]>);
+// ------------------------------------------------------------------ casas abandonadas
+// Cada mundo abierto donde vivió gente tiene dos casas donde se puede entrar: un interior chico con muebles, alguien que
+// lo cuida y, bajo las tablas, lo que el dueño escondió antes de huir. Son zonas de verdad (se guardan y se vuelve a ellas).
+{
+  const NOMBRE: [string, string][] = [['Casa abandonada', 'Abandoned house'], ['Casa tapiada', 'Boarded-up house']];
+  const FRASE: [string, string][] = [['Adentro huele a encierro. Alguien dejó la mesa puesta.', 'It smells shut-in. Someone left the table set.'], ['Las tablas crujen. Abajo, algo responde.', 'The boards creak. Below, something answers.']];
+  for (const z of Object.values(ZONAS)) {
+    if (z.tipo !== 'exterior' || !/^(paramo|cementerio|desierto|nieve|selva|ahogada)$/.test(z.tema) || z.id.includes('~')) continue;
+    for (let i = 0; i < 2; i++) {
+      const id = `${z.id}~c${i}`;
+      ZONAS[id] = { id, nombre: NOMBRE[i], acto: z.acto, nivel: z.nivel + 1, tipo: 'mazmorra', tema: 'casa', tam: [10, 10], oscuridad: 0.74, casa: true, salidas: [{ destino: z.id, entrada: 'salida_' + id, lado: 'arriba', nombre: z.nombre }] };
+      z.salidas.push({ destino: id, entrada: 'arriba', lado: 'casa', nombre: NOMBRE[i] });
+      POBL_ZONA[id] = POBL_ZONA[z.id]; ENTRADA_ZONA[id] = FRASE[i];
+    }
+  }
+}
 import './misiones_historia';

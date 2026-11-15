@@ -66,7 +66,7 @@ export function registrar(...defs: ObjetoDef[]) { for (const d of defs) { if (!R
  * Las edificaciones a escala de la gente: casas, chozas, carpas y pabellones salían con puertas más bajas que una persona.
  * Se agrandan enteras (piezas y huella) al registrarlas, sin tocar cada armado.
  */
-const ESCALA_OBRA: [RegExp, number][] = [
+const ESCALA_OBRA: [RegExp, number, boolean?][] = [
   [/^casa_/, 1.55], [/^camp_carpa$/, 2], [/^camp_(carpa_grande|pabellon)$/, 1.9], [/^pue_(casa_en_llamas|casa_calcinada|ruina_derrumbada|puesto)$/, 1.5],
   // auditoría de todos los temas contra la altura de una persona (75 px): lo que se habita o se cruza de pie
   [/^par_(tienda_bandidos|molino)$/, 1.55], [/^par_torre_vigia$/, 1.25], [/^(des_tienda|des2_tienda)$/, 1.45], [/^des_(puesto|toldo)$/, 1.3],
@@ -75,6 +75,21 @@ const ESCALA_OBRA: [RegExp, number][] = [
   [/^ahg_torre_(farol|campanario)$/, 1.3], [/^for2_torre$/, 1.3],
   [/^dec_(ruina|hito)$/, 1.6], [/^dec_planta$/, 1.4],
   [/^acto_hito$/, 2.4], [/^dec_muro$/, 1.25],
+  // segunda auditoría (todo el catálogo medido contra una persona de 75 px): árboles que eran arbustos, estatuas más
+  // bajas que quien las mira, puertas por las que no se cabe, faroles a la altura del pecho, muebles y carros de juguete.
+  // (los árboles crecen sin ensanchar su huella: el tronco estorba lo mismo; `false` = no tocar la huella)
+  [/^(abi_arbol_borde|arb_arbol_quemado|sel_arbol_telarana)$/, 1.8, false], [/^arb_roble$/, 1.6, false],
+  [/^(arb_arbol_hongo|hie2_arbol|arb_arbol_jaula|arb_sauce)$/, 1.5, false], [/^arb_arbol_seco$/, 1.45, false],
+  [/^(cel_arbol_oro|par_arbol_ahorcados)$/, 1.3, false], [/^(sel_palmera|inf2_arbol)$/, 1.25, false], [/^(des2_palmera|nie2_arbol_muerto|nie_pino)$/, 1.2, false],
+  [/^cem2_lapida_angel$/, 1.7], [/^cri_estatua_guardian$/, 1.6], [/^(sel2_idolo|mis_estatua_doliente)$/, 1.5], [/^(tem_estatua_jaguar|abi_estatua)$/, 1.4], [/^(sel_cabeza_idolo|cel_estatua_suplica)$/, 1.25],
+  [/^cem_obelisco$/, 1.9], [/^cem2_obelisco_velado$/, 1.5], [/^(com_santuario_obelisco|inf2_columna_fuego)$/, 1.3],
+  [/^(cem2_verja_porton|abi_puerta)$/, 1.4], [/^cem_porton$/, 1.35], [/^ahg_puerta_hundida$/, 1.3], [/^cat_puerta_celda$/, 1.15],
+  [/^(abi_farol|ahg_farol_pescador)$/, 1.6], [/^(cem_farol|cem2_farol_cayado)$/, 1.4], [/^par_farol$/, 1.35],
+  [/^(mue_candelabro|cri_candelabro|cel_candelabro_oro)$/, 1.25],
+  [/^(mue_armario|mue_estante_libros|mue_trono|mue_doncella_hierro)$/, 1.3], [/^mue_repisa_frascos$/, 1.25],
+  [/^camp_bote$/, 1.6], [/^(sel2_barca|ahg_bote_roto|min_pozo|hie2_pozo)$/, 1.4],
+  [/^(cue_vagoneta|min_vagoneta|min_vagoneta_volcada|min_vagoneta_rota|nie2_trineo|nie_trineo|camp_fuente)$/, 1.3],
+  [/^(camp_carreta|par_carreta_rota|par_caravana|des2_caravana|pue_carreta|cem2_carreta_enterrador)$/, 1.3],
 ];
 function escalarPiezas(ps: Pieza[], s: number): Pieza[] {
   const P = (v: V3): V3 => [v[0] * s, v[1] * s, v[2] * s];
@@ -89,9 +104,10 @@ function escalarPiezas(ps: Pieza[], s: number): Pieza[] {
   });
 }
 function conEscala(d: ObjetoDef): ObjetoDef {
-  const s = ESCALA_OBRA.find(([re]) => re.test(d.id))?.[1]; if (!s) return d;
+  const fila = ESCALA_OBRA.find(([re]) => re.test(d.id)), s = fila?.[1]; if (!s) return d;
   const base = d.armar, H = (h: [number, number]): [number, number] => [Math.round(h[0] * s), Math.round(h[1] * s)];
   d.armar = (v, f, a) => { const r = base(v, f, a); return Array.isArray(r) ? escalarPiezas(r, s) : { ...r, piezas: escalarPiezas(r.piezas, s) }; };
+  if (fila![2] === false) return d;
   if (d.huella) d.huella = H(d.huella);
   if (d.huellaPor) for (const k of Object.keys(d.huellaPor)) d.huellaPor[k] = H(d.huellaPor[k]);
   return d;

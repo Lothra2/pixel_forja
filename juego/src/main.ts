@@ -410,9 +410,17 @@ function usarObjeto(jj: Juego, o: ObjZ) {
   }
   if (o.tag === 'cofre') {
     if (o.v.startsWith('abiert') || o.v.startsWith('abriendo')) return;
+    const deCasa = !!o.dato?.casa, escondido = !!o.dato?.escondido;
     o.v = o.v.endsWith('_y') ? 'abriendo_y' : 'abriendo'; o.tag = undefined; o.dato = { abre: jj.t }; jj.efectos.push({ id: 'pfx:fx_cofre_abre', x: o.cx + 0.5, y: o.cy + 0.5, t: 0, dir: 0, escala: 1, z: 0, dur: 4.2 } as any);
     Sonido.efecto('cofre');
-    const bueno = /ornado|noble|sarcofago|gg/.test(o.id) ? 2 : 1;
+    // el cofre de una casa abandonada (una vez por casa y ciclo) y los escondidos lejos del camino pagan de verdad
+    const llave = jj.zona.id + '|' + ((h.d as any).ciclo ?? 0), saqueadas: string[] = ((h.d as any).casas ??= []), premio = deCasa && !saqueadas.includes(llave);
+    if (premio) {
+      saqueadas.push(llave); const q = R(), nv = nivelEnDificultad(jj.zona.nivel, h.d.dificultad);
+      setTimeout(() => { const ob = crearObjeto(nv, q < 0.22 ? 'legendario' : q < 0.62 ? 'unico' : 'raro'); if (ob) soltar(jj, o.cx + 0.5, o.cy + 1.6, [{ obj: ob }]); }, 700);
+      msg(jj, ['Bajo las tablas, lo que alguien escondió antes de huir.', 'Under the boards, what someone hid before fleeing.'], '#ffd070');
+    } else if (deCasa) msg(jj, ['Ya te llevaste lo que había aquí.', 'You already took what was here.'], '#a09080');
+    const bueno = premio ? 3 : escondido ? 3 : /ornado|noble|sarcofago|gg/.test(o.id) ? 2 : 1;
     setTimeout(() => soltar(jj, o.cx + 0.5, o.cy + 1.2, botin(nivelEnDificultad(jj.zona.nivel, h.d.dificultad), bueno, h.c.hallazgo, h.c.oro_extra)), 450);
     if (R() < 0.12) { // terror: el cofre era una trampa
       msg(jj, ['Del cofre sale un grito.', 'A scream comes from the chest.'], '#ff6060'); Sonido.susurro(); jj.sacudida = 0.4;

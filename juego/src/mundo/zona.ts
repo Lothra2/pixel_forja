@@ -64,6 +64,8 @@ export interface DefZona {
    * Su puerta es la salida hacia `salida`; con `sello`, la puerta está sellada hasta aceptar esa misión. `cerca` se riega alrededor.
    */
   ancla?: { piezas: [string, number, number][]; puerta: [number, number]; salida: string; sello?: string; herida?: string; cerca?: Sel[]; /** El atrio de la Forja alrededor (losas, sendero, derrumbes, niebla baja): ATRIO_CATEDRAL. */ marco?: boolean };
+  /** Casa abandonada de un mundo abierto: interior chico con muebles, un guardián y el cofre escondido bajo las tablas. */
+  casa?: boolean;
   /** Pueblo amurallado: murallas de fortaleza en los bordes de atrás y portones en las salidas. */
   amurallado?: boolean;
 }
@@ -274,6 +276,13 @@ const TEMATICAS: Record<string, Tematica> = {
       [['cri_osario_pared', ['calaveras', 'huesos_cruzados', 'roseton', 'arco']], ['cri_osario_pared', ['calaveras_der', 'huesos_cruzados_der']]],
     ],
   },
+  casa: {
+    piso: 'madera', parches: ['madera', 'madera', 'lajas'], ambiente: 'cripta', oscuridad: 0.72,
+    borde: [], disperso: [{ t: ['muebles' as Tema], p: ['mue_mesa_redonda', 'mue_mesita', 'mue_mesa_rota', 'mue_silla', 'mue_banco', 'mue_taburete', 'mue_jergon', 'mue_catre', 'mue_estante_caido', 'mue_escritorio', 'mue_comoda', 'mue_alfombra', 'mue_barril_mesa', 'mue_caldero'] }, { t: ['catacumbas'], p: ['cat2_rata', 'cat2_huesos_suelo'] }],
+    grande: [{ t: ['muebles' as Tema], p: ['mue_cama_dosel', 'mue_armario', 'mue_estante_libros', 'mue_mesa_banquete', 'mue_fogon'] }],
+    luces: [{ t: ['muebles' as Tema], p: ['mue_candelabro', 'mue_velas'] }],
+    deco: [{ t: ['muebles' as Tema], p: ['mue_mesa_alquimista', 'mue_mesa_mapas', 'mue_repisa_frascos'] }],
+  },
   fortaleza: {
     piso: 'lajas', parches: ['lajas', 'fortaleza', 'lajas_musgo'], ambiente: 'cripta', oscuridad: 0.7,
     borde: [], disperso: [{ t: ['fortaleza'], p: ['for2_escombros', 'for2_pertrechos', 'for2_barricada', 'for2_cadaver', 'for2_estandarte', 'for2_caldero_aceite', 'for2_tumba'] }],
@@ -421,8 +430,8 @@ function exterior(def: DefZona, semilla: number): Zona {
     return [Math.floor(z.W / 2) + Math.floor((r() - 0.5) * 20), Math.floor(z.H / 2) + Math.floor((r() - 0.5) * 20)];
   };
   // entrada principal (de dónde se llega primero): la primera salida
-  for (const s of def.salidas) if (s.lado !== 'abajo') puntos.push(enLado(s.lado)); else puntos.push([-999, -999]);
-  def.salidas.forEach((s, i) => { if (s.lado === 'abajo') puntos[i] = enInterior(); });
+  for (const s of def.salidas) if (s.lado !== 'abajo' && s.lado !== 'casa') puntos.push(enLado(s.lado)); else puntos.push([-999, -999]);
+  def.salidas.forEach((s, i) => { if (s.lado === 'abajo' || s.lado === 'casa') puntos[i] = enInterior(); });
   const centro: [number, number] = [Math.floor(z.W / 2), Math.floor(z.H / 2)];
   const camino = (a: [number, number], b: [number, number]) => {
     let x = a[0], y = a[1];
@@ -516,10 +525,15 @@ function exterior(def: DefZona, semilla: number): Zona {
       const boca = def.tema === 'desierto' ? 'tum_entrada' : def.tema === 'cementerio' ? 'cem_entrada_cripta' : def.tema === 'nieve' ? 'cue_entrada' : def.tema === 'selva' ? 'tem_escalinata' : def.tema === 'infierno' ? 'inf_portal_rojo' : 'com_cueva';
       const o = k.poner(boca, cx, cy - 3, undefined, true);
       if (o) sal.obj = o;
+    } else if (s.lado === 'casa') {
+      // una casa abandonada: la puerta queda de frente, sobre el punto de la salida
+      const ids = CASAS_PIEZA[def.tema] ?? CASAS_PIEZA.paramo, d = REGISTRO.find((q) => q.id === ids[Math.floor(r() * ids.length)]) ?? REGISTRO.find((q) => q.id === 'casa_piedra');
+      if (d) { const v = d.variantes[Math.floor(r() * d.variantes.length)], [, hh] = huellaDe(d, v); const o = k.poner(d, cx, cy - Math.ceil(hh / 2) - 1, v, true); if (o) sal.obj = o; }
     }
     z.salidas.push(sal);
-    z.entradas[s.lado === 'abajo' ? 'boca' : s.lado] = [cx + (s.lado === 'o' ? 3 : s.lado === 'e' ? -3 : 0), cy + (s.lado === 'n' ? 3 : s.lado === 's' ? -3 : s.lado === 'abajo' ? 3 : 0)];
-    z.entradas['salida_' + s.destino] = z.entradas[s.lado === 'abajo' ? 'boca' : s.lado];
+    const lk = s.lado === 'abajo' ? 'boca' : s.lado === 'casa' ? 'casa_' + s.destino : s.lado;
+    z.entradas[lk] = [cx + (s.lado === 'o' ? 3 : s.lado === 'e' ? -3 : 0), cy + (s.lado === 'n' ? 3 : s.lado === 's' ? -3 : s.lado === 'abajo' || s.lado === 'casa' ? 3 : 0)];
+    z.entradas['salida_' + s.destino] = z.entradas[lk];
   });
   if (def.piedraViaje) {
     const [cx, cy] = puntos[0];
@@ -527,6 +541,8 @@ function exterior(def: DefZona, semilla: number): Zona {
     if (o) z.marcas.push({ tipo: 'viaje', cx: o.cx, cy: o.cy });
   }
   escenasMundo(k, def, puntos);
+  // dos cofres escondidos donde no pasa ningún camino: el premio de quien explora los rincones
+  { const lejosDe = [...puntos]; for (let i = 0; i < 2; i++) { const q = lejos(k, lejosDe); lejosDe.push(q); const o = k.poner('cofre_noble', q[0], q[1], 'cerrado', false, 'cofre'); if (o) { o.dato = { escondido: true }; z.marcas.push({ tipo: 'cofre', cx: q[0], cy: q[1] }); } } }
   relieveMundo(k, def.tema, 0.2);
   // cofres, santuarios y pozos
   colocarInteractivos(k, 2 + Math.floor(area / 6000), 1 + Math.floor(area / 9000), def.tema);
@@ -921,6 +937,8 @@ function bordeCueva(k: Constructor, ab: Uint8Array, id = 'cue_penasco', pre = ''
   }
 }
 
+/** Qué pieza hace de casa abandonada en cada mundo (su interior es una zona aparte: ver `casa` en DefZona). */
+const CASAS_PIEZA: Record<string, string[]> = { paramo: ['casa_entramado', 'casa_piedra', 'casa_posada', 'casa_dos_pisos', 'casa_alargada'], cementerio: ['casa_capilla', 'casa_caseta_piedra', 'casa_piedra'], desierto: ['des_casa'], nieve: ['nie2_cabana', 'casa_piedra'], selva: ['sel2_choza', 'sel_choza_pilotes'], ahogada: ['casa_piedra', 'casa_torre_guardia'] };
 /** Terrazas en que se parte la altura del terreno (para los escalones y la sombra de escalón del piso). */
 export const TERRAZAS = 5;
 /** El relieve de un mundo abierto: un campo de alturas suave y, en las curvas donde cambia de terraza, escalones de roca del tema. */
@@ -1132,8 +1150,9 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) k.vaciar(bx, by);
   const suelo = new Uint8Array(tw * th);
   const cuartos: [number, number, number, number][] = [];
-  for (let i = 0; i < 80 && cuartos.length < Math.floor((tw * th) / 45); i++) {
-    const w = 2 + Math.floor(r() * 4), h = 2 + Math.floor(r() * 4);
+  // (una casa son cuatro o cinco cuartos chicos pegados; una mazmorra, un cuarto cada 45 baldosas)
+  for (let i = 0; i < (def.casa ? 400 : 80) && cuartos.length < (def.casa ? 5 : Math.floor((tw * th) / 45)); i++) {
+    const w = 2 + Math.floor(r() * (def.casa ? 2 : 4)), h = 2 + Math.floor(r() * (def.casa ? 2 : 4));
     const x = 1 + Math.floor(r() * (tw - w - 2)), y = 1 + Math.floor(r() * (th - h - 2));
     if (cuartos.some(([a, b, c, d]) => x < a + c + 1 && x + w + 1 > a && y < b + d + 1 && y + h + 1 > b)) continue;
     cuartos.push([x, y, w, h]);
@@ -1238,7 +1257,7 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   for (const p of [p0, pN]) for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const X = p[0] + dx, Y = p[1] + dy; if (X >= 0 && Y >= 0 && X < z.W && Y < z.H) k.reserva[Y * z.W + X] = 1; }
   // decoración
   const area = orden.reduce((s, c) => s + c[2] * c[3], 0) * 25;
-  for (const c of orden) if (c[2] >= 3 && c[3] >= 3 && r() < 0.6) {
+  for (const c of orden) if (def.casa ? c !== orden[0] && c !== orden[orden.length - 1] : c[2] >= 3 && c[3] >= 3 && r() < 0.6) {
     const gs = k.sel(t.grande); if (!gs.length) continue;
     const g = gs[Math.floor(r() * gs.length)];
     for (const [fx, fy] of [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]]) k.poner(g.d, Math.floor((c[0] + c[2] * fx) * 5), Math.floor((c[1] + c[3] * fy) * 5));
@@ -1246,17 +1265,18 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   // con islas o vías, los pasillos (puentes y rieles) quedan libres de adornos
   const enSuelo = abierto ? (x: number, y: number) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!abierto[(Math.floor(y) + dy) * z.W + Math.floor(x) + dx]) return false; return true; }
     : (x: number, y: number) => !!(t.islas || t.rieles ? sala : suelo)[Math.floor(y / 5) * tw + Math.floor(x / 5)];
-  k.regar(t.disperso, Math.floor(area / 160), 1, 1, z.W - 1, z.H - 1, enSuelo);
-  k.regar(t.luces, Math.floor(area / 500), 1, 1, z.W - 1, z.H - 1, enSuelo);
-  k.regar(t.deco, Math.floor(area / 2500), 1, 1, z.W - 1, z.H - 1, enSuelo);
+  const lleno = def.casa ? 3.5 : 1; // (una casa está amoblada: mucho más por metro que una mazmorra)
+  k.regar(t.disperso, Math.floor((area / 160) * lleno), 1, 1, z.W - 1, z.H - 1, enSuelo);
+  k.regar(t.luces, Math.floor((area / 500) * lleno), 1, 1, z.W - 1, z.H - 1, enSuelo);
+  k.regar(t.deco, Math.floor((area / 2500) * lleno * 2), 1, 1, z.W - 1, z.H - 1, enSuelo);
   // estatuas rotas y piedras con runa del tema, solo dentro de las salas (en un pasillo estorbarían)
   if (!t.islas) decorarMundo(k, abierto ? (typeof t.organica === 'string' ? t.organica : 'paramo') : ESCOMBRO_TEMA[def.tema] ?? 'cementerio', 0, 0, Math.floor(area / 1700), (x, y) => !!sala[Math.floor(y / 5) * tw + Math.floor(x / 5)] && enSuelo(x, y));
   // salidas: la primera en la entrada, las demás al fondo
   def.salidas.forEach((s, i) => {
     const p = i === 0 ? p0 : i === 1 ? pN : centroDe(orden[Math.max(1, Math.floor((orden.length * i) / (def.salidas.length + 1)))]);
     const arriba = s.lado === 'arriba';
-    const id = arriba ? (def.tema === 'tumba' ? 'tum_escalera' : 'com_escalera_subida') : def.tema === 'tumba' ? 'tum_escalera' : 'com_escalera';
-    const v = arriba ? (def.tema === 'tumba' ? 'subida' : 'piedra') : def.tema === 'tumba' ? 'bajada' : 'bajada';
+    const id = arriba && def.casa ? 'cat2_puerta_madera' : arriba ? (def.tema === 'tumba' ? 'tum_escalera' : 'com_escalera_subida') : def.tema === 'tumba' ? 'tum_escalera' : 'com_escalera';
+    const v = arriba && def.casa ? undefined : arriba ? (def.tema === 'tumba' ? 'subida' : 'piedra') : def.tema === 'tumba' ? 'bajada' : 'bajada';
     const o = k.poner(id, p[0], p[1] - 2, v, true);
     z.salidas.push({ cx: p[0], cy: p[1] - 1, destino: s.destino, entrada: s.entrada, nombre: s.nombre, obj: o ?? undefined });
     z.entradas[s.lado] = [p[0], p[1] + 2];
@@ -1310,6 +1330,11 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     tesoro.forEach(([id, v], i) => { const a = (i / tesoro.length) * Math.PI * 2 + 0.3; k.poner(id, pN[0] + Math.cos(a) * (abierto ? 8 : 10.5) * g, pN[1] + 2 + Math.sin(a) * (abierto ? 7 : 9) * g, v); });
     // las mazmorras laterales guardan un cofre de tesoro junto a su mini jefe
     if (def.lateral) { const c = k.poner(def.tema === 'tumba' || def.tema === 'templo' ? 'cofre_sarcofago_tesoro' : 'cofre_noble', pN[0] + 4, pN[1] + 5, 'cerrado', true, 'cofre'); if (c) z.marcas.push({ tipo: 'cofre', cx: c.cx, cy: c.cy }); }
+  }
+  if (def.casa) {
+    const c = k.poner('cofre_noble', pN[0], pN[1], 'cerrado', true, 'cofre'); if (c) { c.dato = { casa: true }; z.marcas.push({ tipo: 'cofre', cx: c.cx, cy: c.cy }); }
+    z.spawns.push({ cx: pN[0] + 2, cy: pN[1] + 3, tipo: r() < 0.5 ? 'unico' : 'campeon', fuerza: 1 });
+    for (const [dx, dy, id] of [[-3, 0, 'mue_velas'], [3, 0, 'mue_velas'], [0, -3, 'mue_alfombra']] as [number, number, string][]) k.poner(id, pN[0] + dx, pN[1] + dy);
   }
   // red de seguridad: si algo de lo que adorna la sala del jefe tapó un paso (el mapa quedó en más pedazos), se quita
   // de atrás hacia adelante hasta que vuelva a estar entero
