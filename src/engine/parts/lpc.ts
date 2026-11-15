@@ -171,7 +171,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
   const tinted = (target: string, kL = 1) => (c: string, d: PartDir) => relative(c, baseColor(d), target, kL);
   const brow = labToHex((() => { const l = hexToLab(colors.hair); return [Math.min(0.3, l[0] * 0.75), l[1], l[2]] as Lab; })());
   // la expresión feliz de LPC no trae boca: con boca abierta o risa se usa la cara de sorpresa o feliz
-  const exprName = mouth === 'o' && eyes === 'open' ? 'shock' : (mouth === 'grin' || mouth === 'open') && eyes === 'open' ? 'happy' : EXPR[eyes];
+  const exprName = (mouth === 'o' || mouth === 'shout') && eyes === 'open' ? 'shock' : (mouth === 'grin' || mouth === 'open') && eyes === 'open' ? 'happy' : EXPR[eyes];
   const layers: Layer[] = [];
   if (look.hair) layers.push({ key: `hairbg/${look.hair}`, mat: 'hair', map: tinted(colors.hair) });
   const earMap = look.ears === 'cat' || look.ears === 'wolf' ? tinted(colors.hair) : skin;
@@ -315,6 +315,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
   }
   if (mouth && mouth !== 'line' && dir !== 'up' && !monster) {
     const lip = skin('#99423c'), dark = '#5a1f26', teeth = '#f4f1ea';
+    const shout = mouth === 'shout';
     const put = (fx: number, fy: number, hex: string) => {
       const i = (fy - y0) * w + (fx - x0);
       if (fx < x0 || fy < y0 || fx >= x1 || fy >= y1 || idx[i] < 0) return;
@@ -326,7 +327,11 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
       const shapes: Record<string, [string, string]> = wide
         ? { smile: ['l....l', '.llll.'], grin: ['lttttl', '.llll.'] }
         : { smile: ['l..l', '.ll.'], grin: ['lttl', '.ll.'], open: ['.dd.', '.dd.'], o: ['.dd.', '....'], frown: ['.ll.', 'l..l'], smirk: ['...l', 'lll.'], tongue: ['.dd.', '.pp.'] };
-      const [a, b] = shapes[mouth] ?? ['....', '.ll.'];
+      if (shout) {
+        // el grito de Nekketsu: la boca ocupa media cara, seis de ancho y cuatro de alto, con los dientes arriba y la lengua abajo
+        ['dttttd', 'dddddd', 'dddddd', '.dppd.'].forEach((row, j) => [...row].forEach((ch, i) => { if (ch !== '.') put(c0 - 1 + i, r1 - 1 + j, ch === 't' ? teeth : ch === 'p' ? '#e8707e' : dark); }));
+      }
+      const [a, b] = shout ? ['....', '....'] : shapes[mouth] ?? ['....', '.ll.'];
       const cx = wide ? c0 - 1 : c0;
       [a, b].forEach((row, j) => [...row].forEach((ch, i) => {
         if (ch !== '.') put(cx + i, j ? r2 : r1, ch === 'l' ? lip : ch === 't' ? teeth : ch === 'p' ? '#e8707e' : dark);
@@ -336,6 +341,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
       let xr = x0;
       for (let xx = x1 - 1; xx >= x0; xx--) { const v = idx[(r2 - y0) * w + (xx - x0)]; if (v >= 0 && pal[v].mat === 'skin') { xr = xx; break; } }
       if (mouth === 'smile' || mouth === 'grin') { put(xr - 1, r1, lip); put(xr - 2, r2, lip); put(xr - 3, r2, lip); if (mouth === 'grin') put(xr - 2, r1, teeth); }
+      else if (shout) { for (let j = -1; j <= 2; j++) for (let i = 0; i <= 2; i++) put(xr - i, r1 + j, j === -1 && i > 0 ? teeth : j === 2 && i === 1 ? '#e8707e' : dark); }
       else if (mouth === 'open' || mouth === 'o') { put(xr - 1, r1, dark); put(xr - 1, r2, dark); }
       else if (mouth === 'frown') { put(xr - 1, r2, lip); put(xr - 2, r1, lip); }
       else if (mouth === 'smirk') { put(xr - 1, r1, lip); put(xr - 2, r2, lip); }

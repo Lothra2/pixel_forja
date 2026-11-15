@@ -614,6 +614,7 @@ function render(m: HeadModel, o: ModelHeadOpts): ModelHeadImage {
       open: ['m'.repeat(mw), `.${'r'.repeat(Math.max(1, mw - 2))}.`],
       grin: ['m'.repeat(mw), 'w'.repeat(mw)],
       o: ['mm', 'rr'],
+      shout: ['m'.repeat(mw + 1), 'r'.repeat(mw + 1), `.${'r'.repeat(Math.max(1, mw - 1))}.`],
       // media sonrisa: la comisura de un lado sube (la cara malandra)
       smirk: [`${'.'.repeat(Math.max(1, mw - 1))}m`, `${'m'.repeat(Math.max(1, mw - 1))}.`],
       // lengua afuera: la boca abierta y la lengua que cuelga dos filas

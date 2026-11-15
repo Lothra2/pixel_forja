@@ -12,7 +12,7 @@ import { shotP } from './footballPremium';
  */
 
 const joy = { eyes: 'happy' as const, mouth: 'grin' as const };
-const fury = { eyes: 'angry' as const, mouth: 'open' as const };
+const fury = { eyes: 'angry' as const, mouth: 'shout' as const };
 /** Los dos brazos arriba en V, con las palmas abiertas: adelante de la cara de lado y a los costados de la cabeza de frente, que si no la cabeza del chibi los tapa. */
 const up = (w: number): Pose['arms'] => ({ near: { shoulder: 168 + w, elbow: 0, spread: 24 }, far: { shoulder: 172 - w, elbow: 0, spread: 24 } }) as Pose['arms'];
 const palms = { near: 'palma' as const, far: 'palma' as const };
@@ -23,7 +23,7 @@ export const nkGoalRun: AnimDef = {
   events: run.events,
   build: (c) => run.build(c).map((p, i) => ({
     ...p, torso: -8, load: true, arms: up(i % 4 < 2 ? 8 : -8), hands: palms,
-    head: { ...p.head, tilt: -10 }, face: i % 4 < 2 ? joy : { eyes: 'happy' as const, mouth: 'open' as const },
+    head: { ...p.head, tilt: -10 }, face: i % 4 < 2 ? joy : { eyes: 'happy' as const, mouth: 'shout' as const },
   })),
 };
 
@@ -34,9 +34,9 @@ export const nkGoalJump: AnimDef = {
   build: (c) => {
     const L = c.L, u = c.u;
     const crouch = P(c, { torso: 14, legs: feet(c, 0.6, 0.26), arms: { near: { shoulder: -35, elbow: 30, spread: 20 }, far: { shoulder: -35, elbow: 30, spread: 20 } }, face: joy, support: 'both' });
-    const rise = P(c, { torso: -6, air: 5 * u, load: true, legs: { near: { x: 0.1 * L, y: L - 0.4, toe: 40 }, far: { x: -0.1 * L, y: L - 0.4, toe: 40 } }, arms: up(0), hands: palms, face: { eyes: 'happy', mouth: 'open' } });
+    const rise = P(c, { torso: -6, air: 5 * u, load: true, legs: { near: { x: 0.1 * L, y: L - 0.4, toe: 40 }, far: { x: -0.1 * L, y: L - 0.4, toe: 40 } }, arms: up(0), hands: palms, face: { eyes: 'happy', mouth: 'shout' } });
     const apex = P(c, { torso: -10, air: 10 * u, load: true, legs: { near: { x: 0.32 * L, y: 0.52 * L, toe: 20 }, far: { x: -0.3 * L, y: 0.58 * L, toe: 50 } },
-      arms: up(8), hands: palms, head: { dx: 0, dy: 0, tilt: -12 }, face: { eyes: 'happy', mouth: 'open' } });
+      arms: up(8), hands: palms, head: { dx: 0, dy: 0, tilt: -12 }, face: { eyes: 'happy', mouth: 'shout' } });
     const fall = P(c, { torso: -2, air: 4 * u, load: true, legs: { near: { x: 0.12 * L, y: L - 0.5, toe: 25 }, far: { x: -0.12 * L, y: L - 0.5, toe: 25 } }, arms: up(-6), hands: palms, face: joy });
     return keyed(8, [[0, crouch], [1, crouch, 'out'], [2, rise], [3, apex, 'hold'], [4, apex], [5, fall], [6, crouch, 'out'], [7, crouch]], true);
   },
@@ -46,7 +46,7 @@ export const nkGoalJump: AnimDef = {
 export const nkBanzai: AnimDef = {
   name: 'nk_banzai', pack: 'football', fps: 10, loop: true,
   build: (c) => [0, 1, 0, 1].map((b, i) => P(c, { torso: -6 + b * 2, load: true, legs: feet(c, 0.12 + b * 0.22, 0.24), arms: up(i < 2 ? 6 : -6), hands: palms,
-    head: { dx: 0, dy: 0, tilt: i < 2 ? -6 : 6 }, face: b ? joy : { eyes: 'happy' as const, mouth: 'open' as const }, support: 'both' })),
+    head: { dx: 0, dy: 0, tilt: i < 2 ? -6 : 6 }, face: b ? joy : { eyes: 'happy' as const, mouth: 'shout' as const }, support: 'both' })),
 };
 
 /** La carga con el hombro (el codazo de Kunio): se tira con el cuerpo entero, el antebrazo por delante. */
@@ -167,6 +167,33 @@ const AMP: Record<string, Amp> = {
 };
 
 /**
+ * Poses clave, como en Nekketsu: una acción de golpe no se reparte en ocho cuadros parejos, tiene tres o cuatro poses y
+ * las sostiene. Arranca, se queda en la carga hasta el cuadro del golpe, se congela en el golpe tres cuadros (con el grito
+ * en la cara), y vuelve en uno. El golpe cae en el mismo cuadro que antes, así el juego no cambia cuándo pega.
+ */
+const KEYED = new Set(['shot', 'chip', 'pass', 'volley', 'chilena', 'tackle', 'run_kick', 'kick_martial', 'air_kick', 'flying_kick', 'uppercut', 'run_punch', 'keeper_punt', 'keeper_throw', 'throw_in',
+  'nk_punch', 'nk_shoulder', 'nk_header', 'nk_power_shot', 'nkx_pass', 'nkx_trap']);
+export function keyPoses(def: AnimDef): AnimDef {
+  return {
+    ...def,
+    build: (c) => {
+      const p = def.build(c), n = p.length;
+      if (n < 6) return p;
+      const hit = def.events?.find((e) => e.type === 'impacto');
+      const i = Math.max(2, Math.min(n - 3, Math.round((hit ? hit.phase : 0.4) * n)));
+      const wind = p[i - 1], hold = Math.min(3, n - i - 2);
+      return p.map((q, f) => {
+        if (f === 0) return q;
+        if (f < i) return wind;
+        if (f < i + hold) return { ...p[i], face: { eyes: p[i].face.eyes === 'happy' ? 'happy' as const : 'angry' as const, mouth: 'shout' as const } };
+        if (f < n - 1) return p[Math.max(i + 1, n - 2)];
+        return q;
+      });
+    },
+  };
+}
+
+/**
  * Las animaciones de Nekketsu que salen de exagerar las del motor. `find` da la animación original por su nombre (la que
  * usa el kit), así ninguna queda copiada: si la original mejora, esta mejora con ella.
  */
@@ -175,16 +202,17 @@ export function nekketsuFrom(find: (name: string) => AnimDef | undefined): AnimD
   for (const [name, k] of Object.entries(AMP)) {
     const src = find(name);
     if (!src) continue;
-    out.push({ ...src, name: 'nk_' + name, pack: 'football', build: (c) => exaggerate(src.build(c), k) });
+    const twin: AnimDef = { ...src, name: 'nk_' + name, pack: 'football', build: (c) => exaggerate(src.build(c), k) };
+    out.push(KEYED.has(name) ? keyPoses(twin) : twin);
   }
   return out;
 }
 
-export const NEKKETSU_FUTBOL: AnimDef[] = [nkGoalRun, nkGoalJump, nkBanzai, nkShoulder, nkPunch, nkHeader, nkSprint, nkShot];
+export const NEKKETSU_FUTBOL: AnimDef[] = [nkGoalRun, nkGoalJump, nkBanzai, nkShoulder, nkPunch, nkHeader, nkSprint, nkShot].map((a) => (KEYED.has(a.name) ? keyPoses(a) : a));
 
 // ---------- Propuesta (nkx_): las acciones que más flojas se veían, dibujadas de cero ----------
 
-const hurt = { eyes: 'hurt' as const, mouth: 'o' as const };
+const hurt = { eyes: 'hurt' as const, mouth: 'shout' as const };
 /**
  * De frente y de espalda el tronco no se inclina (se vería igual): lo que se ve es el giro de lado. Una pose acostada o
  * que se va de lado se dibuja ahí girada lo mismo que se inclina de costado, así la caída, la barrida y la estirada del
@@ -346,4 +374,4 @@ export const nkxRun: AnimDef = {
     arms: { near: { ...p.arms.near, elbow: 105 }, far: { ...p.arms.far, elbow: 105 } }, face: { eyes: 'angry' as const, mouth: 'line' as const } })),
 };
 
-export const NEKKETSU_PROPUESTA: AnimDef[] = [nkxSlide, nkxPass, nkxFly, nkxDizzy, nkxGetup, nkxKeeperDive, nkxKeeperReady, nkxTrap, nkxLaugh, nkxSad, nkxIdle, nkxRun];
+export const NEKKETSU_PROPUESTA: AnimDef[] = [nkxSlide, nkxPass, nkxFly, nkxDizzy, nkxGetup, nkxKeeperDive, nkxKeeperReady, nkxTrap, nkxLaugh, nkxSad, nkxIdle, nkxRun].map((a) => (KEYED.has(a.name) ? keyPoses(a) : a));
