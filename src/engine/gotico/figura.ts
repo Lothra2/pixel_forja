@@ -502,7 +502,9 @@ function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose, estilo?: Pr
   // la tela y el pelo se arrastran atrás y rebotan con cada pisada
   const rebote = Math.sin((u - 0.12) * 2 * TAU);
   p.capa = [(correr ? 4.4 : 2.6) + rebote * (correr ? 0.9 : 0.7), -peso(u - 0.14) * (correr ? 0.9 : 1.3)];
-  p.pelo = [(correr ? 2.2 : 0.6) + rebote * 0.5, -peso(u - 0.16) * 0.8];
+  // (el pelo largo se va atrás con el andar, salta con cada pisada y se mece de un lado al otro con retraso: antes
+  //  casi no se movía al caminar, 0.6 de arrastre, y el cuerpo se veía de madera)
+  p.pelo = [(correr ? 4.6 : 2.2) + rebote * (correr ? 2.2 : 1.5), -peso(u - 0.2) * (correr ? 3.2 : 2.6) + Math.sin((u - 0.08) * TAU) * (correr ? 1.4 : 1.0)];
   const g = dif(u);
   // el vaivén del brazo que lleva un arma: el mismo compás que el brazo libre pero redondo (el arma pesa: no da el
   // latigazo de la pierna cuando pasa al frente). +1 = el brazo derecho adelante (la pierna derecha atrás)

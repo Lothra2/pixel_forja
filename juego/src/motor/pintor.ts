@@ -6,7 +6,7 @@ import { accionesClase } from '../juego/anim';
 /** Sin datos de la clase: los cuadros de siempre. Cada clase trae los suyos (ver juego/anim.ts). */
 const ACCS_BASE: [string, number][] = [['quieto', 4], ['caminar', 8], ['correr', 8], ['atacar', 8], ['lanzar', 8], ['herido', 4], ['morir', 8]];
 /** Versión de la caché de cuadros pintados: sube cuando cambian las animaciones de la Forja. */
-const VER = 'v18';
+const VER = 'v19';
 /**
  * El paso fino: caminar y correr en 16 rumbos (lo normal son 8). El héroe se mueve en cualquier ángulo; con 8 rumbos el
  * cuerpo iba hasta 30° cruzado respecto de sus pies y parecía patinar. Solo se pintan los 8 rumbos intermedios (los otros
@@ -16,7 +16,7 @@ export const FINO_RUMBOS = 16;
 const finos = new Map<string, Cuadro[]>();
 let firmaFinos = '', claseFina = '';
 /** Los cuadros finos de caminar o correr para el rumbo k (0..15, de a 22.5°, 0 = 'se'), si ya están pintados para el héroe que se ve. */
-export const cuadrosFinos = (acc: string, k: number): Cuadro[] | null => (firmaFinos === firmaVivos ? finos.get(acc + '@' + k) ?? null : null);
+export const cuadrosFinos = (acc: string, k: number | string): Cuadro[] | null => (firmaFinos === firmaVivos ? finos.get(acc + '@' + k) ?? null : null);
 const DIRS = ['s', 'so', 'o', 'no', 'n', 'ne', 'e', 'se'];
 let vivos: Map<string, Cuadro[]> | null = null;
 /** Lo nuevo que ya está listo: cada animación se cambia cuando está pintada en las 8 direcciones (antes se mezclaban). */
@@ -62,7 +62,7 @@ async function escribir(k: string, v: any) {
     const st = d.transaction('sprites', 'readwrite').objectStore('sprites');
     st.put(v, k);
     // guardar solo los últimos 6
-    const ks = st.getAllKeys(); ks.onsuccess = () => { const ret = k.startsWith('R|'), all = (ks.result as string[]).filter((x) => x.startsWith('R|') === ret); if (all.length > 5) for (const x of all.slice(0, all.length - 5)) if (x !== k) st.delete(x); };
+    const ks = st.getAllKeys(); ks.onsuccess = () => { const ret = k.startsWith('R|'), all = (ks.result as string[]).filter((x) => x.startsWith('R|') === ret); if (all.length > 3) for (const x of all.slice(0, all.length - 3)) if (x !== k) st.delete(x); };
   } catch { /* sin espacio */ }
 }
 
@@ -89,8 +89,11 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
   const ponerFinos = (c: Record<string, any[]>) => { let n = 0; for (const [k, fs] of Object.entries(c)) if (k.includes('@')) { finos.set(k, fs.map(aCuadro)); n++; } if (n) firmaFinos = firma; return n; };
   /** Pinta el paso fino (o lo que falte de él) y lo agrega a lo guardado. */
   const afinar = async (crudos: Record<string, any[]>) => {
-    const tr: { acc: string; k: number }[] = [];
+    const tr: { acc: string; k: number; medio?: boolean }[] = [];
     for (const acc of ['correr', 'caminar']) if (base12[acc]) for (let k = 1; k < FINO_RUMBOS; k += 2) if (!crudos[acc + '@' + k]) tr.push({ acc, k });
+    // los medios cuadros: entre cada dos cuadros del paso va uno más, en los 16 rumbos. Con 12 por ciclo el cuerpo avanzaba
+    // a saltos de 6 píxeles y se veía de autómata; con 24 el paso corre seguido. Van al final: son lo último en pintarse.
+    for (const acc of ['correr', 'caminar']) if (base12[acc]) for (let k = 0; k < FINO_RUMBOS; k++) if (!crudos[acc + '@' + k + '~']) tr.push({ acc, k, medio: true });
     if (!tr.length) return;
     firmaFinos = firma;
     let sig2 = 0, hechos2 = 0;
@@ -98,7 +101,7 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
       for (let i = 0; i < Math.max(1, Math.min(2, (navigator.hardwareConcurrency || 4) - 2)); i++) {
         let w: Worker; try { w = new Obrero(); } catch { fin(); return; }
         obreros.push(w);
-        const dar = () => { if (sig2 < tr.length) { const t = tr[sig2++]; w.postMessage({ id: yo, cuerpo, equipo, acc: t.acc, dir: 'r' + (t.k * 360) / FINO_RUMBOS, cuadros: base12[t.acc], base: base12[t.acc], calidad: 1, clave: t.acc + '@' + t.k }); } else w.terminate(); };
+        const dar = () => { if (sig2 < tr.length) { const t = tr[sig2++]; w.postMessage({ id: yo, cuerpo, equipo, acc: t.acc, dir: 'r' + (t.k * 360) / FINO_RUMBOS, cuadros: base12[t.acc], base: base12[t.acc], desfase: t.medio ? 0.5 : 0, calidad: 1, clave: t.acc + '@' + t.k + (t.medio ? '~' : '') }); } else w.terminate(); };
         w.onmessage = (ev) => { const m = ev.data; if (m.id !== yo) return; if (!m.error) { finos.set(m.clave, m.out.map(aCuadro)); crudos[m.clave] = m.out; (window as any).__finos = finos.size; } if (++hechos2 >= tr.length) fin(); dar(); };
         w.onerror = () => { if (++hechos2 >= tr.length) fin(); dar(); };
         dar();

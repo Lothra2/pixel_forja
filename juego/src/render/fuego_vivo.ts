@@ -165,3 +165,16 @@ export function dibujarVivos(ctx: CanvasRenderingContext2D, vs: Vivo[], px: numb
   statsFuego.msDibujo += performance.now() - t0;
 }
 (window as any).__fuegos = statsFuego;
+
+// ------------------------------------------------------------------ un fuego fuera del mundo (menús)
+const sueltos = new Map<string, Vivo[]>();
+/**
+ * El fuego vivo de un objeto de la tabla (p. ej. 'camp_fogata|grande') para dibujarlo donde no hay zona: lo crea la
+ * primera vez, lo avanza `dt` segundos y devuelve sus llamas listas para `dibujarVivos`. Nada si el objeto no tiene fuego.
+ */
+export function fuegoSuelto(clave: string, dt: number): Vivo[] | null {
+  let vs = sueltos.get(clave);
+  if (!vs) { const ss = FUEGOS_DOOM[clave]; if (!ss) return null; vs = ss.map((s) => crear(s, null)).filter(Boolean) as Vivo[]; for (const v of vs) D.pasos(v.f, 30); sueltos.set(clave, vs); }
+  for (const v of vs) { D.paso(v.f, Math.min(0.1, dt)); pintarVivo(v); }
+  return vs.length ? vs : null;
+}

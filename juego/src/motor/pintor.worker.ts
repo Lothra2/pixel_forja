@@ -8,7 +8,7 @@ import { tinte } from '../../../src/engine/gotico/apariencia';
 function tenir(equipo: any) { for (const m of JSON.stringify(equipo).matchAll(/cu_tinte_(tela|cuero|metal)_([0-9a-f]{6})/g)) tinte('#' + m[2], m[1] as any); }
 
 self.onmessage = (ev: MessageEvent) => {
-  const { id, cuerpo, equipo, acc, dir, cuadros, calidad, base, clave, retrato, fs } = ev.data;
+  const { id, cuerpo, equipo, acc, dir, cuadros, calidad, base, clave, retrato, fs, desfase } = ev.data;
   try {
     fijarCalidad(calidad ?? 1);
     tenir(equipo);
@@ -32,7 +32,7 @@ self.onmessage = (ev: MessageEvent) => {
     }
     // (`base`: los cuadros que la acción tiene en el motor; si se piden más, salen los intermedios: el motor acepta medios cuadros)
     for (let i = 0; i < cuadros; i++) {
-      const f = base ? (i * base) / cuadros : i;
+      const f = (base ? (i * base) / cuadros : i) + (desfase ?? 0);
       const r = pintarEscena({ ...personajeEscena(cuerpo, equipo, dir, acc, f), sinSombra: true });
       const img = r.img;
       let x0 = img.w, y0 = img.h, x1 = -1, y1 = -1;

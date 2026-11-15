@@ -104,23 +104,32 @@ const fr = (acc: string, t: number, dur: number, e?: Ent, accPies?: string, nRea
   return Math.min(n - 1, Math.floor((t / Math.max(0.05, dur)) * n));
 };
 
+const intercalados = new WeakMap<Cuadro[], { base: Cuadro[]; lista: Cuadro[] }>();
 function framesHeroe(j: Juego, acc: string, dir: string): Cuadro[] {
+  const D8 = ['se', 's', 'so', 'o', 'no', 'n', 'ne', 'e'];
+  let k = -1, base: Cuadro[] | null = null;
   // caminando o corriendo: el rumbo real en 16 (si ya está pintado y el cuerpo ya giró hasta ahí), para que no patine de lado
   if ((acc === 'caminar' || acc === 'correr') && !(window as any).__sinFino) {
+    k = D8.indexOf(dir) * 2;
     const ru = (j.heroe as any).rumbo as number | undefined;
     if (ru !== undefined) {
-      const g = ((ru * 180) / Math.PI + 360) % 360, k = Math.round(g / (360 / FINO_RUMBOS)) % FINO_RUMBOS;
-      const D8 = ['se', 's', 'so', 'o', 'no', 'n', 'ne', 'e'], gd = D8.indexOf(dir) * 45, dif = Math.abs(((k * (360 / FINO_RUMBOS) - gd + 540) % 360) - 180);
-      if (dif <= 34) {
+      const g = ((ru * 180) / Math.PI + 360) % 360, kr = Math.round(g / (360 / FINO_RUMBOS)) % FINO_RUMBOS;
+      if (Math.abs(((kr * (360 / FINO_RUMBOS) - D8.indexOf(dir) * 45 + 540) % 360) - 180) <= 34) {
         // los rumbos pares son los ocho de siempre (pero el que toca por el rumbo real, no el que arrastra el giro)
-        if (k % 2 === 0) { (window as any).__fino = k; dir = D8[k / 2]; }
-        else { const f = cuadrosFinos(acc, k); if (f && f.length) { (window as any).__fino = k; return f; } (window as any).__fino = -1; }
-      } else (window as any).__fino = -1;
+        if (kr % 2 === 0) { k = kr; dir = D8[kr / 2]; }
+        else { const f = cuadrosFinos(acc, kr); if (f && f.length) { k = kr; base = f; } }
+      }
     }
+    (window as any).__fino = k;
   }
-  const vivos = cuadrosVivos(acc, dir);
-  if (vivos && vivos.length) return vivos;
-  return cuadrosHeroe(j.heroe.d.clase, acc, dir);
+  if (!base) { const vivos = cuadrosVivos(acc, dir); base = vivos && vivos.length ? vivos : cuadrosHeroe(j.heroe.d.clase, acc, dir); }
+  // con los medios cuadros ya pintados, el paso va a 24 por ciclo: el del motor y el intermedio, alternados
+  if (k >= 0 && !(window as any).__sinMedios) {
+    const med = cuadrosFinos(acc, k + '~');
+    if (med && med.length === base.length) { let it = intercalados.get(med); if (!it || it.base !== base) { const lista: Cuadro[] = []; for (let i = 0; i < base.length; i++) lista.push(base[i], med[i]); it = { base, lista }; intercalados.set(med, it); } (window as any).__medios = true; return it.lista; }
+    (window as any).__medios = false;
+  }
+  return base;
 }
 export function framesMonstruo(sprite: string, acc: string, dir: string): Cuadro[] {
   let f = cuadrosMonstruo(sprite, acc, dir);
@@ -757,7 +766,8 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
     const esH = e.tipo === 'heroe', zp = zancadaDe(e, acc === 'correr' && !esH && !cuadrosMonstruo(m.def.sprite, 'correr', e.dir).length ? 'caminar' : acc) / fs.length;
     if (zp > 0.02 && zp < 0.8) {
       const resto = ((e.recorrido ?? 0) % zp) - zp / 2, ru = (e as any).rumbo as number | undefined, [vx, vy] = ru !== undefined ? [Math.cos(ru), Math.sin(ru)] : DIR_VEC[e.dir] ?? [0, 0];
-      px -= (vx - vy) * 16 * resto; py -= (vx + vy) * 8 * resto;
+      // (los monstruos tienen 8 cuadros por ciclo: clavados del todo avanzaban a tirones; van a medias)
+      const kc = esH ? 1 : 0.5; px -= (vx - vy) * 16 * resto * kc; py -= (vx + vy) * 8 * resto * kc;
     }
   }
   const q = fs[Math.min(fs.length - 1, i)];

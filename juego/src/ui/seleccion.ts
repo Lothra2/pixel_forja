@@ -4,7 +4,8 @@ import { texto, T, TT, boton, marco, dentro, envolver, TITULO } from './comun';
 import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, cuadrosSel, metaSel, objetoMeta, dibujar, dibujarTenido, type Cuadro } from '../motor/assets';
 import { CLASES, HABILIDADES, type Habilidad } from '../datos/clases';
 import { iconoHab } from './juego_ui';
-import { sombraSuelta } from '../render/luces';
+import { fuegoMundo, dibujarFuegosMundo } from '../render/fuego';
+import { fuegoSuelto, dibujarVivos } from '../render/fuego_vivo';
 import { R } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 
@@ -42,6 +43,24 @@ export function cuadroPresentar(tt: number, n: number, pausa = 5.5): number {
   const dur = n / 12, u = ((tt % (dur + pausa)) + dur + pausa) % (dur + pausa);
   if (u < dur) return Math.min(n - 1, Math.floor(u * 12));
   return [n - 1, 0, 1, 0][Math.floor((u - dur) * 2.4) % 4];
+}
+let lienzoLuz: HTMLCanvasElement | null = null;
+/** Pinta sobre el héroe la luz dirigida de la fogata: sombra fría del lado lejano (multiplicada) y fuego del lado cercano (sumado). */
+function luzFogata(q: Cuadro, x: number, y: number, esc: number, lado: number, pul: number, k: number) {
+  const w = Math.ceil(q.w * esc) + 4, h = Math.ceil(q.h * esc) + 4;
+  const c = (lienzoLuz ??= document.createElement('canvas')); if (c.width < w || c.height < h) { c.width = Math.max(c.width, w); c.height = Math.max(c.height, h); }
+  const o = c.getContext('2d')!, ax = q.ax * esc + 2, ay = q.ay * esc + 2;
+  const capa = (pintar: (g: CanvasGradient) => void, x0: number, y0: number, x1: number, y1: number, modo: GlobalCompositeOperation, alfa: number) => {
+    o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = 'source-over'; o.clearRect(0, 0, c.width, c.height); o.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
+    dibujar(o, q, ax, ay, esc);
+    o.globalCompositeOperation = 'source-in'; const g = o.createLinearGradient(x0, y0, x1, y1); pintar(g); o.fillStyle = g; o.fillRect(0, 0, w, h);
+    ctx.save(); ctx.globalCompositeOperation = modo; ctx.globalAlpha = alfa; ctx.drawImage(c, 0, 0, w, h, Math.round(x - ax), Math.round(y - ay), w, h); ctx.restore();
+  };
+  const cerca = lado > 0 ? w : 0, lejos = lado > 0 ? 0 : w;
+  // sombra: del lado lejano y arriba (la luz viene de abajo)
+  capa((g) => { g.addColorStop(0, 'rgba(18,22,58,0.92)'); g.addColorStop(0.5, 'rgba(60,50,70,0.4)'); g.addColorStop(1, 'rgba(255,255,255,0)'); }, lejos, 0, cerca, h * 0.9, 'multiply', 0.85 * k);
+  // fuego: del lado cercano y abajo, late con la llama
+  capa((g) => { g.addColorStop(0, 'rgba(255,150,50,0.9)'); g.addColorStop(0.35, 'rgba(255,100,30,0.35)'); g.addColorStop(0.7, 'rgba(255,80,20,0)'); }, cerca, h, lejos, h * 0.15, 'lighter', (0.3 + 0.3 * pul) * k);
 }
 const USAR_SEL = false; // (la pose 'sel' encorvaba al héroe con los brazos cruzados y tapaba la mano: va la de retrato)
 /** Las partículas del aura en dos pasadas: `atras` se dibuja antes del héroe y la de adelante después. */
@@ -149,8 +168,20 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
     ctx.fillStyle = gf; ctx.fillRect(-260, -260, 520, 520);
     ctx.restore();
   }
-  const fog = objetoMeta('camp_fogata', 'grande');
-  const dibFogata = () => { if (fog) dibujar(ctx, fog.f[Math.floor(t * 25 / fog.t) % fog.f.length], fx, fy, 2); };
+  // la fogata: las piedras y los leños horneados, y encima el fuego vivo del juego (lenguas que suben meciéndose, humo y
+  // brasas), no una llama pintada que se repite
+  const fog = objetoMeta('camp_fogata_sin_llama', 'grande') ?? objetoMeta('camp_fogata', 'grande');
+  const dibFogata = () => {
+    if (fog) dibujar(ctx, fog.f[Math.floor(t * 25 / fog.t) % fog.f.length], fx, fy, 2);
+    // el fuego de Doom de la fogata del juego, al doble como su sprite; unas brasas sueltas de las otras llamas encima
+    const vs = fuegoSuelto('camp_fogata|grande', dt);
+    if (vs) { ctx.save(); ctx.translate(fx, fy); ctx.scale(2.9, 2.15); dibujarVivos(ctx, vs, 0, 0); ctx.restore(); }
+    else for (const [ox, oy, tm] of [[-9, -5, 1.5], [9, -5, 1.5], [0, -8, 1.7], [0, -30, 1.1]] as [number, number, number][]) fuegoMundo(ctx, fx + ox, fy + oy, tm, t, 0, 0);
+    fuegoMundo(ctx, fx, fy - 30, 0.35, t, 0, 0);
+    dibujarFuegosMundo(ctx, t, 0, 0);
+  };
+  // el fuego late: todo lo que alumbra (el héroe, el piso, la sombra) sigue este mismo pulso
+  const pulF = 0.78 + 0.14 * Math.sin(t * 9.1) * Math.sin(t * 3.7 + 1) + 0.08 * Math.sin(t * 23);
   // el héroe en grande, con su pose de presentación
   const k = Math.min(1, (t - tCambio) * 3);
   const vista = nivelVista;
@@ -166,9 +197,17 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
     escQ = 1; // la Forja lo hornea al tamaño final (unos 195 px): a ×1 exacto los píxeles quedan parejos
   }
   if (!q) { const fs = cuadrosHeroe(c.id, 'quieto', 'so'); q = fs[Math.floor(t * 6) % Math.max(1, fs.length)]; escQ = esc * 2.3; }
-  // sombra larga desde la fogata y otra corta desde la luz de la clase
-  sombraSuelta(ctx, q, cx, cy, escQ, fx, fy, 70, 0.55 * k);
-  sombraSuelta(ctx, q, cx, cy, escQ, cx - 60, cy + 40, 140, 0.25 * k);
+  // una sola sombra, la que tira la fogata: la silueta del mismo cuadro que se ve, echada en el piso hacia el lado
+  // contrario al fuego, que se alarga y se acorta con la llama (antes eran dos sombras de luces distintas y ninguna
+  // calzaba con el cuerpo)
+  // el charco de luz de la fogata en el piso (antes de la sombra: la sombra es justamente donde esa luz no llega)
+  { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(fx, fy); ctx.scale(1, 0.5); const rl = 330 + pulF * 40, gl = ctx.createRadialGradient(0, 0, 10, 0, 0, rl); gl.addColorStop(0, `rgba(255,150,60,${0.42 * pulF})`); gl.addColorStop(0.4, `rgba(255,110,40,${0.2 * pulF})`); gl.addColorStop(1, 'rgba(255,90,30,0)'); ctx.fillStyle = gl; ctx.fillRect(-rl, -rl, rl * 2, rl * 2); ctx.restore(); }
+  if (q) {
+    const gx = cx - fx, gy = (cy - fy) * 2, d = Math.hypot(gx, gy) || 1, L = (0.95 + 0.1 * (1 - pulF)) * 1.05, sx = (gx / d) * L, sy = Math.min(-0.22, (gy / d) * 0.5 * L);
+    ctx.save(); ctx.translate(cx, cy + 2); ctx.transform(1, 0, -sx, -sy, 0, 0);
+    for (const [ox, a] of [[0, 0.5], [1.5, 0.2], [-1.5, 0.2]] as [number, number][]) { ctx.globalAlpha = a * k * (0.8 + 0.2 * pulF); dibujarTenido(ctx, q, ox, 0, '#000000', 1, escQ); }
+    ctx.restore(); ctx.globalAlpha = 1;
+  }
   ctx.globalAlpha = k;
   particulas(f, cx, cy, dt, t, 'atras');
   if (q) {
@@ -179,7 +218,10 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
     if (!conSel) { ctx.globalAlpha = 0.22 * k; dibujarTenido(ctx, q, hx - 2, cy - 1, '#7f9fd8', 1, escQ); }
     if (!conSel) { ctx.globalAlpha = 0.18 * k; dibujarTenido(ctx, q, hx + 2, cy, '#ff9a48', 1, escQ); }
     ctx.globalAlpha = k; dibujar(ctx, q, hx, cy, escQ);
-    if (!conSel) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.05 * k * pul; dibujarTenido(ctx, q, hx, cy, '#ff8a3a', 0.9, escQ); ctx.restore(); }
+    void pul;
+    // la luz de la fogata sobre el cuerpo: viene de abajo y del lado del fuego. El lado contrario se hunde en sombra azul
+    // y el lado del fuego se enciende, con el pulso de la llama (una máscara del mismo cuadro, no un velo parejo)
+    if (!conSel) luzFogata(q, hx, cy, escQ, fx > cx ? 1 : -1, pulF, k);
   }
   ctx.globalAlpha = 1;
   dibFogata();
@@ -188,7 +230,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   const g = ctx.createRadialGradient(cx, cy - 100, 60, cx, cy - 100, Math.max(W, H) * 0.7); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.35, 'rgba(0,0,0,0.45)'); g.addColorStop(0.8, 'rgba(0,0,0,0.97)'); g.addColorStop(1, 'rgba(0,0,0,1)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter';
-  const g2 = ctx.createRadialGradient(fx, fy - 30, 0, fx, fy - 30, 170 + Math.sin(t * 8) * 6); g2.addColorStop(0, 'rgba(255,120,40,0.22)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+  const g2 = ctx.createRadialGradient(fx, fy - 30, 0, fx, fy - 30, 190 + pulF * 30); g2.addColorStop(0, `rgba(255,120,40,${0.2 + 0.14 * pulF})`); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
   const g3 = ctx.createRadialGradient(cx, cy - 120, 0, cx, cy - 120, 260); g3.addColorStop(0, `rgba(${lc},${0.08 * k})`); g3.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g3; ctx.fillRect(0, 0, W, H);
   ctx.restore();
   particulas(f, cx, cy, dt, t, 'adelante');

@@ -14,7 +14,7 @@ const temaDe = (j: Juego): string => (ZONAS[j.zona.id] as any)?.tema ?? '';
 export const ambienteCfg = { nivel: 2 };
 
 let zonaDe = '';
-const huellas: { x: number; y: number; t: number; ang: number; lado: number; clara: boolean; rgb?: string; vida?: number; k?: number }[] = [];
+const huellas: { x: number; y: number; t: number; ang: number; lado: number; clara: boolean; rgb?: string; vida?: number; k?: number; f?: 'bota' | 'pata' | 'pie' }[] = [];
 /** Pasos que le quedan al héroe con las botas ensangrentadas (pisó donde acaba de caer alguien). */
 let pasosSangre = 0;
 /** Pasos que le quedan con barro en las botas (viene de pisar tierra, barro, nieve o ceniza) y de qué color. */
@@ -48,6 +48,23 @@ function reiniciar(j: Juego) {
   zonaDe = j.zona.id + ':' + j.zona.semilla;
   vuelos.clear(); enVuelo.length = 0;
   huellas.length = 0; ultPaso.clear(); chapoteos.length = 0; ratas.length = 0; motas.length = 0; jirones.length = 0;
+}
+/**
+ * La rata, dibujada punto por punto mirando a la derecha: lomo arqueado, panza clara, orejas y hocico rosados. Tres
+ * poses: dos de carrera (las patas se cruzan) y sentada olfateando con el hocico arriba.
+ */
+const RATA: string[][] = [
+  ['................', '..........pp....', '......dddmpd....', '....ddmmmmmmdd..', '...dmmmlllmmmmd.', '..dmmllllllmmmmp', '..dmmlllllmmmd..', '...ddmmmmmddd...', '...d..d...d.d...'],
+  ['................', '..........pp....', '......dddmpd....', '....ddmmmmmmdd..', '...dmmmlllmmmmd.', '..dmmllllllmmmmp', '..dmmlllllmmmd..', '...ddmmmmmddd...', '....d.d..d..d...'],
+  ['...........pp...', '..........dmpd..', '.........dmmmmd.', '.......ddmllmmmp', '.....ddmmlllmd..', '....dmmmllllmd..', '...dmmmlllllmd..', '...dmmmmmmmmd...', '....dd.dd.dd....'],
+];
+const RATA_C: Record<string, string> = { d: '#1c1512', m: '#3d3029', l: '#6a5646', p: '#c08a84' };
+const ratasSpr: HTMLCanvasElement[] = [];
+function rataSpr(i: number): HTMLCanvasElement {
+  if (ratasSpr[i]) return ratasSpr[i];
+  const c = document.createElement('canvas'); c.width = 16; c.height = 9; const x = c.getContext('2d')!;
+  RATA[i].forEach((fila, y) => { for (let k = 0; k < fila.length; k++) { const col = RATA_C[fila[k]]; if (col) { x.fillStyle = col; x.fillRect(k, y, 1, 1); } } });
+  return (ratasSpr[i] = c);
 }
 const pisoEn = (j: Juego, x: number, y: number) => { const z = j.zona, cx = Math.floor(x), cy = Math.floor(y); if (cx < 0 || cy < 0 || cx >= z.W || cy >= z.H) return null; return z.pisos[Math.floor(cy / 5) * z.tw + Math.floor(cx / 5)]; };
 const libre = (j: Juego, x: number, y: number) => { const z = j.zona, cx = Math.floor(x), cy = Math.floor(y); return cx >= 0 && cy >= 0 && cx < z.W && cy < z.H && !z.bloq[cy * z.W + cx]; };
@@ -152,7 +169,13 @@ export function ambienteSuelo(j: Juego, dt: number, t: number, aP: AP, bx0: numb
   // ceniza) se hunde; en la piedra solo queda si llueve (mojada) o si el héroe viene de pisar sangre (roja, una docena de pasos)
   for (const m of j.monstruos) if (m.muerto && ((m as any).tMuerto ?? 9) < 0.5 && !m.dueno && Math.abs(m.x - h.x) + Math.abs(m.y - h.y) < 2.2) pasosSangre = 14;
   const BLANDO: [RegExp, string, number][] = [[/nieve|hielo/, '70,90,120', 1], [/arena|desierto|arenisca/, '74,50,22', 0.9], [/tierra_infierno|infierno|ceniza/, '20,8,6', 1], [/pantano|selva/, '14,20,10', 1], [/tierra|campamento|paramo|cueva/, '30,20,10', 0.85], [/pasto/, '22,30,12', 0.7]];
+  // cada cual pisa con lo suyo: el héroe con bota (planta y taco), Thor y las bestias con pata (almohadilla y dedos), los
+  // demás con pie; lo que vuela, flota o repta no deja huella
+  const SIN_PIES = /murcielago|espectro|aparecida|gargola|gusano|demonio_alado|sirena|cuervo|fantasma|sin_rostro|mano_dorada|angel/;
+  const DE_PATA = /thor|lobo|perro|chacal|jabali|arana|escorpion|cangrejo|oso|rata|dragon|sabueso|hiena/;
   const marca = (e: Ent) => {
+    const spr = (e as any).def?.sprite as string | undefined; if (spr && SIN_PIES.test(spr)) return;
+    const forma: 'bota' | 'pata' | 'pie' = e === (h as Ent) ? 'bota' : spr && DE_PATA.test(spr) ? 'pata' : 'pie';
     const p = pisoEn(j, e.x, e.y); if (!p) return;
     const esH = e === (h as Ent), bl = BLANDO.find((b) => b[0].test(p.id));
     const sangre = esH && pasosSangre > 0, mojado = !bl && z.lluvia && z.tipo !== 'mazmorra', barro = esH && !bl && pasosBarro > 0;
@@ -160,14 +183,14 @@ export function ambienteSuelo(j: Juego, dt: number, t: number, aP: AP, bx0: numb
     if (!bl && !sangre && !mojado && !barro) { ultPaso.delete(e.id); return; }
     const u = ultPaso.get(e.id);
     if (!u) { ultPaso.set(e.id, [e.x, e.y, 1]); return; }
-    const d = Math.hypot(e.x - u[0], e.y - u[1]); if (d < (esH ? 0.42 : 0.55)) return;
+    const d = Math.hypot(e.x - u[0], e.y - u[1]); if (d < (esH ? 0.46 : forma === 'pata' ? 0.3 : 0.55)) return;
     if (d < 3) {
       const ang = Math.atan2((e.x + e.y - u[0] - u[1]) / 2, e.x - e.y - u[0] + u[1]), tam = Math.min(1.7, Math.max(0.8, (e as any).escala ?? 1));
-      if (sangre) { huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: '120,8,6', vida: 26, k: (pasosSangre / 14) * tam }); pasosSangre--; }
-      else if (bl) huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: /nieve|hielo/.test(p.id), rgb: bl[1], vida: 22, k: bl[2] * tam });
+      if (sangre) { huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: '120,8,6', vida: 26, k: (pasosSangre / 14) * tam, f: forma }); pasosSangre--; }
+      else if (bl) huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: /nieve|hielo/.test(p.id), rgb: bl[1], vida: 22, k: bl[2] * tam, f: forma });
       // sobre piedra, con las botas todavía sucias: la pisada de barro (o de nieve) que se va gastando paso a paso
-      else if (barro) { huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: barroClaro ? '200,214,230' : barroRgb, vida: 16, k: (0.35 + 0.65 * pasosBarro / 12) * tam }); pasosBarro--; }
-      else huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: '8,10,14', vida: 5, k: 0.6 * tam });
+      else if (barro) { huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: barroClaro ? '200,214,230' : barroRgb, vida: 16, k: (0.35 + 0.65 * pasosBarro / 12) * tam, f: forma }); pasosBarro--; }
+      else huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: '8,10,14', vida: 5, k: 0.6 * tam, f: forma });
     }
     ultPaso.set(e.id, [e.x, e.y, -u[2]]);
     if (huellas.length > (E.tactil ? 130 : 240)) huellas.splice(0, huellas.length - (E.tactil ? 130 : 240));
@@ -183,8 +206,17 @@ export function ambienteSuelo(j: Juego, dt: number, t: number, aP: AP, bx0: numb
     const k = q.k ?? 1, ox = -Math.sin(q.ang) * 2.8 * q.lado, oy = Math.cos(q.ang) * 1.4 * q.lado, a = 0.78 * Math.min(1, k) * (1 - q.t / vida) ** 0.7;
     const fx = px + ox, fy = py + oy, ca = Math.cos(q.ang), sa = Math.sin(q.ang), tm = Math.max(0.8, k) * 1.2;
     ctx.fillStyle = `rgba(${q.rgb ?? '40,26,12'},${a})`;
-    ctx.beginPath(); ctx.ellipse(fx + ca * 1.2 * tm, fy + sa * 0.6 * tm, 2.5 * tm, 1.25 * tm, q.ang, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(fx - ca * 2.4 * tm, fy - sa * 1.2 * tm, 1.3 * tm, 0.9 * tm, q.ang, 0, Math.PI * 2); ctx.fill();
+    if (q.f === 'pata') {
+      // la pata: una almohadilla y tres dedos adelante, chica y junta
+      const t2 = tm * 0.62; ctx.beginPath(); ctx.ellipse(fx, fy, 1.7 * t2, 1.1 * t2, q.ang, 0, Math.PI * 2); ctx.fill();
+      for (const d of [-0.7, 0, 0.7]) { const ax = Math.cos(q.ang + d), ay = Math.sin(q.ang + d); ctx.beginPath(); ctx.ellipse(fx + ax * 2.9 * t2, fy + ay * 1.45 * t2, 0.8 * t2, 0.6 * t2, 0, 0, Math.PI * 2); ctx.fill(); }
+    } else {
+      // la bota del héroe: planta ancha, el arco vacío y el taco; el pie de los demás, más corto y sin taco marcado
+      const bt = q.f === 'bota' ? 1.3 : 0.9;
+      ctx.beginPath(); ctx.ellipse(fx + ca * 1.5 * tm * bt, fy + sa * 0.75 * tm * bt, 2.6 * tm * bt, 1.3 * tm * bt, q.ang, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(fx - ca * 2.7 * tm * bt, fy - sa * 1.35 * tm * bt, (q.f === 'bota' ? 1.5 : 1.1) * tm * bt, (q.f === 'bota' ? 1.05 : 0.8) * tm * bt, q.ang, 0, Math.PI * 2); ctx.fill();
+      if (q.f === 'bota') { ctx.fillStyle = `rgba(${q.rgb ?? '40,26,12'},${a * 0.55})`; ctx.beginPath(); ctx.ellipse(fx + ca * 1.5 * tm * bt, fy + sa * 0.75 * tm * bt, 3.3 * tm * bt, 1.75 * tm * bt, q.ang, 0, Math.PI * 2); ctx.fill(); }
+    }
     // en la nieve, el borde levantado que da la luz
     if (q.clara) { ctx.fillStyle = `rgba(240,248,255,${a * 0.6})`; ctx.fillRect(Math.round(fx) - 2, Math.round(fy + 1.6 * tm), 4, 1); }
   }
@@ -215,11 +247,17 @@ export function ambienteSuelo(j: Juego, dt: number, t: number, aP: AP, bx0: numb
       const nx = q.x + q.vx * dt, ny = q.y + q.vy * dt;
       if (libre(j, nx, ny)) { q.x = nx; q.y = ny; } else { q.vx = -q.vx * 0.6 + (Math.random() - 0.5) * 2; q.vy = -q.vy * 0.6 + (Math.random() - 0.5) * 2; q.t = 0.2; }
       const [px, py] = aP(q.x, q.y); if (px < -10 || px > W + 10 || py < -10 || py > H + 10) continue;
-      const sx = q.vx - q.vy, dir = sx < 0 ? -1 : 1, X = Math.round(px), Y = Math.round(py);
-      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(X - 3, Y, 6, 1);
-      ctx.fillStyle = '#2a211b'; ctx.fillRect(X - 2, Y - 3, 5, 3); ctx.fillRect(X + dir * 3 - (dir < 0 ? 1 : 0), Y - 2, 2, 2);
-      ctx.fillStyle = '#4a3a30'; ctx.fillRect(X - 1, Y - 3, 3, 1);
-      ctx.fillStyle = '#6a5048'; ctx.fillRect(X - dir * 3 - (dir > 0 ? 2 : 0), Y - 1, 3, 1);
+      const sx = q.vx - q.vy, quieta = Math.abs(q.vx) + Math.abs(q.vy) < 0.3;
+      if (!quieta) (q as any).dir = sx < 0 ? -1 : 1;
+      const dir = (q as any).dir ?? 1, X = Math.round(px), Y = Math.round(py), fase = (q as any).fase = ((q as any).fase ?? Math.random() * 9) + dt * (quieta ? 3 : 18);
+      // sombra, cola que culebrea, cuerpo (corre en dos tiempos; quieta se sienta y olfatea) y el ojo que brilla
+      ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.beginPath(); ctx.ellipse(X, Y + 1, 7, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#a07a72'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X - dir * 6, Y - 2);
+      for (let c = 1; c <= 4; c++) ctx.lineTo(X - dir * (6 + c * 2.3), Y - 2 + Math.sin(fase * 0.7 + c * 1.1) * (quieta ? 1 : 1.8) - c * 0.2);
+      ctx.stroke();
+      const im = rataSpr(quieta ? 2 : Math.floor(fase) % 2);
+      ctx.save(); ctx.translate(X, Y + (quieta ? 0 : (Math.floor(fase) % 2 ? -1 : 0))); ctx.scale(dir, 1); ctx.drawImage(im, -8, -9); ctx.restore();
+      if (Math.sin(fase * 0.31 + q.x) > 0.2) { ctx.fillStyle = 'rgba(255,120,60,0.9)'; ctx.fillRect(X + dir * 5 - (dir < 0 ? 1 : 0), Y - (quieta ? 7 : 5), 1, 1); }
     }
   }
   ctx.restore();
