@@ -35,7 +35,7 @@ function empezarCine(acto: number, despues: () => void, clave = claveCine(acto))
   cine = { clave, acto, t: 0, despues }; estado = 'cine'; ui.izq = ui.der = null; E.clicIzq = false;
   Sonido.musica('intro');
 }
-import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, costoMana, DIR_VEC, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, anotarMapas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
+import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, costoMana, DIR_VEC, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, anotarMapas, esDistancia, aspectoThor, thorDe, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, nivelHab, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad, volverAEmpezar } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
 import { libreCerca } from './mundo/zona';
@@ -127,7 +127,7 @@ function atlasZona(zid: string): Set<string> {
   // íconos del equipo de Thor
   for (const a of atlasDe('o', ['thor_icono_collar|icono', 'thor_icono_barda|icono', 'thor_icono_collar|suelo'])) s.add(a);
   // invocaciones del héroe
-  for (const id of ['esqueleto', 'esqueleto_arquero', 'ogro', 'necrofago', 'espectro', `thor_${tramoThor(j!.heroe.d)}`, `thor_${Math.min(5, tramoThor(j!.heroe.d) + 1)}`]) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
+  for (const id of ['esqueleto', 'esqueleto_arquero', 'ogro', 'necrofago', 'espectro', `thor_${aspectoThor(j!.heroe.d)}`, `thor_${Math.min(5, aspectoThor(j!.heroe.d) + 1)}`]) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
   // armas del arsenal para íconos
   for (const k of Object.keys(m.o)) if (k.startsWith('arma_') && (k.endsWith('|flota') || k.endsWith('|suelo'))) for (const e of m.o[k].f) s.add(e[0]);
   return s;
@@ -189,6 +189,7 @@ async function empezarPartida(d: DatosHeroe) {
 }
 
 // ------------------------------------------------------------------ control del héroe
+let spriteThorVisto = '';
 let mantenerT = 0, derT = 0;
 /** El botón se apretó sobre un panel, una ficha o un botón: hasta que se suelte no cuenta como «mantener para caminar». */
 let presaEnMenu = false;
@@ -755,6 +756,8 @@ function paso(dt: number) {
       procesarEventos(jj);
       // capa de combate de la música según cuántos monstruos despiertos hay cerca
       if (Math.floor(tiempo * 2) !== Math.floor((tiempo - dt) * 2)) { let n = 0; for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado === 'perseguir' && dist(m.x, m.y, jj.heroe.x, jj.heroe.y) < 12) n++; Sonido.combate(Math.min(1, n / 6)); }
+      // Thor cambió de armadura: se bajan sus cuadros nuevos enseguida (si no, quedaba invisible hasta cambiar de zona)
+      { const sp = thorDe(jj)?.def.sprite; if (sp && sp !== spriteThorVisto) { spriteThorVisto = sp; precargar(new Set(atlasDe('m', clavesCon('m', `${sp}/`)))); } }
       guardadoT += dt; if (guardadoT > 45) { guardadoT = 0; guardar(); }
       if ((ui as any).guardarAhora) { (ui as any).guardarAhora = false; guardar(); avisoGuardado = performance.now(); Sonido.efecto('click'); }
       { const dtg = (performance.now() - Math.max(avisoGuardado, guardadoEn)) / 1000, fuerte = performance.now() - avisoGuardado < 2600;

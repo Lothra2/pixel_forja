@@ -1335,6 +1335,8 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     const c = k.poner('cofre_noble', pN[0], pN[1], 'cerrado', true, 'cofre'); if (c) { c.dato = { casa: true }; z.marcas.push({ tipo: 'cofre', cx: c.cx, cy: c.cy }); }
     z.spawns.push({ cx: pN[0] + 2, cy: pN[1] + 3, tipo: r() < 0.5 ? 'unico' : 'campeon', fuerza: 1 });
     for (const [dx, dy, id] of [[-3, 0, 'mue_velas'], [3, 0, 'mue_velas'], [0, -3, 'mue_alfombra']] as [number, number, string][]) k.poner(id, pN[0] + dx, pN[1] + dy);
+    // y lo que dejó escrito el que vivía aquí: una página de la historia del acto (se lee como los libros malditos)
+    for (const [dx, dy] of [[-2, 3], [2, -2], [-3, -2], [3, 3]]) if (k.poner('mis_libro_maldito', pN[0] + dx, pN[1] + dy)) break;
   }
   // red de seguridad: si algo de lo que adorna la sala del jefe tapó un paso (el mapa quedó en más pedazos), se quita
   // de atrás hacia adelante hasta que vuelva a estar entero

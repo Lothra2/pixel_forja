@@ -1179,6 +1179,12 @@ export function tramoThor(d: DatosHeroe): number {
   let t = 0; for (let i = 0; i < TRAMOS_THOR.length; i++) if (d.nivel >= TRAMOS_THOR[i]) t = i;
   return Math.max(t, d.thor?.barda ?? 0);
 }
+/**
+ * Cómo se ve Thor: lo que lleva puesto. Sin barda va a pelo, con su collar; con barda, la armadura de esa barda.
+ * (Antes el aspecto salía del mayor entre su nivel y la barda: como por nivel ya iba armado, ponerle una barda no
+ * cambiaba nada a la vista. La fuerza sigue saliendo de tramoThor: no pierde nada por ir sin barda.)
+ */
+export const aspectoThor = (d: DatosHeroe): number => Math.max(0, Math.min(5, d.thor?.barda ?? 0));
 /** El sprite de Thor según su tramo; mientras no llegue el de la Forja, un lobo teñido de leonado. */
 export function spriteThor(tramo: number): { sprite: string; tinte?: string; escala: number } {
   const m: any = manifiesto()?.m ?? {};
@@ -1200,10 +1206,11 @@ function statsThor(j: Juego, m: Monstruo) {
   m.vel = 5.2 * (col > 1 ? 1.1 : 1) * (1 + st('thor_vel') / 100);
   (m as any).firmaCollar = h.d.thor?.collar?.uid ?? 0;
   (m as any).nivelThor = n; (m as any).tramoThor = tr; (m as any).collarThor = col;
-  const sp = spriteThor(tr); m.def = { ...m.def, sprite: sp.sprite }; m.tinte = sp.tinte; m.escala = sp.escala;
+  (m as any).aspectoThor = aspectoThor(h.d);
+  const sp = spriteThor(aspectoThor(h.d)); m.def = { ...m.def, sprite: sp.sprite }; m.tinte = sp.tinte; m.escala = sp.escala;
 }
 function crearThor(j: Juego): Monstruo {
-  const h = j.heroe, sp = spriteThor(tramoThor(h.d));
+  const h = j.heroe, sp = spriteThor(aspectoThor(h.d));
   const base = MONSTRUOS.lobo_sombrio;
   const def: DefMonstruo = { ...base, id: 'thor', sprite: sp.sprite, nombre: ['Thor', 'Thor'], vida: 70, dano: [4, 8], vel: 5.2, ia: 'normal', xp: 0, jefe: false, res: {} };
   const q = libreCerca(j.zona, h.x + 1, h.y + 1);
@@ -1221,7 +1228,7 @@ function actualizarThor(j: Juego, dt: number) {
   if (t.descanso && t.descanso > 0) { t.descanso -= dt; if (j.zona.tipo === 'pueblo') t.descanso = 0; if (t.descanso > 0) return; }
   let m = thorDe(j);
   if (!m) { if (h.muerto) return; m = crearThor(j); efecto(j, 'circulo_invocacion', m.x, m.y, 0, 0.6); return; }
-  if ((m as any).nivelThor !== h.d.nivel || (m as any).tramoThor !== tramoThor(h.d) || (m as any).collarThor !== (conCollar(h) ? 1.3 : 1) || (m as any).firmaCollar !== (h.d.thor?.collar?.uid ?? 0)) statsThor(j, m);
+  if ((m as any).nivelThor !== h.d.nivel || (m as any).tramoThor !== tramoThor(h.d) || (m as any).collarThor !== (conCollar(h) ? 1.3 : 1) || (m as any).firmaCollar !== (h.d.thor?.collar?.uid ?? 0) || (m as any).aspectoThor !== aspectoThor(h.d)) statsThor(j, m);
   // ladrido protector: escudo para el héroe cuando está en apuros o rodeado
   (m as any).cdLadrido -= dt;
   if ((m as any).cdLadrido <= 0 && !h.muerto) {

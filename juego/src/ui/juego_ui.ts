@@ -595,6 +595,10 @@ function ponerThor(j: Juego, tipo: 'collar' | 'barda', o?: Objeto) {
   if (tipo === 'collar') th.collar = nuevo ?? undefined; else { th.bardaObj = nuevo ?? undefined; th.barda = nuevo?.tramo ?? 0; }
   if (!o) ui.mano = viejo;
   Sonido.efecto('equipar');
+  // que se note: chispas sobre Thor y el aviso de lo que lleva ahora
+  { const t = thorDe(j); if (t) j.efectos.push({ id: 'chispas_curacion', x: t.x, y: t.y, t: 0, dir: 0, escala: 1, z: 0 } as any);
+    if (nuevo) msg(j, [`Thor lleva ahora: ${nuevo.nombre[0]}`, `Thor now wears: ${nuevo.nombre[1] || nuevo.nombre[0]}`], '#ffd080');
+    else msg(j, tipo === 'collar' ? ['Thor se queda sin collar.', 'Thor is left without a collar.'] : ['Thor va a pelo, sin barda.', 'Thor goes bare, without barding.'], '#c0b090'); }
   return viejo;
 }
 const GEMA_HUD: Record<string, string> = { rubi: 'rubi', zafiro: 'zafiro', topacio: 'topacio', esmeralda: 'esmeralda', amatista: 'amatista', diamante: 'diamante', calavera: 'diamante' };

@@ -715,11 +715,14 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (!e.muerto) sombras(ctx, e, q, px, py, esc);
   // los aliados llevan un aro en los pies (Thor dorado, invocados verdes): de noche un lobo enemigo se confundía con Thor
   if (!e.muerto && (e as any).dueno) {
-    const thor = (e as any).invocaId === 'thor', c = thor ? '255,205,120' : '120,225,150', rr = 13 * Math.max(0.8, esc), kk = 0.5 + 0.2 * Math.sin(tiempo * 3 + e.x);
+    // (el collar de Thor se ve: el aro toma el color de su rareza y una gema le brilla al cuello)
+    const thor = (e as any).invocaId === 'thor', col = thor ? (j.heroe.d as any).thor?.collar : null, cCol = !col ? null : col.rareza === 'legendario' ? '255,140,40' : col.rareza === 'unico' ? '230,190,90' : col.rareza === 'raro' ? '255,240,110' : '110,170,255';
+    const c = thor ? cCol ?? '255,205,120' : '120,225,150', rr = 13 * Math.max(0.8, esc), kk = 0.5 + 0.2 * Math.sin(tiempo * 3 + e.x);
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     const ga = ctx.createRadialGradient(px, py, rr * 0.3, px, py, rr); ga.addColorStop(0, `rgba(${c},0)`); ga.addColorStop(0.75, `rgba(${c},${0.22 * kk})`); ga.addColorStop(1, `rgba(${c},0)`);
     ctx.fillStyle = ga; ctx.beginPath(); ctx.ellipse(px, py, rr, rr / 2, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = `rgba(${c},${0.55 * kk})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(px, py, rr * 0.82, rr * 0.41, 0, 0, Math.PI * 2); ctx.stroke();
+    if (cCol) { (e as any).gemaCollar = cCol; ctx.strokeStyle = `rgba(${cCol},${0.5 * kk})`; ctx.beginPath(); ctx.ellipse(px, py, rr * 1.0, rr * 0.5, 0, 0, Math.PI * 2); ctx.stroke(); } else (e as any).gemaCollar = null;
     ctx.restore();
   }
   // la mitad de atrás del aura va antes del cuerpo
@@ -767,6 +770,14 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
     const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
     ozmarenArde(ctx, m, q, px, py, esc, dtCuadro, furia); calorOzmaren(ctx, q, px, py, esc, tiempo, furia);
   } else if (ok && !(window as any).__sinFuego && (e.tipo === 'monstruo' || e.tipo === 'heroe')) cuerpoArde(ctx, j, e, q, px, py, esc, dtCuadro);
+  // la gema del collar de Thor: un rombo que late a la altura del cuello, del color de la rareza del collar
+  if (!e.muerto && (e as any).gemaCollar) {
+    const cg = (e as any).gemaCollar as string, gx = Math.round(px), gy = Math.round(py - q.ay * esc * 0.58), lat = 0.7 + 0.3 * Math.sin(tiempo * 5);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const hg = ctx.createRadialGradient(gx, gy, 0, gx, gy, 9); hg.addColorStop(0, `rgba(${cg},${0.55 * lat})`); hg.addColorStop(1, `rgba(${cg},0)`); ctx.fillStyle = hg; ctx.fillRect(gx - 9, gy - 9, 18, 18);
+    ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = `rgb(${cg})`; ctx.beginPath(); ctx.moveTo(gx, gy - 3); ctx.lineTo(gx + 3, gy); ctx.lineTo(gx, gy + 3); ctx.lineTo(gx - 3, gy); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(gx - 1, gy - 1, 1, 1); ctx.restore();
+  }
   // únicos y jefes: aura
   if (!e.muerto && e.tipo === 'monstruo' && m.calidad >= 2) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.18 + Math.sin(tiempo * 4) * 0.06;
