@@ -139,6 +139,8 @@ async function irAZona(id: string, entrada: string) {
   await new Promise((r) => setTimeout(r, 30));
   entrarZona(j, id, entrada);
   historiaEntrar(j);
+  // el presagio: al bajar a una mazmorra o meterse en una casa abandonada (no al volver a un lugar ya limpio de sustos)
+  if (ZONAS[id].tipo === 'mazmorra' && !ZONAS[id].jefe) setTimeout(() => Sonido.efecto('presagio' as any, { vol: (ZONAS[id] as any).casa ? 0.7 : 0.9 }), 900);
   const atl = atlasZona(id);
   // primero soltar lo viejo que no hace falta (partidas largas: sin esto el navegador se queda sin recursos)
   liberarAtlas(atl);

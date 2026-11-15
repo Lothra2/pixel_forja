@@ -129,6 +129,8 @@ export interface Pose {
   armaRel?: [number, number];
   /** Muñeca: vuelca el arma en el puño (grados, + hacia adelante): el arma se atrasa o se adelanta al brazo. */
   munecaD?: number;
+  /** El filo del arma mira al piso (0..1) en vez de al frente: así cuelga un hacha en reposo o cae en un hachazo. */
+  filoAbajo?: number;
   /** La cabeza del arma busca el piso (0..1): golpe contra el suelo, según el largo del arma. */
   pisoArma?: number;
   /** La izquierda toma el mango a esa distancia del puño derecho; pegaI 0..1 cuánto (0 = mano libre). */
@@ -714,32 +716,32 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       // llegue a su lugar en el mango
       const [b0, t0, c0] = una ? [2.6, 8, -10] : [7, 34, -20];
       const apoyado: Vals = una
-        ? { agarreI: ag, bajar: b0, torso: t0, ladeo: -1, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [16, 3, 36], armaD: [70, -80], pisoArma: 0 }
-        : { agarreI: ag, bajar: b0, torso: t0, ladeo: -2, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [17, 4, 32], armaD: [160, -4], pisoArma: 1 };
+        ? { agarreI: ag, bajar: b0, torso: t0, ladeo: -1, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [16, 3, 36], armaD: [70, -80], pisoArma: 0, filoAbajo: 1 }
+        : { agarreI: ag, bajar: b0, torso: t0, ladeo: -2, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [17, 4, 32], armaD: [160, -4], pisoArma: 1, filoAbajo: 1 };
       // el hacha sube cruzada delante del pecho (la cabeza arriba a la izquierda, la derecha en la cadera) y de ahí se alza
       // atravesada sobre la cabeza, los brazos en V y los puños abiertos en el mango (la cabeza del hacha a la izquierda,
       // un poco más alta): los puños quedan por encima de la coronilla, nunca delante de la cara
-      const sube: Vals = { agarreI: ag, manoD: [una ? 16 : 20, una ? 3 : 6.5, una ? 36 : 38], armaD: [una ? 62 : 50, -72] };
+      const sube: Vals = { agarreI: ag, manoD: [una ? 16 : 20, una ? 3 : 6.5, una ? 36 : 38], armaD: [una ? 62 : 50, -72], filoAbajo: 0.7 };
       // (arriba el hacha se para sobre la cabeza y se echa atrás, el filo mirando adelante y abajo: la carga del hachazo.
       //  Antes subía acostada, de costado, igual que la llevaba abajo: se movía el brazo pero el hacha no cambiaba)
-      const arriba: Vals = { agarreI: agArriba, manoD: [-2, 6.5, 66], armaD: [30, -90] };
-      const cumbre: Vals = { agarreI: agArriba, manoD: [-4, 6.5, 67], armaD: [10, -90] };
+      const arriba: Vals = { agarreI: agArriba, manoD: [-2, 6.5, 66], armaD: [30, -90], filoAbajo: 0 };
+      const cumbre: Vals = { agarreI: agArriba, manoD: [-4, 6.5, 67], armaD: [10, -90], filoAbajo: 0 };
       const cl: Clave[] = [
         K(0, { ...apoyado, respira: 0.15, hombros: [1, 0.9] }),
         K(0.08, { respira: 0.95, hombros: [1.5, 1.4], torso: t0 - 2, cabeza: c0 - 2 }),
         K(0.16, { respira: 0.05, hombros: [0.9, 0.8], bajar: b0 + 0.8, torso: t0 + 4, cabeza: c0 + 2 }, true),
         // (los tiempos van abiertos: el alzado ocupa tres cuadros y la descarga dos; antes cada uno era un salto de un cuadro)
         K(0.24, { bajar: 2, torso: 6, ladeo: 1, giroTorso: 2, lateral: 0.3, ladeoCadera: 1, respira: 0.6, hombros: [1.2, 1.2], cabeza: -14, ...sube, pisoArma: 0 }),
-        K(0.32, { bajar: 1.6, torso: -2, ladeo: 1.5, giroTorso: 1, lateral: 0.45, ladeoCadera: 1.5, respira: 0.8, hombros: [1.4, 1.4], cabeza: -22, agarreI: agArriba, manoD: [una ? 6 : 8, 6.5, 53], armaD: [una ? 52 : 48, -84] }),
+        K(0.32, { bajar: 1.6, torso: -2, ladeo: 1.5, giroTorso: 1, lateral: 0.45, ladeoCadera: 1.5, respira: 0.8, hombros: [1.4, 1.4], cabeza: -22, agarreI: agArriba, manoD: [una ? 6 : 8, 6.5, 53], armaD: [una ? 52 : 48, -84], filoAbajo: 0.3 }),
         // arriba ruge al cielo debajo del hacha, el cuerpo echado atrás y el pecho inflado
         K(0.42, { bajar: 1, torso: -10, ladeo: 2, giroTorso: 0, lateral: 0.6, ladeoCadera: 2, respira: 1, hombros: [1.6, 1.6], cabeza: -30, giroCabeza: 0, ladeoCabeza: 3, ...arriba }),
         K(0.54, { bajar: 0.8, torso: -13, cabeza: -34, ...cumbre }, true),
-        K(0.6, { agarreI: ag, bajar: 4, torso: 12, ladeo: -1, giroTorso: 3, lateral: 0, ladeoCadera: 0, respira: 0.6, hombros: [1, 1], cabeza: -20, manoD: [una ? 12 : 14, 6, 50], armaD: [96, -30] }),
-        K(0.66, { agarreI: ag, bajar: una ? 8 : 7.5, torso: una ? 36 : 33, ladeo: -3, giroTorso: 6, giroCadera: 4, lateral: -0.8, ladeoCadera: -2, respira: 0.3, hombros: [1, 1], cabeza: -12, ladeoCabeza: -1, manoD: [una ? 16 : 19, una ? 3 : 6, 30], armaD: [150, -4], pisoArma: 1 }),
+        K(0.6, { agarreI: ag, bajar: 4, torso: 12, ladeo: -1, giroTorso: 3, lateral: 0, ladeoCadera: 0, respira: 0.6, hombros: [1, 1], cabeza: -20, manoD: [una ? 12 : 14, 6, 50], armaD: [96, -30], filoAbajo: 0.6 }),
+        K(0.66, { agarreI: ag, bajar: una ? 8 : 7.5, torso: una ? 36 : 33, ladeo: -3, giroTorso: 6, giroCadera: 4, lateral: -0.8, ladeoCadera: -2, respira: 0.3, hombros: [1, 1], cabeza: -12, ladeoCabeza: -1, manoD: [una ? 16 : 19, una ? 3 : 6, 30], armaD: [150, -4], pisoArma: 1, filoAbajo: 1 }),
         K(0.74, { bajar: una ? 7.6 : 7, torso: una ? 37.5 : 34.5, cabeza: -12, manoD: [una ? 14 : 17, una ? 3 : 6, 31], armaD: [158, -4], respira: 0.1 }, true),
       ];
       // el hacha corta sale del piso y vuelve a la guardia, cruzada delante del cuerpo
-      if (una) cl.push(K(0.82, { bajar: 4.5, torso: 20, giroTorso: 5, cabeza: -10, manoD: [16, 5, 31], armaD: [100, -45], pisoArma: 0 }));
+      if (una) cl.push(K(0.82, { bajar: 4.5, torso: 20, giroTorso: 5, cabeza: -10, manoD: [16, 5, 31], armaD: [100, -45], pisoArma: 0, filoAbajo: 1 }));
       cl.push(K(0.9, { ...apoyado, respira: 0.7, hombros: [1.2, 1.1] }), K(0.96, { respira: 0.1, hombros: [1, 0.9], torso: t0 + 1 }));
       actuar(p, cl, u, { lagCab: 0.035, capa: 1 });
       break;

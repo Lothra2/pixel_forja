@@ -1337,6 +1337,8 @@ interface Pista {
   texturaVol: number;
   construir?: boolean;
   disonante?: boolean;
+  /** Cada cuánto (probabilidad por frase) suena el tema del juego en vez de una frase improvisada. */
+  tema?: number;
 }
 
 function pista(p: Partial<Pista> & Pick<Pista, 'bpm' | 'raiz' | 'escala'>): Pista {
@@ -1535,6 +1537,23 @@ function variar(m: (Nota | null)[], op: number, rng: () => number): (Nota | null
   return r;
 }
 
+/**
+ * El tema del juego, el Réquiem: un lamento en menor que baja de la quinta a la tónica y una respuesta que sube y vuelve
+ * a caer. Está escrito en grados de la escala, así que cada acto lo canta en su modo y con su instrumento (el arco en el
+ * menú, la flauta junto al fuego, el metal en el infierno): es lo que se queda en la cabeza. Dos estrofas; la segunda
+ * abre más arriba y cierra larga.
+ */
+const TEMA: [number, number][][] = [
+  [[4, 3], [5, 1], [4, 2], [2, 2], [3, 2], [2, 2], [0, 4], [0, 2], [2, 2], [4, 3], [3, 1], [2, 2], [1, 2], [0, 4]],
+  [[7, 3], [6, 1], [5, 2], [4, 2], [5, 2], [2, 2], [4, 4], [3, 2], [2, 2], [1, 2], [2, 2], [0, 8]],
+];
+/** Con qué frecuencia suena el tema según la pista: mucho en el menú y junto al fuego, poco bajo tierra, nunca en el jefe. */
+const temaDe = (id: string, P: Pista): number => P.tema ?? (id === 'menu' ? 0.62 : id === 'intro' ? 0.5 : id.startsWith('campamento') ? 0.42 : id.startsWith('acto') ? 0.24 : id.startsWith('mazmorra') ? 0.14 : 0);
+function fraseTema(k: number): (Nota | null)[] {
+  const f = new Array<Nota | null>(32).fill(null); let s2 = 0;
+  for (const [deg, len] of TEMA[k % TEMA.length] as [number, number][]) { if (s2 >= 32) break; f[s2] = { deg, len, vel: s2 % 16 === 0 ? 1 : 0.82 }; s2 += len; }
+  return f;
+}
 function nuevaFrase(r: Rep, compas: number): void {
   const n = Math.floor(compas / 4);
   const rng = mulberry32((r.semilla + Math.imul(n + 1, 2654435761)) >>> 0);
@@ -1548,6 +1567,9 @@ function nuevaFrase(r: Rep, compas: number): void {
   }
   r.arp = ARPEGIOS[Math.floor(rng() * ARPEGIOS.length)] as number[];
   r.frase = new Array<Nota | null>(32).fill(null);
+  // el tema: nunca dos frases seguidas, y las dos estrofas se alternan
+  if (P.mel && n > 0 && !(r as any).huboTema && rng() < temaDe(r.id, P)) { (r as any).huboTema = true; (r as any).estrofa = ((r as any).estrofa ?? -1) + 1; r.frase = fraseTema((r as any).estrofa); (globalThis as any).__temas = ((globalThis as any).__temas ?? 0) + 1; return; }
+  (r as any).huboTema = false;
   if (rng() < P.silencio) return;
   const ops = [0, 0, 1, 2, 3, 4, 5, 5];
   const v1 = variar(r.motivo, ops[Math.floor(rng() * ops.length)] as number, rng);
@@ -1989,6 +2011,19 @@ const EFECTOS_HORROR: Record<string, Fx> = {
     golpeSordo(o, t, 70, 32, 0.55, 0.5);
     const gm = gan(0, o); env(gm.gain, t, 0.002, 0.35, 0.9); ruido(t, t + 1, filt('bandpass', 5200, 1.5, gm));
     return 1.9;
+  },
+  /**
+   * El presagio: lo que suena al cruzar una puerta que no convenía cruzar. Dos graves casi iguales que se baten entre sí
+   * y crecen despacio, un soplo que sube como aire que entra a una tumba, y una campana lejana, sola, al final.
+   */
+  presagio(o, t, p) {
+    const g = gan(0, o); envSost(g.gain, t, 1.4, 0.34, 1.2, 2.2);
+    const lp = filt('lowpass', 420, 0.8, g); lp.frequency.linearRampToValueAtTime(900, t + 2.4);
+    for (const [f, det] of [[49, 0], [51.9, 0], [98, -6], [146.8, 5]] as [number, number][]) osc(f < 60 ? 'sine' : 'triangle', f * p, t, t + 5, lp, det);
+    const gs = gan(0, o); envSost(gs.gain, t + 0.3, 1.8, 0.12, 0.3, 1.2);
+    const bp = filt('bandpass', 300, 3, gs); bp.frequency.exponentialRampToValueAtTime(2200, t + 2.6); ruido(t + 0.3, t + 3.8, bp, ROSA);
+    campanaFM(o, t + 2.7, 146.8 * p, 3.2, 0.2);
+    return 6;
   },
 };
 const HORROR = new Set([...Object.keys(EFECTOS_HORROR), 'susurro']);

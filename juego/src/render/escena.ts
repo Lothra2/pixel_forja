@@ -108,10 +108,13 @@ function framesHeroe(j: Juego, acc: string, dir: string): Cuadro[] {
     const ru = (j.heroe as any).rumbo as number | undefined;
     if (ru !== undefined) {
       const g = ((ru * 180) / Math.PI + 360) % 360, k = Math.round(g / (360 / FINO_RUMBOS)) % FINO_RUMBOS;
-      const gd = ['se', 's', 'so', 'o', 'no', 'n', 'ne', 'e'].indexOf(dir) * 45, dif = Math.abs(((k * (360 / FINO_RUMBOS) - gd + 540) % 360) - 180);
-      if (dif <= 34) { const f = cuadrosFinos(acc, k); if (f && f.length) { (window as any).__fino = k; return f; } }
+      const D8 = ['se', 's', 'so', 'o', 'no', 'n', 'ne', 'e'], gd = D8.indexOf(dir) * 45, dif = Math.abs(((k * (360 / FINO_RUMBOS) - gd + 540) % 360) - 180);
+      if (dif <= 34) {
+        // los rumbos pares son los ocho de siempre (pero el que toca por el rumbo real, no el que arrastra el giro)
+        if (k % 2 === 0) { (window as any).__fino = k; dir = D8[k / 2]; }
+        else { const f = cuadrosFinos(acc, k); if (f && f.length) { (window as any).__fino = k; return f; } (window as any).__fino = -1; }
+      } else (window as any).__fino = -1;
     }
-    (window as any).__fino = -1;
   }
   const vivos = cuadrosVivos(acc, dir);
   if (vivos && vivos.length) return vivos;

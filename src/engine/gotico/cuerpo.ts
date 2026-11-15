@@ -1903,7 +1903,7 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
   const dd = b.eje, m = b.mano;
   const en = (k: number): V3 => add(m, dd, k);
   // vector de canto de la hoja: perpendicular al mango y al frente del cuerpo
-  const [canto, plano] = marcoArma(dd, F, b.s > 0 ? b.d2 : undefined);
+  const [canto, plano] = marcoArma(dd, F, b.s > 0 ? b.d2 : undefined, b.s > 0 ? e.pose?.filoAbajo ?? 0 : 0);
   const hoja = (k0: number, k1: number, ancho: number, grueso: number, punta = 0.15, curva = 0): Pieza => {
     const a = en(k0), z = add(en(k1), canto, curva);
     return poliedro([add(a, canto, ancho), add(a, canto, -ancho), add(a, plano, grueso), add(a, plano, -grueso),
@@ -2056,10 +2056,12 @@ function marcoArco(e: Esqueleto, c: V3, m: V3): { tira: boolean; tiro: V3; arrib
 }
 
 /** El marco de una hoja en el puño: el canto (ancho de la hoja) y el plano (hacia donde mira su cara). */
-function marcoArma(dd: V3, F: V3, d2?: V3): [V3, V3] {
+function marcoArma(dd: V3, F: V3, d2?: V3, abajo = 0): [V3, V3] {
   // el filo mira al frente del cuerpo y hacia donde apunta el antebrazo (los nudillos): con el arma apuntando justo al
   // frente el antebrazo decide y la hoja no se da vuelta de un cuadro al otro
-  const ref: V3 = d2 ? add(F, d2, 0.6) : F;
+  // (`abajo`, 0..1, de la pose: el filo busca el piso, como cuelga un hacha que se sostiene sin estar pegando)
+  let ref: V3 = d2 ? add(F, d2, 0.6) : F;
+  if (abajo > 0) ref = add(mulv(ref, 1 - abajo), [0, 0, -1], abajo * 1.6);
   let canto = nor(cruz(dd, ref)); if (!isFinite(canto[0]) || len(cruz(dd, ref)) < 0.2) canto = nor(cruz(dd, [0, 0, 1]));
   return [canto, nor(cruz(canto, dd))];
 }
@@ -2094,7 +2096,7 @@ function cadenaHuesos(pts: V3[], r0: number, r1: number, mat: string, tono?: num
 function armaEpica(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string, gema?: string): Pieza[] {
   const { S, F } = e;
   const dd = b.eje, m = b.mano, ps: Pieza[] = [];
-  const [canto, plano] = marcoArma(dd, F, b.s > 0 ? b.d2 : undefined);
+  const [canto, plano] = marcoArma(dd, F, b.s > 0 ? b.d2 : undefined, b.s > 0 ? e.pose?.filoAbajo ?? 0 : 0);
   /** Punto en unidades de S: k a lo largo del arma, c hacia el canto, p hacia la cara. */
   const P = (k: number, c = 0, p = 0): V3 => add(add(add(m, dd, k * S), canto, c * S), plano, p * S);
   /** Hoja recta o curva por puntos [k, corrimiento de canto, ancho, grueso]. */
