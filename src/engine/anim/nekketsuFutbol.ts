@@ -374,4 +374,108 @@ export const nkxRun: AnimDef = {
     arms: { near: { ...p.arms.near, elbow: 105 }, far: { ...p.arms.far, elbow: 105 } }, face: { eyes: 'angry' as const, mouth: 'line' as const } })),
 };
 
-export const NEKKETSU_PROPUESTA: AnimDef[] = [nkxSlide, nkxPass, nkxFly, nkxDizzy, nkxGetup, nkxKeeperDive, nkxKeeperReady, nkxTrap, nkxLaugh, nkxSad, nkxIdle, nkxRun].map((a) => (KEYED.has(a.name) ? keyPoses(a) : a));
+// ---------- Los remates, de cero: el tiro, el cañonazo, la volea y la chilena de Nekketsu ----------
+
+/** El tiro de Kunio: se echa encima con la pierna atrás hasta la espalda y la suelta recta al frente, con el cuerpo atrás y un saltito. */
+export const nkxShot: AnimDef = {
+  name: 'nkx_shot', pack: 'football', fps: 16, loop: false, hairTrail: -1,
+  events: [{ type: 'impacto', phase: 3 / 9, joint: 'footNear' }],
+  build: (c) => {
+    const L = c.L, u = c.u;
+    const step = P(c, { torso: 14, legs: { far: { x: 0.45 * L, y: L - 0.5, toe: 0 }, near: { x: -0.5 * L, y: 0.8 * L, toe: 45 } },
+      arms: { near: { shoulder: 50, elbow: 30, spread: 25 }, far: { shoulder: -60, elbow: 30, spread: 35 } }, face: { eyes: 'angry', mouth: 'line' }, support: 'far' });
+    const wind = P(c, { torso: 30, x: 0.1 * L, freeArms: true, legs: { far: { x: 0.3 * L, y: L - 0.5, toe: 0 }, near: { x: -1.05 * L, y: 0.12 * L, toe: 80 } },
+      arms: { near: { shoulder: 105, elbow: 10, spread: 45 }, far: { shoulder: -110, elbow: 10, spread: 60 } }, head: { dx: 0, dy: 0, tilt: 8 }, face: fury, support: 'far' });
+    const hit = P(c, { torso: -32, air: 2 * u, x: 0.12 * L, freeArms: true, legs: { far: { x: -0.25 * L, y: L - 0.5, toe: 25 }, near: { x: 1.2 * L, y: 0.02 * L, toe: -35 } },
+      arms: { near: { shoulder: -105, elbow: 10, spread: 45 }, far: { shoulder: 125, elbow: 10, spread: 65 } }, head: { dx: 0, dy: 0, tilt: -8 }, face: fury });
+    const high = P(c, { torso: -42, air: 5 * u, x: 0.16 * L, freeArms: true, legs: { far: { x: -0.3 * L, y: 0.8 * L, toe: 45 }, near: { x: 1.0 * L, y: -0.5 * L, toe: -20 } },
+      arms: { near: { shoulder: -120, elbow: 10, spread: 50 }, far: { shoulder: 140, elbow: 10, spread: 65 } }, head: { dx: 0, dy: 0, tilt: -10 }, face: fury });
+    const drop = P(c, { torso: -12, air: 2 * u, x: 0.18 * L, legs: { far: { x: -0.25 * L, y: L - 0.7, toe: 25 }, near: { x: 0.6 * L, y: 0.55 * L, toe: 0 } },
+      arms: { near: { shoulder: -50, elbow: 30, spread: 30 }, far: { shoulder: 70, elbow: 30, spread: 40 } }, face: { eyes: 'angry', mouth: 'grin' } });
+    const land = P(c, { torso: 12, x: 0.18 * L, legs: feet(c, 0.5, 0.26), arms: { near: { shoulder: 25, elbow: 50, spread: 15 }, far: { shoulder: -15, elbow: 50, spread: 15 } }, face: { eyes: 'angry', mouth: 'line' }, support: 'both' });
+    return sideways(c, [step, wind, wind, hit, hit, high, high, drop, land], 0.5);
+  },
+};
+
+/** La vaselina: se echa atrás con los brazos abiertos y mete el pie por debajo, de abajo hacia arriba, hasta la altura de la cara. */
+export const nkxChip: AnimDef = {
+  name: 'nkx_chip', pack: 'football', fps: 16, loop: false,
+  events: [{ type: 'impacto', phase: 3 / 8, joint: 'footNear' }],
+  build: (c) => {
+    const L = c.L, u = c.u;
+    const wind = P(c, { torso: 18, freeArms: true, legs: { far: { x: 0.3 * L, y: L - 0.5, toe: 0 }, near: { x: -0.8 * L, y: 0.45 * L, toe: 70 } },
+      arms: { near: { shoulder: 80, elbow: 20, spread: 40 }, far: { shoulder: -90, elbow: 20, spread: 55 } }, face: { eyes: 'angry', mouth: 'line' }, support: 'far' });
+    const scoop = P(c, { torso: -36, x: 0.1 * L, freeArms: true, legs: { far: { x: -0.2 * L, y: L - 0.5, toe: 15 }, near: { x: 0.95 * L, y: 0.45 * L, toe: -70 } },
+      arms: { near: { shoulder: -110, elbow: 10, spread: 55 }, far: { shoulder: -120, elbow: 10, spread: 65 } }, head: { dx: 0, dy: 0, tilt: -12 }, face: fury, support: 'far' });
+    const lift = P(c, { torso: -46, air: 3 * u, x: 0.14 * L, freeArms: true, legs: { far: { x: -0.25 * L, y: 0.85 * L, toe: 40 }, near: { x: 0.9 * L, y: -0.7 * L, toe: -80 } },
+      arms: { near: { shoulder: -130, elbow: 10, spread: 55 }, far: { shoulder: -140, elbow: 10, spread: 65 } }, head: { dx: 0, dy: 0, tilt: -16 }, face: { eyes: 'happy', mouth: 'shout' } });
+    const drop = P(c, { torso: -10, x: 0.16 * L, legs: { far: { x: -0.2 * L, y: L - 0.6, toe: 20 }, near: { x: 0.5 * L, y: 0.7 * L, toe: 0 } }, arms: { near: { shoulder: -40, elbow: 30, spread: 30 }, far: { shoulder: 40, elbow: 30, spread: 35 } }, face: joy });
+    const land = P(c, { torso: 8, x: 0.16 * L, legs: feet(c, 0.4, 0.26), arms: { near: { shoulder: 20, elbow: 40, spread: 15 }, far: { shoulder: -10, elbow: 40, spread: 15 } }, face: joy, support: 'both' });
+    return sideways(c, [wind, wind, scoop, lift, lift, lift, drop, land], 0.5);
+  },
+};
+
+/** El cañonazo (el botón sostenido): toma vuelo en el aire con la pierna sobre la espalda y pega con el cuerpo acostado y el pie arriba de la cabeza. */
+export const nkxPowerShot: AnimDef = {
+  name: 'nkx_power_shot', pack: 'football', fps: 16, loop: false, hairTrail: -1,
+  events: [{ type: 'despegue', phase: 1 / 10 }, { type: 'impacto', phase: 4 / 10, joint: 'footNear' }, { type: 'aterriza', phase: 8 / 10 }],
+  build: (c) => {
+    const L = c.L, u = c.u;
+    const dip = P(c, { torso: 24, legs: feet(c, 0.7, 0.3), arms: { near: { shoulder: -70, elbow: 30, spread: 30 }, far: { shoulder: -70, elbow: 30, spread: 30 } }, face: fury, support: 'both' });
+    const coil = P(c, { torso: 40, air: 4 * u, x: -0.2 * L, freeArms: true, legs: { far: { x: 0.35 * L, y: 0.7 * L, toe: 20 }, near: { x: -1.1 * L, y: -0.1 * L, toe: 85 } },
+      arms: { near: { shoulder: 120, elbow: 10, spread: 55 }, far: { shoulder: -125, elbow: 10, spread: 65 } }, head: { dx: 0, dy: 0, tilt: 10 }, face: fury });
+    const hit = P(c, { torso: -52, air: 6 * u, x: 0.6 * L, freeArms: true, legs: { far: { x: -0.45 * L, y: 0.7 * L, toe: 55 }, near: { x: 1.2 * L, y: -0.3 * L, toe: -35 } },
+      arms: { near: { shoulder: -125, elbow: 5, spread: 55 }, far: { shoulder: 150, elbow: 5, spread: 70 } }, head: { dx: 0, dy: 0, tilt: -12 }, face: fury });
+    const high = P(c, { ...hit, torso: -64, air: 7 * u, legs: { far: { x: -0.4 * L, y: 0.6 * L, toe: 60 }, near: { x: 0.85 * L, y: -0.85 * L, toe: -15 } } });
+    const drop = P(c, { torso: -20, air: 3 * u, x: 0.2 * L, legs: { far: { x: -0.25 * L, y: L - 0.8, toe: 30 }, near: { x: 0.6 * L, y: 0.5 * L, toe: 0 } },
+      arms: { near: { shoulder: -60, elbow: 30, spread: 35 }, far: { shoulder: 80, elbow: 30, spread: 45 } }, face: { eyes: 'angry', mouth: 'grin' } });
+    const land = P(c, { torso: 20, x: 0.2 * L, legs: feet(c, 0.7, 0.3), arms: { near: { shoulder: 30, elbow: 60, spread: 20 }, far: { shoulder: -20, elbow: 60, spread: 20 } }, face: { eyes: 'angry', mouth: 'line' }, support: 'both' });
+    return sideways(c, [dip, coil, coil, coil, hit, hit, high, high, drop, land], 0.5);
+  },
+};
+
+/** La volea de Nekketsu: en el aire, acostado de lado, con las dos piernas en tijera a la altura del balón. */
+export const nkxVolley: AnimDef = {
+  name: 'nkx_volley', pack: 'football', fps: 14, loop: false, hairTrail: -1,
+  events: [{ type: 'impacto', phase: 3 / 8, joint: 'footNear' }, { type: 'aterriza', phase: 6 / 8 }],
+  build: (c) => {
+    const L = c.L, u = c.u;
+    const hop = P(c, { torso: 8, air: 3 * u, freeArms: true, legs: { far: { x: 0.3 * L, y: 0.75 * L, toe: 20 }, near: { x: -0.7 * L, y: 0.5 * L, toe: 60 } },
+      arms: { near: { shoulder: 90, elbow: 15, spread: 50 }, far: { shoulder: -90, elbow: 15, spread: 60 } }, face: fury });
+    const wind = P(c, { torso: -30, air: 6 * u, freeArms: true, legs: { far: { x: 0.55 * L, y: 0.5 * L, toe: 0 }, near: { x: -1.0 * L, y: 0.1 * L, toe: 75 } },
+      arms: { near: { shoulder: 110, elbow: 10, spread: 55 }, far: { shoulder: -110, elbow: 10, spread: 65 } }, face: fury, fit: true });
+    const hit = P(c, { torso: -72, air: 7 * u, x: 0.1 * L, freeArms: true, legs: { far: { x: -0.35 * L, y: 0.55 * L, toe: 50 }, near: { x: 1.25 * L, y: -0.1 * L, toe: -35 } },
+      arms: { near: { shoulder: -115, elbow: 5, spread: 50 }, far: { shoulder: 150, elbow: 5, spread: 70 } }, head: { dx: 0, dy: 0, tilt: 14 }, face: fury, fit: true });
+    const cross = P(c, { ...hit, torso: -80, air: 6 * u, legs: { far: { x: 0.5 * L, y: 0.35 * L, toe: 10 }, near: { x: 1.0 * L, y: -0.55 * L, toe: -20 } }, fit: true });
+    const fall = P(c, { torso: -40, air: 2 * u, x: 0.14 * L, legs: { far: { x: 0.1 * L, y: 0.8 * L, toe: 20 }, near: { x: 0.7 * L, y: 0.4 * L, toe: 0 } },
+      arms: { near: { shoulder: -60, elbow: 30, spread: 35 }, far: { shoulder: 60, elbow: 30, spread: 45 } }, face: { eyes: 'angry', mouth: 'grin' }, fit: true });
+    const land = P(c, { torso: 16, x: 0.14 * L, legs: feet(c, 0.6, 0.28), arms: { near: { shoulder: 25, elbow: 55, spread: 18 }, far: { shoulder: -15, elbow: 55, spread: 18 } }, face: { eyes: 'angry', mouth: 'line' }, support: 'both' });
+    return sideways(c, [hop, wind, wind, hit, hit, cross, fall, land], 0.8);
+  },
+};
+
+/** La chilena: salta de espaldas, se pone cabeza abajo y pega con la pierna recta arriba mientras la otra hace la tijera; cae de espalda y rebota. */
+export const nkxChilena: AnimDef = {
+  name: 'nkx_chilena', pack: 'football', fps: 14, loop: false, hairTrail: -1,
+  events: [{ type: 'despegue', phase: 1 / 10 }, { type: 'impacto', phase: 5 / 10, joint: 'footNear' }, { type: 'aterriza', phase: 8 / 10 }],
+  build: (c) => {
+    const L = c.L, u = c.u;
+    const top = Math.max(4, Math.round(9 * u));
+    const wide = (a: number, b: number): Pose['arms'] => ({ near: { shoulder: a, elbow: 10, spread: 60 }, far: { shoulder: b, elbow: 10, spread: 65 } }) as Pose['arms'];
+    const crouch = P(c, { torso: 14, legs: feet(c, 0.85, 0.24), arms: { near: { shoulder: -50, elbow: 30 }, far: { shoulder: -50, elbow: 30 } }, face: fury, support: 'both' });
+    const leap = P(c, { air: top * 0.6, torso: -50, freeArms: true, legs: { near: { x: 0.2 * L, y: 0.85 * L, toe: 50 }, far: { x: 0.75 * L, y: 0.15 * L, toe: 0 } }, arms: wide(130, 140), face: fury, fit: true });
+    const flip = P(c, { air: top, torso: -105, freeArms: true, legs: { near: { x: 0.5 * L, y: 0.55 * L, toe: 40 }, far: { x: 0.95 * L, y: -0.55 * L, toe: -10 } }, arms: wide(95, 120), face: fury, fit: true });
+    const hit = P(c, { air: top, torso: -138, freeArms: true, legs: { near: { x: 0.15 * L, y: -1.2 * L, toe: -40 }, far: { x: 0.95 * L, y: 0.1 * L, toe: 30 } }, arms: wide(80, 110), face: fury, fit: true });
+    const over = P(c, { air: top * 0.8, torso: -150, freeArms: true, legs: { near: { x: -0.6 * L, y: -0.95 * L, toe: -20 }, far: { x: 0.55 * L, y: -0.75 * L, toe: 0 } }, arms: wide(70, 100), face: fury, fit: true });
+    const fall = P(c, { air: top * 0.35, torso: -100, legs: { near: { x: 0.75 * L, y: -0.45 * L, toe: 0 }, far: { x: 0.9 * L, y: 0.0, toe: 10 } }, arms: wide(50, 60), face: hurt, fit: true });
+    const ground = P(c, { torso: -88, legs: { near: { x: 0.9 * L, y: -0.12 * L, toe: 0 }, far: { x: 0.85 * L, y: 0.1 * L, toe: 0 } }, arms: { near: { shoulder: 30, elbow: 20, spread: 30 }, far: { shoulder: 20, elbow: 20, spread: 30 } }, face: joy, fit: true });
+    // rueda sobre el centro del cuerpo, no sobre la cadera
+    const hc = (c.d.torsoH + c.d.headW * 0.5) * 0.5;
+    // (en el juego el pie toca el balón al 62 % del gesto: los tres cuadros del golpe lo cubren)
+    const seq = [crouch, leap, flip, flip, hit, hit, hit, over, fall, ground].map((p) => ({ ...p, x: p.x - Math.sin((p.torso * Math.PI) / 180) * hc }));
+    return sideways(c, seq, 0.9);
+  },
+};
+
+
+export const NEKKETSU_PROPUESTA: AnimDef[] = [nkxSlide, nkxPass, nkxFly, nkxDizzy, nkxGetup, nkxKeeperDive, nkxKeeperReady, nkxTrap, nkxLaugh, nkxSad, nkxIdle, nkxRun, nkxShot, nkxPowerShot, nkxVolley, nkxChilena, nkxChip].map((a) => (KEYED.has(a.name) ? keyPoses(a) : a));
