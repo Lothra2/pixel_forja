@@ -27,16 +27,17 @@ export function rasgos(m: MarcoCab, o: { piel: string; pelo?: string; mujer: boo
   for (const s of [1, -1]) {
     // la cuenca: piel en sombra, hundida bajo el arco de las cejas (el ojo vive adentro)
     // (la cara del juego está a ~3.8 cabezas del centro a la altura de los ojos: la cuenca asoma apenas)
-    ps.push(elipCab(m, 3.62, s * 1.4, 0.3, [0.45, 0.85, 0.55], o.piel, -0.55));
-    if (!o.brilla) ps.push(elipCab(m, 3.92, s * 1.38, 0.28, [0.25, 0.4, 0.28], o.ojo));
+    // (la cuenca casi negra juntaba cejas, ojos y barba en un antifaz: todas las caras eran la misma mancha)
+    ps.push(elipCab(m, 3.62, s * 1.4, 0.3, [0.4, 0.72, 0.42], o.piel, -0.3));
+    if (!o.brilla) { ps.push(elipCab(m, 3.9, s * 1.42, 0.3, [0.25, 0.5, 0.3], 'cu_ojo_blanco')); ps.push(elipCab(m, 4.02, s * 1.3, 0.28, [0.2, 0.26, 0.26], o.ojo)); }
     // la ceja: una raya de pelo apenas inclinada (más fina en ella); sin pelo, el canto del arco con luz
     const ceja = o.pelo ?? o.piel, tc = o.pelo ? 0 : 0.2;
     ps.push(palo(P(m, 4.05, s * 0.5, 1.25), P(m, 3.72, s * 2.1, o.mujer ? 1.6 : 1.45), (o.mujer ? 0.24 : 0.34) * m.H, { mat: ceja, tono: tc, r1: (o.mujer ? 0.14 : 0.24) * m.H }));
     // el pómulo agarra un poco de luz
-    ps.push(elipCab(m, 3.45, s * 2.05, -0.5, [0.55, 0.6, 0.45], o.piel, 0.14));
+    ps.push(elipCab(m, 3.45, s * 2.05, -0.5, [0.6, 0.7, 0.55], o.piel, 0.24));
   }
   // la nariz: el lomo con luz y la sombra de abajo
-  ps.push(palo(P(m, 4.3, 0, 0.45), P(m, 5.0, 0, -0.85), 0.24 * m.H, { mat: o.piel, tono: 0.22, r1: 0.3 * m.H }));
+  ps.push(palo(P(m, 4.3, 0, 0.45), P(m, 5.0, 0, -0.85), 0.24 * m.H, { mat: o.piel, tono: 0.34, r1: 0.34 * m.H }));
   ps.push(elipCab(m, 4.35, 0, -1.75, [0.4, 0.7, 0.25], o.piel, -0.5));
   // la boca: una sombra corta (con barba la tapa el bigote)
   if (!o.barba) ps.push(palo(P(m, 4.3, 0.8, -2.3), P(m, 4.3, -0.8, -2.3), 0.2 * m.H, { mat: o.piel, tono: o.mujer ? -0.3 : -0.45 }));

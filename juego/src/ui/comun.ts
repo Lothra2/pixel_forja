@@ -54,13 +54,25 @@ export function titulo(s: string, x: number, y: number, w: number) {
 export const dentro = (x: number, y: number, w: number, h: number) => E.x >= x && E.y >= y && E.x < x + w && E.y < y + h;
 /** Botón: devuelve true si se hizo clic. */
 export function boton(s: string, x: number, y: number, w: number, h: number, o: { activo?: boolean; tam?: number; color?: string } = {}): boolean {
-  const encima = dentro(x, y, w, h) && o.activo !== false;
+  // una placa grabada de esquinas cortadas: hierro oscuro, filo de oro viejo y, con el puntero encima, la brasa que la enciende
+  const encima = dentro(x, y, w, h) && o.activo !== false, c = Math.min(7, h * 0.22);
+  const placa = () => { ctx.beginPath(); ctx.moveTo(x + c, y); ctx.lineTo(x + w - c, y); ctx.lineTo(x + w, y + c); ctx.lineTo(x + w, y + h - c); ctx.lineTo(x + w - c, y + h); ctx.lineTo(x + c, y + h); ctx.lineTo(x, y + h - c); ctx.lineTo(x, y + c); ctx.closePath(); };
+  ctx.save();
+  if (encima) { ctx.shadowColor = 'rgba(255,130,40,0.55)'; ctx.shadowBlur = 14; }
   const g = ctx.createLinearGradient(x, y, x, y + h);
-  g.addColorStop(0, encima ? '#4a3a26' : '#2a221a'); g.addColorStop(1, encima ? '#2a2016' : '#14100c');
-  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = '#000'; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-  ctx.strokeStyle = encima ? '#c0a060' : '#6a5838'; ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
-  texto(s, x + w / 2, y + h / 2 + (o.tam ?? 14) * 0.35, { tam: o.tam ?? 14, alin: 'center', color: o.activo === false ? '#6a6050' : o.color ?? (encima ? '#ffe8b0' : '#d8c8a0'), fuente: TITULO });
+  g.addColorStop(0, encima ? '#4a3220' : '#2a211a'); g.addColorStop(0.5, encima ? '#2e1e12' : '#1a1410'); g.addColorStop(1, encima ? '#1c120a' : '#0e0b08');
+  ctx.fillStyle = g; placa(); ctx.fill(); ctx.shadowBlur = 0;
+  // luz de arriba y sombra de abajo (el bisel), y el filo
+  ctx.fillStyle = 'rgba(255,220,160,0.07)'; ctx.fillRect(x + c, y + 1, w - c * 2, Math.max(1, h * 0.36));
+  ctx.lineWidth = 1; ctx.strokeStyle = '#000'; placa(); ctx.stroke();
+  const fg = ctx.createLinearGradient(x, y, x + w, y); const oro = o.activo === false ? '90,80,60' : encima ? '240,190,100' : '150,118,66';
+  fg.addColorStop(0, `rgba(${oro},0.25)`); fg.addColorStop(0.5, `rgba(${oro},1)`); fg.addColorStop(1, `rgba(${oro},0.25)`);
+  ctx.strokeStyle = fg; ctx.beginPath(); ctx.moveTo(x + c + 1, y + 1.5); ctx.lineTo(x + w - c - 1, y + 1.5); ctx.moveTo(x + c + 1, y + h - 1.5); ctx.lineTo(x + w - c - 1, y + h - 1.5); ctx.stroke();
+  // los rombos de los costados
+  const rb = (rx: number) => { const ry = y + h / 2, q = encima ? 3.5 : 2.5; ctx.fillStyle = encima ? '#ffb050' : `rgb(${oro})`; ctx.beginPath(); ctx.moveTo(rx, ry - q); ctx.lineTo(rx + q, ry); ctx.lineTo(rx, ry + q); ctx.lineTo(rx - q, ry); ctx.closePath(); ctx.fill(); };
+  if (w > 90) { rb(x + 9); rb(x + w - 9); }
+  ctx.restore();
+  texto(s, x + w / 2, y + h / 2 + (o.tam ?? 14) * 0.35, { tam: o.tam ?? 14, alin: 'center', color: o.activo === false ? '#6a6050' : o.color ?? (encima ? '#fff0c0' : '#d8c8a0'), fuente: TITULO });
   return encima && E.clicIzq;
 }
 

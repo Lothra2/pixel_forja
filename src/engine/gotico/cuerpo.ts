@@ -35,6 +35,7 @@ M.cu_piel_roja = { rampa: ['#170604', '#2c0b07', '#44110a', '#5e180e', '#792114'
 M.cu_piel_gris = { rampa: ['#121214', '#202024', '#303036', '#424149', '#55545d', '#696872', '#7e7d87'], ruido: 0.16, escala: 0.4 };
 M.cu_piel_azul = { rampa: ['#0b1018', '#141d2b', '#1f2c40', '#2b3c56', '#384e6c', '#486283', '#5a779a'], ruido: 0.1, escala: 0.4 };
 M.cu_ojo = { rampa: ['#060505', '#120e0c', '#201a16'], ruido: 0, escala: 1 };
+M.cu_ojo_blanco = { rampa: ['#6a625a', '#a89c8e', '#d8cec0'], ruido: 0, escala: 1 };
 M.cu_ojo_brasa = { rampa: ['#a0300c', '#e06818', '#ffb840', '#fff0a0'], ruido: 0, escala: 1, emite: true };
 M.cu_ojo_hielo = { rampa: ['#2060b0', '#50a0f0', '#b0e0ff', '#f0fbff'], ruido: 0, escala: 1, emite: true };
 M.cu_ojo_verde = { rampa: ['#207020', '#40c040', '#a0ff80'], ruido: 0, escala: 1, emite: true };
@@ -683,10 +684,11 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: st
       // (antes era un solo bulto: a la escala de la selección se leía como una manopla)
       const lat = nor(cruz(b.d2, [0, 0, 1])), n = nor(cruz(b.d2, lat)), ej: [V3, V3, V3] = [b.d2, lat, n], f = fino;
       const largo = len(sub(b.mano, b.mun));
-      cs.push(bulto(mez(b.mun, b.mano, 0.5), [largo * 0.62 + inf, 1.2 * f * A + inf, 0.75 * S + inf], { ejes: ej, mat }));
-      cs.push(bulto(add(b.mano, b.d2, 0.15 * S), [0.85 * S + inf, 1.3 * f * A + inf, 0.85 * S + inf], { ejes: ej, mat, k: 1.1 }));
-      const p0 = add(add(b.mun, b.d2, 0.5 * S), lat, 0.9 * f * A * b.s), p1 = add(add(add(b.mun, b.d2, 1.7 * S), lat, 1.45 * f * A * b.s), n, 0.35 * S);
-      cs.push(hueso(p0, p1, 0.5 * S + inf, 0.38 * S + inf, o));
+      // (una mano es más ancha que la muñeca y casi tan larga como la cara: más fina que el antebrazo se leía como un muñón)
+      cs.push(bulto(mez(b.mun, b.mano, 0.55), [largo * 0.8 + inf, 1.75 * f * A + inf, 1.0 * S + inf], { ejes: ej, mat }));
+      cs.push(bulto(add(b.mano, b.d2, 0.55 * S), [1.35 * S + inf, 1.9 * f * A + inf, 1.2 * S + inf], { ejes: ej, mat, k: 1.1, tono: 0.06 }));
+      const p0 = add(add(b.mun, b.d2, 0.5 * S), lat, 1.3 * f * A * b.s), p1 = add(add(add(b.mun, b.d2, 2.1 * S), lat, 2.1 * f * A * b.s), n, 0.4 * S);
+      cs.push(hueso(p0, p1, 0.7 * S + inf, 0.52 * S + inf, o));
     }
   }
   for (const p of e.piernas) {

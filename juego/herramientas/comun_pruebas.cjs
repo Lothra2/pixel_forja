@@ -13,8 +13,8 @@ async function entrar(vista, clase, nivel, URL = process.env.URL || 'http://127.
   const L = await p.evaluate(() => { const c = document.getElementById('juego'); const r = c.getBoundingClientRect(); return { k: r.width / c.width, l: r.left, t: r.top, W: c.width, H: c.height }; });
   const tactil = vista !== 'pc';
   const tap = async (x, y) => { if (tactil) await p.touchscreen.tap(L.l + x * L.k, L.t + y * L.k); else await p.mouse.click(L.l + x * L.k, L.t + y * L.k); };
-  if (L.W >= 760) { const bw = Math.min(210, (L.W - 120) / 4 - 12); await tap(L.W / 2 - (bw * 4 + 36) / 2 + bw / 2, L.H - 73); } else await tap(L.W / 2, L.H * 0.62 + 19);
-  await p.waitForTimeout(800); await tap(L.W / 2 + 240, L.H * 0.35 + 99);
+  // el menú de la portada: Continuar entra directo con el héroe guardado
+  { const c = await p.evaluate(() => window.__menuFilas && window.__menuFilas.continuar); await tap(c[0], c[1]); }
   for (let i = 0; i < 80; i++) { await p.waitForTimeout(400); const e = await p.evaluate(() => window.__estado()); if (e === 'juego') break; if (e === 'entreacto') await tap(L.W / 2, L.H / 2); }
   return { b, p, L, tap, errs, tactil };
 }

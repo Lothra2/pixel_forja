@@ -275,24 +275,88 @@ export function dibujarFondoMenu(t: number) {
   brasas(t, 30);
   vineta();
 }
-export function menuPrincipal(t: number, hayPartidas: boolean): string | null {
-  // la portada de la Forja; mientras baja, el fondo de siempre
+/** Estado del menú de la portada: qué renglón está encendido y cuánto lleva así (para que la raya crezca y la brasa prenda). */
+const menuP = { sel: 0, k: [0, 0, 0, 0, 0, 0], t0: -1, ult: 0 };
+/**
+ * El menú de la portada: una columna a la izquierda, sobre la franja oscura del camposanto, sin tapar la catedral.
+ * Cada renglón es un título grabado; el encendido lleva una brasa viva a su lado, se dora y le crece una raya debajo.
+ * Arriba de todo, Continuar: tu último héroe de pie junto a su fuego, a un toque de volver a jugar.
+ */
+export function menuPrincipal(t: number, hayPartidas: boolean, ultimo?: DatosHeroe | null): string | null {
   const pt = dibujarPortada(performance.now() / 1000);
-  // mientras la portada no llega: negro con brasas (nunca el título viejo)
   if (!pt) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); brasas(t, 30); return null; }
-  let y = pt ? pt.yBotones : H * 0.44; let r: string | null = null;
-  const alfa = pt ? pt.botones : 1;
-  if (alfa <= 0) return null;
-  // con la portada, los botones van en fila en la franja oscura de abajo, sobre el cementerio, sin tapar la catedral
-  const fila = !!pt && W >= 760; const bw = fila ? Math.min(210, (W - 120) / 4 - 12) : 260; let bx = W / 2 - (fila ? (bw * 4 + 36) / 2 : 130);
-  if (fila) y = H - 92;
-  const b = (s: string, id: string, activo = true) => { ctx.save(); ctx.globalAlpha = alfa; const ok = boton(s, bx, y, bw, 38, { activo, tam: 16 }); ctx.restore(); if (ok && alfa > 0.6) r = id; if (fila) bx += bw + 12; else y += 50; };
-  b(T('Jugar', 'Play'), 'jugar');
-  b(T('Ver la intro', 'Watch intro'), 'intro');
-  b(T('Opciones', 'Options'), 'opciones');
-  b(IDI ? 'Español' : 'English', 'idioma');
-  void hayPartidas;
-  texto(T('Un juego hecho en casa para la familia Gutierrez', 'A homemade game for the Gutierrez family'), W / 2, H - 20, { alin: 'center', tam: 11, color: '#6a5a40' });
+  const alfa = pt.botones; if (alfa <= 0) { menuP.t0 = -1; return null; }
+  if (menuP.t0 < 0) menuP.t0 = t;
+  const dt = Math.min(0.05, Math.max(0, t - menuP.ult)); menuP.ult = t;
+  const filas: { id: string; s: string; sub?: string }[] = [];
+  if (ultimo) filas.push({ id: 'continuar', s: T('Continuar', 'Continue'), sub: `${ultimo.nombre} · ${TT(CLASES.find((c) => c.id === ultimo.clase)!.nombre)} · ${T('Nivel', 'Level')} ${ultimo.nivel} · ${T('Acto', 'Act')} ${ultimo.acto}` });
+  filas.push({ id: 'jugar', s: hayPartidas ? T('Héroes', 'Heroes') : T('Nueva partida', 'New game') });
+  filas.push({ id: 'intro', s: T('Ver la intro', 'Watch intro') });
+  filas.push({ id: 'opciones', s: T('Opciones', 'Options') });
+  filas.push({ id: 'idioma', s: IDI ? 'Español' : 'English' });
+  const angosto = W < 760, tam = Math.max(17, Math.min(25, H * 0.034)), paso = Math.round(tam * 2.05), altoSub = ultimo ? Math.round(tam * 0.95) : 0;
+  const alto = filas.length * paso + altoSub, ancho = Math.min(W - 40, Math.max(300, tam * 15));
+  const x0 = angosto ? Math.round(W / 2 - ancho / 2) : Math.round(Math.max(28, W * 0.065)), y0 = Math.round(Math.min(H - alto - 46, Math.max(H * 0.5, H - alto - 70)));
+  let r: string | null = null;
+  ctx.save(); ctx.globalAlpha = alfa;
+  // el paño: una sombra que se deshace hacia la derecha, con un filo de oro viejo a la izquierda y sus dos remates
+  const pg = ctx.createLinearGradient(x0 - 26, 0, x0 + ancho + 60, 0);
+  pg.addColorStop(0, 'rgba(4,2,2,0.86)'); pg.addColorStop(0.62, 'rgba(6,3,2,0.6)'); pg.addColorStop(1, 'rgba(6,3,2,0)');
+  ctx.fillStyle = pg; ctx.fillRect(x0 - 26, y0 - 22, ancho + 86, alto + 40);
+  const filo = ctx.createLinearGradient(0, y0 - 22, 0, y0 + alto + 18);
+  filo.addColorStop(0, 'rgba(200,150,70,0)'); filo.addColorStop(0.5, 'rgba(214,168,88,0.95)'); filo.addColorStop(1, 'rgba(200,150,70,0)');
+  ctx.fillStyle = filo; ctx.fillRect(x0 - 14, y0 - 22, 2, alto + 40);
+  const rombo = (x: number, y: number, q: number, c: string) => { ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x, y - q); ctx.lineTo(x + q, y); ctx.lineTo(x, y + q); ctx.lineTo(x - q, y); ctx.closePath(); ctx.fill(); };
+  rombo(x0 - 13, y0 - 22, 5, '#d8aa5a'); rombo(x0 - 13, y0 + alto + 18, 5, '#d8aa5a');
+  // quién está encendido: el que tiene el puntero encima; si ninguno, el último que lo tuvo (o el primero)
+  let y = y0;
+  filas.forEach((fl, n) => {
+    const h = paso + (n === 0 && fl.sub ? altoSub : 0), enc = dentro(x0 - 16, y, ancho + 30, h);
+    if (enc) menuP.sel = n;
+    const act = menuP.sel === n;
+    menuP.k[n] = Math.max(0, Math.min(1, menuP.k[n] + (act ? dt * 5.5 : -dt * 4)));
+    const k = suave(menuP.k[n]), entra = suave(Math.max(0, Math.min(1, (t - menuP.t0 - n * 0.09) / 0.45)));
+    const tx = x0 + 26 + k * 10 - (1 - entra) * 26, ty = y + Math.round(tam * 1.18), grande = n === 0 && !!fl.sub;
+    ctx.globalAlpha = alfa * entra;
+    // el fondo del encendido: una franja tibia que se apaga hacia la derecha
+    if (k > 0.01) { const fg = ctx.createLinearGradient(x0 - 12, 0, x0 + ancho, 0); fg.addColorStop(0, `rgba(190,90,30,${0.26 * k})`); fg.addColorStop(1, 'rgba(190,90,30,0)'); ctx.fillStyle = fg; ctx.fillRect(x0 - 12, y + 3, ancho + 12, h - 6); }
+    // la brasa: un rombo que late, con su halo y dos chispas que suben
+    if (k > 0.01) {
+      const bx = x0 + 6, by = ty - tam * 0.34, lat = 0.75 + 0.25 * Math.sin(t * 9 + n) + 0.1 * Math.sin(t * 23);
+      const hg = ctx.createRadialGradient(bx, by, 0, bx, by, 20 * k); hg.addColorStop(0, `rgba(255,150,50,${0.55 * k * lat})`); hg.addColorStop(1, 'rgba(255,120,30,0)'); ctx.fillStyle = hg; ctx.fillRect(bx - 22, by - 22, 44, 44);
+      rombo(bx, by, 5.5 * k, '#ff8a2a'); rombo(bx, by, 2.6 * k, '#fff0b0');
+      for (let c = 0; c < 3; c++) { const u = (t * 0.9 + c * 0.37 + n * 0.2) % 1; ctx.fillStyle = `rgba(255,${170 + c * 25},90,${(1 - u) * 0.9 * k})`; ctx.fillRect(Math.round(bx + Math.sin(u * 7 + c * 2) * 5), Math.round(by - 6 - u * 26), 2, 2); }
+    }
+    // el título: grabado (sombra dura abajo), dorado y con resplandor cuando está encendido
+    ctx.font = `700 ${Math.round(tam * (grande ? 1.16 : 1))}px ${TITULO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    const S = fl.s.toUpperCase().split('').join(' ');
+    ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillText(S, tx + 1, ty + 2);
+    if (k > 0.01) { ctx.shadowColor = `rgba(255,140,40,${0.85 * k})`; ctx.shadowBlur = 16 * k; }
+    const tg = ctx.createLinearGradient(0, ty - tam, 0, ty + 2);
+    tg.addColorStop(0, k > 0.5 ? '#fff3c8' : '#d6c6a0'); tg.addColorStop(0.55, k > 0.5 ? '#f0c060' : '#b09a70'); tg.addColorStop(1, k > 0.5 ? '#b0702a' : '#7a6848');
+    ctx.fillStyle = tg; ctx.fillText(S, tx, ty); ctx.shadowBlur = 0;
+    const wt = ctx.measureText(S).width;
+    // la raya que crece debajo, con su rombo en la punta
+    if (k > 0.01) { const lg = ctx.createLinearGradient(tx, 0, tx + wt * k, 0); lg.addColorStop(0, 'rgba(230,180,90,0.95)'); lg.addColorStop(1, 'rgba(230,180,90,0.15)'); ctx.fillStyle = lg; ctx.fillRect(tx, ty + 7, wt * k, 1.5); rombo(tx + wt * k + 5, ty + 7.5, 2.6, `rgba(240,200,110,${k})`); }
+    if (fl.sub) { ctx.font = `500 ${Math.round(tam * 0.56)}px ${TITULO}`; ctx.fillStyle = k > 0.5 ? '#e8c890' : '#9a8a68'; ctx.fillText(fl.sub, tx + 1, ty + Math.round(tam * 0.95)); }
+    ctx.globalAlpha = alfa;
+    ((window as any).__menuFilas ??= {})[fl.id] = [x0 + ancho / 2, y + h / 2];
+    if (enc && E.clicIzq && alfa > 0.6) { r = fl.id; Sonido.efecto('click'); }
+    y += h;
+  });
+  // tu héroe junto al menú: de pie, alumbrado desde abajo por su fuego
+  if (ultimo && !angosto) {
+    const fs = cuadrosHeroe(ultimo.clase, 'quieto', 'so');
+    if (fs.length) {
+      const hx = x0 + ancho + 46, hy = y0 + altoSub + paso + 34, esc = Math.max(1.5, Math.min(2.2, H / 380));
+      const lg = ctx.createRadialGradient(hx, hy, 4, hx, hy, 120); lg.addColorStop(0, `rgba(255,130,40,${0.34 + 0.06 * Math.sin(t * 7)})`); lg.addColorStop(1, 'rgba(255,110,30,0)');
+      ctx.fillStyle = lg; ctx.fillRect(hx - 130, hy - 130, 260, 200);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.ellipse(hx, hy, 30 * esc * 0.5, 9 * esc * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.imageSmoothingEnabled = false; dibujar(ctx, fs[Math.floor(t * 6) % fs.length], hx, hy, esc);
+    }
+  }
+  ctx.restore();
+  texto(T('Un juego hecho en casa para la familia Gutierrez', 'A homemade game for the Gutierrez family'), angosto ? W / 2 : W - 24, H - 18, { alin: angosto ? 'center' : 'right', tam: 11, color: '#7a6a4c' });
   return r;
 }
 

@@ -158,6 +158,7 @@ function pista(id: string, txt: [string, string]) {
 }
 
 async function empezarPartida(d: DatosHeroe) {
+  try { localStorage.setItem('marca.ultimo', String(d.id)); } catch { /* nada */ }
   olvidarZonas();
   // atajos: los que no tengan, se llenan con las habilidades aprendidas
   while (d.atajos.length < 10) d.atajos.push(null);
@@ -626,7 +627,11 @@ function paso(dt: number) {
     }
     case 'menu': {
       if (musicaMenuEn && tiempo >= musicaMenuEn) { musicaMenuEn = 0; Sonido.musica('menu'); }
-      const r = menuPrincipal(tiempo, heroes.length > 0);
+      // Continuar: el último héroe con el que se jugó (o el que más horas lleva)
+      let ultId = ''; try { ultId = localStorage.getItem('marca.ultimo') ?? ''; } catch { /* nada */ }
+      const ult = heroes.find((q) => String(q.id) === ultId) ?? [...heroes].sort((a, b) => (b.jugado ?? 0) - (a.jugado ?? 0))[0] ?? null;
+      const r = menuPrincipal(tiempo, heroes.length > 0, ult);
+      if (r === 'continuar' && ult) { E.clicIzq = false; empezarPartida(JSON.parse(JSON.stringify(ult))); break; }
       dibujarCursor('senalar');
       if (r === 'jugar') { estado = heroes.length ? 'seleccion' : 'crear'; selClase = null; tEstado = 0; }
       if (r === 'intro') { estado = 'intro'; introT = 0; tEstado = 0; precargarCine('intro', 0); Sonido.musica('intro'); }
