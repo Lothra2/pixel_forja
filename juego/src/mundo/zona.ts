@@ -973,6 +973,26 @@ function costa(k: Constructor, tema: string) {
   bordeCueva(k, ab, 'bor_risco', e + '_', (i) => !!fuera[i]);
 }
 
+/** Derrubio a lo largo de las dos orillas de cada túnel de mina (la fila del frente de cada baldosa de pasillo), nunca en el centro. */
+function orillaTunel(k: Constructor, suelo: Uint8Array, sala: Uint8Array) {
+  const z = k.z, r = k.r, { W, tw, th } = z;
+  const pen = REGISTRO.find((d) => d.id === 'bor_risco'); if (!pen) return;
+  const bajas = pen.variantes.filter((v) => v.startsWith('paramo_baja')), medias = pen.variantes.filter((v) => v.startsWith('paramo_media'));
+  const puestos: { o: ObjZ; i: number }[] = [];
+  const regiones = () => { const v = new Uint8Array(W * z.H); let n = 0; for (let i0 = 0; i0 < v.length; i0++) { if (v[i0] || z.bloq[i0]) continue; n++; const pila = [i0]; v[i0] = 1; while (pila.length) { const i = pila.pop()!, x = i % W, y = (i - x) / W; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= W || Y >= z.H) continue; const j = Y * W + X; if (!v[j] && !z.bloq[j]) { v[j] = 1; pila.push(j); } } } } return n; };
+  const antes = regiones();
+  const pon = (x: number, y: number) => { const i = y * W + x; if (z.bloq[i] || k.reserva[i] || r() > 0.5) return; const vs = r() < 0.12 ? medias : bajas; const o = k.poner(pen, x + 0.3, y + 0.3, vs[Math.floor(r() * vs.length)], true); if (o) { z.bloq[i] = 1; puestos.push({ o, i }); } };
+  const piso = (bx: number, by: number) => bx >= 0 && by >= 0 && bx < tw && by < th && !!suelo[by * tw + bx];
+  for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) {
+    if (!suelo[by * tw + bx] || sala[by * tw + bx]) continue;
+    // solo las orillas que dan a roca; el centro (3 celdas) queda siempre libre
+    if (!piso(bx + 1, by)) for (let y = by * 5; y < by * 5 + 5; y++) pon(bx * 5 + 4, y);
+    if (!piso(bx, by + 1)) for (let x = bx * 5; x < bx * 5 + 5; x++) pon(x, by * 5 + 4);
+    if (!piso(bx - 1, by)) for (let y = by * 5; y < by * 5 + 5; y++) if (r() < 0.5) pon(bx * 5, y);
+    if (!piso(bx, by - 1)) for (let x = bx * 5; x < bx * 5 + 5; x++) if (r() < 0.5) pon(x, by * 5);
+  }
+  if (regiones() !== antes) { const fuera = new Set(puestos.map((q) => q.o)); z.objetos = z.objetos.filter((o) => !fuera.has(o)); for (const q of puestos) z.bloq[q.i] = 0; }
+}
 const ESCOMBRO_TEMA: Record<string, string> = { tumba: 'desierto', templo: 'selva', santuario: 'infierno', abismo: 'infierno', celestial_interior: 'celestial', catedral_ahogada: 'ahogada', mina: 'paramo' };
 function escombroFrente(k: Constructor, suelo: Uint8Array, estilo: string) {
   const z = k.z, r = k.r, { W, tw, th } = z;
@@ -1070,6 +1090,9 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   }
   // muros: en los bordes de atrás (hacia -x y -y) de cada baldosa con suelo
   const opcionesMuro: [[string, string[]], [string, string[]]][] = [[t.muroX ?? ['mon_muro', ['izq']], t.muroY ?? ['mon_muro', ['der']]], ...(t.murosAlt ?? [])];
+  // la mitad de las mazmorras de obra va con la sillería nueva de la Forja (muro_obra) en el estilo de su tema
+  const estObra = ESCOMBRO_TEMA[def.tema] ?? 'cementerio', panos = ['liso', 'liso', 'pilastras', 'arco_ciego', 'pilastras', 'roto'];
+  if (!t.organica && !t.islas && REGISTRO.some((d) => d.id === 'muro_obra') && r() < 0.5) opcionesMuro.splice(0, opcionesMuro.length, [['muro_obra', panos.map((q) => `${estObra}_${q}`)], ['muro_obra', panos.map((q) => `${estObra}_${q}_y`)]]);
   const [[mx, vx], [my, vy]] = opcionesMuro[Math.floor(r() * opcionesMuro.length)];
   const defX = t.islas || abierto ? undefined : REGISTRO.find((d) => d.id === mx), defY = t.islas || abierto ? undefined : REGISTRO.find((d) => d.id === my);
   if (t.islas) islas(k, t.islas, suelo, sala);
@@ -1092,6 +1115,8 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   }
   // el frente de las mazmorras de obra (hacia la cámara) no lleva muro: en vez de un piso cortado a regla, escombro y roca
   // caída del tema a lo largo de esos bordes, que estrecha y desordena el filo
+  // en las minas los túneles rectos llevan derrubio a los dos lados (queda libre el centro, por donde van los rieles)
+  if (t.rieles && !abierto) orillaTunel(k, suelo, sala);
   if (!abierto && !t.islas && !(globalThis as any).__sinEscombro) escombroFrente(k, sala, ESCOMBRO_TEMA[def.tema] ?? 'cementerio'); // (solo en las salas: en un pasillo podría cerrar el paso)
   // entrada (primer cuarto) y fondo (último)
   const c0 = orden[0], cN = orden[orden.length - 1];

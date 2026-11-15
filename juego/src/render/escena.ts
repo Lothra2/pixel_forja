@@ -227,6 +227,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
     dibujar(ctx, q, px, py);
   }
+  gobernar(dt);
   if (!(window as any).__sinMatiz) matizSuelo(j, bx0, bx1, by0, by1);
   // cavernas: la roca maciza se pinta negra encima del piso, por tramos de celdas seguidas (los peñascos del contorno van después, encima)
   if (z.hueco) {
@@ -953,12 +954,14 @@ function matizSuelo(j: Juego, bx0: number, bx1: number, by0: number, by1: number
     }
     g.putImageData(im, 0, 0);
   }
+  if (calidadMundo.nivel > 0) {
   ctx.save();
   const [ox, oy] = aPant(0, 0);
   ctx.globalCompositeOperation = 'multiply'; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   ctx.setTransform(ctx.getTransform().multiply(new DOMMatrix([16, 8, -16, 8, ox, oy])));
   ctx.drawImage(matizCv, 0, 0);
   ctx.restore();
+  }
   // detalles sueltos: se pintan una vez por baldosa en un lienzo propio y después solo se copian
   for (let by = by0; by <= by1; by++) for (let bx = bx0; bx <= bx1; bx++) {
     if (!z.pisos[by * z.tw + bx]) continue;
@@ -974,9 +977,10 @@ function detalleBaldosa(z: Juego['zona'], bx: number, by: number): HTMLCanvasEle
   // donde la baldosa vecina es de otro piso, ese piso entra en esta por manchas irregulares a lo largo del borde (la
   // textura de cada piso se repite por baldosa, así que dibujada aquí continúa sin costura): se acaban los parches cuadrados
   const VIVO = /agua|lava|arcano|pentagrama/;
-  if (!VIVO.test(p.id)) for (const [dx, dy, x1, y1, x2, y2] of [[0, -1, 88, 8, 168, 48], [1, 0, 168, 48, 88, 88], [0, 1, 88, 88, 8, 48], [-1, 0, 8, 48, 88, 8]]) {
+  for (const [dx, dy, x1, y1, x2, y2] of [[0, -1, 88, 8, 168, 48], [1, 0, 168, 48, 88, 88], [0, 1, 88, 88, 8, 48], [-1, 0, 8, 48, 88, 8]]) {
     const X = bx + dx, Y = by + dy; if (X < 0 || Y < 0 || X >= z.tw || Y >= z.th) continue;
-    const o = z.pisos[Y * z.tw + X]; if (!o || o.id === p.id || VIVO.test(o.id) || !(o.id < p.id)) continue;
+    // (el agua y la lava reciben siempre la orilla del vecino: así la poza no es un rombo)
+    const o = z.pisos[Y * z.tw + X]; if (!o || o.id === p.id || VIVO.test(o.id) || !(VIVO.test(p.id) || o.id < p.id)) continue;
     const q = cuadrosPiso(o.id, variantePiso(o.id, o.v, bx, by))[0]; if (!q) continue; // (con la fase de ESTA baldosa: así continúa el dibujo)
     if (!g) { c = document.createElement('canvas'); c.width = 176; c.height = 96; g = c.getContext('2d')!; }
     g.save(); g.beginPath();
@@ -1017,6 +1021,18 @@ function detalleBaldosa(z: Juego['zona'], bx: number, by: number): HTMLCanvasEle
   }
   detalles.set(idx, c); return c;
 }
+// ------------------------------------------------------------------ gobernador de calidad
+// Si el aparato no da (cuadros por debajo de ~38 por segundo durante 4 s seguidos), se baja un escalón lo más caro de
+// lo nuevo, y otro si sigue sin dar. No vuelve a subir en la sesión (para que no ande saltando).
+//   2: todo   1: mitad de lluvia, charcos sin ondas y sin bruma   0: además, sin el matiz que multiplica el piso
+export const calidadMundo = { nivel: 2, lento: 0, espera: 0 };
+function gobernar(dt: number) {
+  const c = calidadMundo; if ((window as any).__calidad !== undefined) { c.nivel = (window as any).__calidad; return; }
+  if (c.nivel <= 0 || dt <= 0) return;
+  if (c.espera > 0) { c.espera -= dt; return; }
+  if (dt > 1 / 38 && dt < 0.25) c.lento += dt; else c.lento = Math.max(0, c.lento - dt * 2);
+  if (c.lento > 4) { c.nivel--; c.lento = 0; c.espera = 6; }
+}
 // ------------------------------------------------------------------ la lluvia
 // Lluvia de verdad, en dos capas. En el piso: charcos fijos del mapa que reflejan y se llenan de ondas, y cada gota que
 // cae revienta en una coronita con salpicaduras. En el aire: dos cortinas de agua a distinta distancia que el viento
@@ -1039,10 +1055,10 @@ function lluviaSuelo(j: Juego, dt: number, t: number, aP: (x: number, y: number)
     ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
     // el reflejo del cielo y las ondas de las gotas que le caen
     ctx.strokeStyle = `rgba(150,175,215,${0.16 + 0.1 * Math.sin(t * 2 + h * 900)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(px - r * 0.2, py - r * 0.12, r * 0.45, r * 0.16, 0, Math.PI, Math.PI * 1.9); ctx.stroke();
-    for (let k = 0; k < 2; k++) { const f = (t * (0.9 + k * 0.35) + h * 500 + k * 0.5) % 1, rr = r * (0.15 + f * 0.7); ctx.strokeStyle = `rgba(170,195,230,${0.4 * (1 - f)})`; ctx.beginPath(); ctx.ellipse(px + (k ? r * 0.25 : -r * 0.2), py + (k ? -r * 0.08 : r * 0.06), rr, rr * 0.5, 0, 0, Math.PI * 2); ctx.stroke(); }
+    if (calidadMundo.nivel >= 2) for (let k = 0; k < 2; k++) { const f = (t * (0.9 + k * 0.35) + h * 500 + k * 0.5) % 1, rr = r * (0.15 + f * 0.7); ctx.strokeStyle = `rgba(170,195,230,${0.4 * (1 - f)})`; ctx.beginPath(); ctx.ellipse(px + (k ? r * 0.25 : -r * 0.2), py + (k ? -r * 0.08 : r * 0.06), rr, rr * 0.5, 0, 0, Math.PI * 2); ctx.stroke(); }
   }
   // gotas que revientan en el piso
-  const porSeg = (E.tactil ? 170 : 300) * (0.75 + 0.5 * rafaga);
+  const porSeg = (E.tactil ? 170 : 300) * (0.75 + 0.5 * rafaga) * (calidadMundo.nivel >= 2 ? 1 : 0.5);
   for (let n = porSeg * dt + Math.random(); n >= 1; n--) {
     const sx = Math.random() * W, sy = Math.random() * H, [wx, wy] = aM(sx, sy);
     if (piso(wx, wy)) salpicones.push({ x: wx, y: wy, t: 0, d: 0.22 + Math.random() * 0.14, g: Math.random() });
@@ -1064,7 +1080,8 @@ function lluviaSuelo(j: Juego, dt: number, t: number, aP: (x: number, y: number)
 function lluviaAire(dt: number, t: number) {
   // el viento sopla por ráfagas: inclina las gotas y las apura
   rafaga = Math.max(0, Math.min(1, 0.5 + 0.5 * Math.sin(t * 0.37) + 0.3 * Math.sin(t * 1.3 + 2)));
-  const n = E.tactil ? 190 : 340, incl = 0.16 + 0.3 * rafaga;
+  const n = Math.round((E.tactil ? 190 : 340) * (calidadMundo.nivel >= 2 ? 1 : 0.55)), incl = 0.16 + 0.3 * rafaga;
+  if (chorros.length > n) chorros.length = n;
   while (chorros.length < n) chorros.push({ x: Math.random() * (W + 300), y: Math.random() * H, v: 0.7 + Math.random() * 0.6, l: 10 + Math.random() * 14, c: Math.random() < 0.3 ? 1 : 0 });
   ctx.save(); ctx.lineCap = 'butt';
   for (const capa of [0, 1]) {
@@ -1080,7 +1097,7 @@ function lluviaAire(dt: number, t: number) {
     ctx.stroke();
   }
   // bruma de agua que barre baja con cada ráfaga
-  if (rafaga > 0.55) { const a = (rafaga - 0.55) * 0.16, x = W - ((t * 220) % (W + 500)); const gb = ctx.createLinearGradient(x, 0, x + 380, 0); gb.addColorStop(0, 'rgba(170,185,215,0)'); gb.addColorStop(0.5, `rgba(170,185,215,${a})`); gb.addColorStop(1, 'rgba(170,185,215,0)'); ctx.fillStyle = gb; ctx.fillRect(x, 0, 380, H); }
+  if (rafaga > 0.55 && calidadMundo.nivel >= 2) { const a = (rafaga - 0.55) * 0.16, x = W - ((t * 220) % (W + 500)); const gb = ctx.createLinearGradient(x, 0, x + 380, 0); gb.addColorStop(0, 'rgba(170,185,215,0)'); gb.addColorStop(0.5, `rgba(170,185,215,${a})`); gb.addColorStop(1, 'rgba(170,185,215,0)'); ctx.fillStyle = gb; ctx.fillRect(x, 0, 380, H); }
   // relámpago: dos fogonazos seguidos y el trueno un instante después
   proxRayo -= dt;
   if (proxRayo <= 0) { proxRayo = 14 + Math.random() * 22; relampago = 0.5; setTimeout(() => Sonido.efecto('trueno', { vol: 0.35 + Math.random() * 0.2 }), 350 + Math.random() * 900); }
