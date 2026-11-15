@@ -908,7 +908,10 @@ const TINTA: Record<string, [string, string]> = { rojo: ['#8a0808', '#c81818'], 
 function muerteBrutal(j: Juego, m: Monstruo, g?: Golpe) {
   const h = j.heroe, o = j as any, hueso = sangraHueso(m), pal = paletaDe(m), [c1, c2] = TINTA[pal], crit = !!(g as any)?.fueCrit, rev = !!(m as any).reventado;
   const fx = g?.fuente?.x ?? h.x, fy = g?.fuente?.y ?? h.y, dx = m.x - fx, dy = m.y - fy, l = Math.hypot(dx, dy) || 1, ang = Math.atan2(dy / l, dx / l), esc = m.escala ?? 1;
-  if (hueso) {
+  // (lo que muere por un elemento no sangra: se quema, se parte en hielo, se deshace. La sangre es del acero)
+  const seco = !!(m as any).mElem && (m as any).mElem !== 'sangre' && !rev;
+  if (seco) { /* el cuerpo y sus partículas los pone la muerte por elemento */ }
+  else if (hueso) {
     // el esqueleto se desarma: astillas y huesos que saltan en abanico
     if (j.particulas.length < 1000) for (let i = 0; i < 16; i++) { const a = ang + (R() - 0.5) * 1.6, v = 2 + R() * 5; j.particulas.push({ x: m.x, y: m.y, z: 20 * esc + R() * 20, vx: Math.cos(a) * v, vy: Math.sin(a) * v, vz: 50 + R() * 130, t: 0, dur: 0.9 + R() * 0.7, color: R() < 0.5 ? '#d8d0b8' : '#a89c80', tam: 2 + R() * 3, grav: 320, tipo: 'sangre' } as any); }
     particulas(j, m.x, m.y, 5, 'humo', '#8a8474', 0.9, 24 * esc);
@@ -922,7 +925,7 @@ function muerteBrutal(j: Juego, m: Monstruo, g?: Golpe) {
     if (crit && !rev) { const gibs: Gib[] = (o.gibs ??= []); const v = 3 + R() * 3, a = ang + (R() - 0.5) * 0.5; gibs.push({ id: 'gore_gib_craneo', pal: PAL_GIB[pal], x: m.x, y: m.y, z: 44 * esc, vx: Math.cos(a) * v, vy: Math.sin(a) * v, vz: 120 + R() * 80, ang: R() * 8, va: (R() - 0.5) * 34, t: 0, vida: 20 + R() * 20 }); sonar(j, 'desgarro', m.x, m.y, 0.8); }
   }
   // sangre en el lente: cuando revienta o cae de un crítico pegado a ti
-  if (!hueso && (rev || crit) && dist(m.x, m.y, h.x, h.y) < 2.6) o.lente = { t: j.t, sem: R() * 100, n: rev ? 10 : 6, color: c1 };
+  if (!hueso && !seco && (rev || crit) && dist(m.x, m.y, h.x, h.y) < 2.6) o.lente = { t: j.t, sem: R() * 100, n: rev ? 10 : 6, color: c1 };
   // rachas: varias muertes seguidas
   o.racha = j.t - (o.rachaT ?? -9) < 2.4 ? (o.racha ?? 0) + 1 : 1; o.rachaT = j.t;
   const RACHA: Record<number, [[string, string], string, number]> = { 3: [['¡Triple!', 'Triple!'], '#ffd070', 0.2], 5: [['¡Carnicería!', 'Carnage!'], '#ff9040', 0.35], 8: [['¡MATANZA!', 'SLAUGHTER!'], '#ff5030', 0.5], 12: [['¡EXTERMINIO!', 'EXTERMINATION!'], '#ff2020', 0.7] };
@@ -941,8 +944,21 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
     return;
   }
   if (m.dueno) { despedidaInvocado(j, m); j.cadaveres++; return; }
-  // la muerte de pixelfx (el ánima que sube, el hielo que revienta, la explosión del jefe...)
-  const mp = muertePfx(m as any, g?.elem, R()); if (mp) { (m as any).pfxMuerte = { id: mp, t0: j.t }; efecto(j, 'pfx:' + mp, m.x, m.y, 0, m.escala ?? 1, 0, 4.5); }
+  // la muerte según lo que lo mató: el fuego lo carboniza, el frío lo congela y lo parte, el rayo lo sacude, el veneno
+  // lo derrite, la sombra lo deshace en humo negro y la luz lo consume (el cuerpo y las partículas los pone el dibujo:
+  // ver escena y energia). Acá queda la marca en el piso.
+  { const me: string | undefined = m.congelado > 0 ? 'frio' : (m as any).quema > 0 ? 'fuego' : g?.elem && g.elem !== 'fisico' ? g.elem : !g && m.veneno > 0 ? 'veneno' : !g && m.sangrado > 0 ? 'sangre' : undefined;
+    if (me && !m.def.jefe) {
+      (m as any).mElem = me; const re = Math.max(0.7, m.escala ?? 1);
+      if (me === 'fuego') ponerMancha(j, { x: m.x, y: m.y, r: 0.9 * re, color: '#120c06', t: 0, tipo: 'quemado' });
+      else if (me === 'frio') ponerMancha(j, { x: m.x, y: m.y, r: 1.1 * re, color: '#a8d8f0', t: 0, tipo: 'hielo' });
+      else if (me === 'veneno') ponerMancha(j, { x: m.x, y: m.y, r: 0.3 * re, rmax: 1.2 * re, color: '#3a7a14', t: 0, tipo: 'veneno' } as any);
+      else if (me === 'rayo') ponerMancha(j, { x: m.x, y: m.y, r: 0.6 * re, color: '#16120c', t: 0, tipo: 'quemado' });
+      if (me === 'frio' || me === 'rayo') sonar(j, me === 'frio' ? 'hueso_cruje' : 'rayo', m.x, m.y, 0.6);
+    } }
+  // la muerte de pixelfx (el ánima que sube, el hielo que revienta, la explosión del jefe...). La nube que desintegra
+  // el cuerpo no va cuando murió por un elemento: ahí el cuerpo se ve consumirse
+  let mp = muertePfx(m as any, g?.elem, R()); if ((m as any).mElem && mp && /desintegrar|alma_sube|implosion/.test(mp)) mp = null; if (mp) { (m as any).pfxMuerte = { id: mp, t0: j.t }; efecto(j, 'pfx:' + mp, m.x, m.y, 0, m.escala ?? 1, 0, 4.5); }
   // condena del osario: el maldito revienta al morir
   if (m.maldicion?.condena && !(m as any).usado) {
     usarCadaver(m);
@@ -952,8 +968,9 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   sonar(j, m.def.sonido === 'hueso' ? 'muerte_esqueleto' : m.calidad >= 3 ? 'rugido_jefe' : 'muerte_monstruo', m.x, m.y);
   // el charco crece despacio bajo el cuerpo
   const rm = (0.8 + R() * 0.8) * m.escala * ((m as any).reventado ? 1.4 : 1);
-  ponerMancha(j, { x: m.x, y: m.y, r: rm * 0.25, rmax: rm, color: colorSangre(m), t: 0, tipo: 'sangre', forma: sangraHueso(m) ? undefined : 'charco', sem: Math.floor(R() * 8), pal: paletaDe(m) });
-  particulas(j, m.x, m.y, 14, 'sangre', m.def.sonido === 'hueso' ? '#d8d0b8' : '#7a0808', 1.4, 30);
+  const secoM = !!(m as any).mElem && (m as any).mElem !== 'sangre' && !(m as any).reventado;
+  if (!secoM) { ponerMancha(j, { x: m.x, y: m.y, r: rm * 0.25, rmax: rm, color: colorSangre(m), t: 0, tipo: 'sangre', forma: sangraHueso(m) ? undefined : 'charco', sem: Math.floor(R() * 8), pal: paletaDe(m) });
+    particulas(j, m.x, m.y, 14, 'sangre', m.def.sonido === 'hueso' ? '#d8d0b8' : '#7a0808', 1.4, 30); }
   muerteBrutal(j, m, g);
   if (m.def.jefe || m.calidad >= 3) { ((j as any).caidas ??= []).push({ x: m.x, y: m.y, t: 0, prox: 0.15, esc: Math.max(1, m.escala ?? 1), elem: m.def.elem ?? 'fisico', pal: paletaDe(m), hueso: sangraHueso(m) }); j.congela = Math.max(j.congela ?? 0, 0.22); }
   // experiencia (con castigo si el monstruo es muy bajo)

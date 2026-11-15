@@ -742,7 +742,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   let i: number;
   if (e.tipo === 'monstruo' && (m as any).surgiendo > 0) i = Math.max(0, fs.length - 1 - Math.floor((1.2 - (m as any).surgiendo) * 7));
   else if ((e as any).estado === 'surgir') return;
-  else i = fr(acc, e.t, e.dur, e, acc === 'correr' && e.tipo !== 'heroe' && !cuadrosMonstruo(m.def.sprite, 'correr', e.dir).length ? 'caminar' : acc, fs.length);
+  else i = fr(acc, e.muerto && (e as any).mElem === 'frio' ? Math.max(0, e.t - 0.45) : e.muerto && (e as any).mElem === 'rayo' ? Math.max(0, e.t - 0.55) : e.t, e.dur, e, acc === 'correr' && e.tipo !== 'heroe' && !cuadrosMonstruo(m.def.sprite, 'correr', e.dir).length ? 'caminar' : acc, fs.length);
   if (e.tipo === 'monstruo' && m.estado === 'surgir') return;
   // los pies clavados: un cuadro de paso vale para un punto exacto del recorrido, pero se muestra mientras el cuerpo sigue
   // avanzando (hasta 6 píxeles) y el pie apoyado se corría con él, para volver de un salto en el cuadro siguiente. El
@@ -790,16 +790,33 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (!e.muerto && e.tipo === 'monstruo' && (m.fase ?? 0) >= 1 && (m.def.jefe || m.calidad >= 2) && m.def.sprite !== 'jefe_ozmaren') { ctx.save(); ctx.globalAlpha = 0.22 + 0.2 * Math.sin(tiempo * 6); for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) dibujarTenido(ctx, q, px + ox, py + oy, '#ff2a14', 1, esc); ctx.restore(); }
   // Ozmaren sobre su lava: un borde rojo brillante en la silueta (detrás del cuerpo) para que se despegue del piso
   if (!e.muerto && e.tipo === 'monstruo' && m.def.sprite === 'jefe_ozmaren') { ctx.save(); ctx.globalAlpha = 0.5; for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) dibujarTenido(ctx, q, px + ox, py + oy, '#ff5a20', 1, esc); ctx.restore(); }
+  // la muerte por elemento se ve en el cuerpo: carbonizado, hecho hielo, sacudido por el rayo (blanco y negro, como una
+  // radiografía), derretido en verde, negro de sombra o blanco de luz
+  const mE = e.muerto ? ((e as any).mElem as string | undefined) : undefined, tm = e.tMuerto;
+  let tinM: [string, number] | null = null, escY = 1;
+  let brM: [string, number] | null = null, alM = 1;
+  if (mE === 'fuego') { tinM = ['#1a0f08', Math.min(0.82, tm / 1.1)]; brM = ['#ff6a18', 0.42 * Math.max(0, 1 - tm / 3.2) * (0.6 + 0.4 * Math.sin(tiempo * 17 + e.id))]; }
+  else if (mE === 'frio') tinM = tm < 0.45 ? ['#dcf6ff', 0.78] : ['#9fd8ff', Math.max(0.45, 0.78 - (tm - 0.45) * 0.3)];
+  else if (mE === 'rayo') { if (tm < 0.55) { const f = Math.floor(tm * 24) % 2; tinM = [f ? '#ffffff' : '#080812', 0.94]; px += f ? 2 : -2; } else tinM = ['#1a1612', Math.min(0.6, 0.3 + (tm - 0.55))]; }
+  else if (mE === 'veneno') { tinM = ['#3f9a1c', Math.min(0.62, tm / 0.8)]; escY = 1 - 0.42 * Math.min(1, tm / 1.6); }
+  else if (mE === 'sombra') { tinM = ['#12061e', Math.min(0.9, tm / 0.35)]; brM = ['#8a3cff', 0.4 * Math.max(0, 1 - tm / 1.6)]; alM = Math.max(0.4, 1 - Math.max(0, tm - 0.4) * 0.5); }
+  else if (mE === 'luz') { tinM = ['#fff2c8', tm < 0.5 ? 0.85 : Math.max(0.3, 0.85 - (tm - 0.5) * 0.5)]; brM = ['#ffe9a0', 0.6 * Math.max(0, 1 - tm / 1.5)]; alM = Math.max(0.35, 1 - Math.max(0, tm - 0.5) * 0.55); }
+  if (mE === 'frio') brM = ['#bfe8ff', 0.22 * Math.max(0, 1 - tm / 4)];
+  if (mE === 'rayo' && tm >= 0.55) brM = ['#9ab8ff', 0.3 * Math.max(0, 1 - (tm - 0.55) / 0.8)];
+  if (escY !== 1) { ctx.save(); ctx.translate(px, py); ctx.scale(1 + (1 - escY) * 0.35, escY); ctx.translate(-px, -py); }
   const cambio = e.tipo === 'heroe' ? performance.now() / 1000 - cambioVisible : 9;
   // nunca una silueta en lugar del sprite: el brillo de equipo nuevo es un velo de 25 % que se apaga, y el destello del
   // golpe un blanco de 30 % como mucho en los primeros 70 ms (destello arranca en 0.12 s), para todos los monstruos
   if (cambio < 0.45) ok = dibujarTenido(ctx, q, px, py, '#fff2d0', 0.25 * (1 - cambio / 0.45), esc);
   else if (e.destello > 0.05) ok = dibujarTenido(ctx, q, px, py, '#ffffff', 0.3 * Math.min(1, (e.destello - 0.05) / 0.07), esc);
   // los estados tiñen sin tapar el sprite: como mucho 40 % (salvo petrificado, que es piedra)
+  else if (tinM) { if (alM < 1) ctx.globalAlpha = alM; ok = dibujarTenido(ctx, q, px, py, tinM[0], tinM[1], esc); ctx.globalAlpha = 1;
+    if (brM && brM[1] > 0.01) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = brM[1]; dibujarTenido(ctx, q, px, py, brM[0], 1, esc); ctx.restore(); } }
   else if (tinteEst) ok = dibujarTenido(ctx, q, px, py, tinteEst.color, Math.min(tinteEst.fuerza >= 0.8 ? tinteEst.fuerza : 0.4, tinteEst.fuerza) * (e.frio > 0 && !(e.congelado > 0) ? 0.6 : 1), esc);
   else if (e.tinte) ok = dibujarTenido(ctx, q, px, py, e.tinte, e.tipo === 'invocado' ? 0.35 : e.tipo === 'heroe' ? 0.22 : 0.3, esc);
   else if (e.muerto && e.tMuerto > 60) { ctx.globalAlpha = Math.max(0.25, 1 - (e.tMuerto - 60) / 400); ok = dibujar(ctx, q, px, py, esc); ctx.globalAlpha = 1; }
   else ok = dibujar(ctx, q, px, py, esc);
+  if (escY !== 1) ctx.restore();
   // realce del personaje: el sprite viene pintado en clave baja y encima cae la oscuridad de la zona, así que el cuerpo
   // quedaba como una mancha parda al lado de un piso bien iluminado. Se suma el sprite sobre sí mismo (en su lugar del
   // orden de dibujo: lo que lo tapa lo sigue tapando): sube la luz y el contraste, los cantos de metal saltan y lo oscuro
