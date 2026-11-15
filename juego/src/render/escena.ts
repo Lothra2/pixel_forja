@@ -17,6 +17,7 @@ import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
 import { cuadrosVivos, cuadrosFinos, cambioVisible, FINO_RUMBOS } from '../motor/pintor';
 import { energiaSuelo, energiaAire } from './energia';
+import { dibujarMarca } from './marcas';
 import { R, rng } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { calorOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
@@ -263,6 +264,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   for (const m of j.manchas) {
     const [px, py] = aPant(m.x, m.y); if (px < -60 || px > W + 60 || py < -40 || py > H + 40) continue;
     if (m.forma) { dibujarSangre(m, px, py); continue; }
+    if (m.tipo !== 'sangre' && !(window as any).__sinMarcas) { dibujarMarca(ctx, m, px, py, j.t); continue; }
     ctx.save(); ctx.globalAlpha = m.tipo === 'quemado' ? 0.55 : 0.75; ctx.fillStyle = m.color;
     ctx.beginPath(); ctx.ellipse(px, py, m.r * 16, m.r * 8, 0, 0, Math.PI * 2); ctx.fill();
     if (m.tipo === 'sangre' && m.r > 0.5) { ctx.beginPath(); ctx.ellipse(px + m.r * 9, py + 3, m.r * 6, m.r * 3, 0, 0, Math.PI * 2); ctx.fill(); }
@@ -620,7 +622,10 @@ function dibujarRaw(raw: any[], x: number, y: number) {
 }
 function dibujarEfecto(e: Efecto, _t: number) {
   if (e.id === 'arco_cadena') return;
-  if (e.id.startsWith('pfx:')) { const [px, py] = aPant(e.x, e.y); dibujarPfx(ctx, e.id.slice(4), e.t, px, py - (e.z ?? 0), { dir: e.dir, escala: e.escala }); return; }
+  if (e.id.startsWith('pfx:')) { const [px, py] = aPant(e.x, e.y);
+    // (un efecto cortado antes de su final se apaga en su último cuarto de segundo en vez de desaparecer de golpe)
+    const corte = (e as any).corte ? Math.max(0, Math.min(1, ((e.dur ?? 9) - e.t) * 4)) : 1; if (corte < 1) ctx.globalAlpha = corte;
+    dibujarPfx(ctx, e.id.slice(4), e.t, px, py - (e.z ?? 0), { dir: e.dir, escala: e.escala }); ctx.globalAlpha = 1; return; }
   const meta = manifiesto().wm?.[e.id];
   const [px, py] = aPant(e.x, e.y);
   if (!meta) return;

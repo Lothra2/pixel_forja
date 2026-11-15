@@ -950,15 +950,17 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   { const me: string | undefined = m.congelado > 0 ? 'frio' : (m as any).quema > 0 ? 'fuego' : g?.elem && g.elem !== 'fisico' ? g.elem : !g && m.veneno > 0 ? 'veneno' : !g && m.sangrado > 0 ? 'sangre' : undefined;
     if (me && !m.def.jefe) {
       (m as any).mElem = me; const re = Math.max(0.7, m.escala ?? 1);
-      if (me === 'fuego') ponerMancha(j, { x: m.x, y: m.y, r: 0.9 * re, color: '#120c06', t: 0, tipo: 'quemado' });
-      else if (me === 'frio') ponerMancha(j, { x: m.x, y: m.y, r: 1.1 * re, color: '#a8d8f0', t: 0, tipo: 'hielo' });
-      else if (me === 'veneno') ponerMancha(j, { x: m.x, y: m.y, r: 0.3 * re, rmax: 1.2 * re, color: '#3a7a14', t: 0, tipo: 'veneno' } as any);
-      else if (me === 'rayo') ponerMancha(j, { x: m.x, y: m.y, r: 0.6 * re, color: '#16120c', t: 0, tipo: 'quemado' });
+      if (me === 'fuego') ponerMancha(j, { x: m.x, y: m.y, r: 1.25 * re, color: '#120c06', t: 0, tipo: 'quemado' });
+      else if (me === 'frio') ponerMancha(j, { x: m.x, y: m.y, r: 1.5 * re, color: '#a8d8f0', t: 0, tipo: 'hielo' });
+      else if (me === 'veneno') ponerMancha(j, { x: m.x, y: m.y, r: 0.3 * re, rmax: 1.5 * re, color: '#3a7a14', t: 0, tipo: 'veneno' } as any);
+      else if (me === 'rayo') ponerMancha(j, { x: m.x, y: m.y, r: 0.85 * re, color: '#16120c', t: 0, tipo: 'quemado' });
       if (me === 'frio' || me === 'rayo') sonar(j, me === 'frio' ? 'hueso_cruje' : 'rayo', m.x, m.y, 0.6);
     } }
   // la muerte de pixelfx (el ánima que sube, el hielo que revienta, la explosión del jefe...). La nube que desintegra
   // el cuerpo no va cuando murió por un elemento: ahí el cuerpo se ve consumirse
-  let mp = muertePfx(m as any, g?.elem, R()); if ((m as any).mElem && mp && /desintegrar|alma_sube|implosion/.test(mp)) mp = null; if (mp) { (m as any).pfxMuerte = { id: mp, t0: j.t }; efecto(j, 'pfx:' + mp, m.x, m.y, 0, m.escala ?? 1, 0, 4.5); }
+  let mp = muertePfx(m as any, g?.elem, R()); if ((m as any).mElem && mp && /desintegrar|alma_sube|implosion/.test(mp)) mp = null; if (mp) { (m as any).pfxMuerte = { id: mp, t0: j.t };
+    // (el hielo que revienta se corta al segundo: después sus esquirlas se aplastaban en una raya a lo ancho de la pantalla)
+    const hel = mp === 'fx_muerte_helada'; efecto(j, 'pfx:' + mp, m.x, m.y, 0, m.escala ?? 1, 0, hel ? 1.05 : 4.5); if (hel) (j.efectos[j.efectos.length - 1] as any).corte = true; }
   // condena del osario: el maldito revienta al morir
   if (m.maldicion?.condena && !(m as any).usado) {
     usarCadaver(m);
