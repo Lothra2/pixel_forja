@@ -856,15 +856,19 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       plantar(p, [-0.3, 0.6], [5, 5], [24, 24]);
       const atras = (s: number): [number, number, number] => [-1, s, -0.2];
       actuar(p, [
-        K(0, { bajar: 7, torso: 6, ladeo: 0, giroTorso: 0, giroCadera: 0, lateral: 0, ladeoCadera: 0, respira: 0.3, manoD: [2, 7.4, 29.5], manoI: [2, -7.4, 29.5], codoD: atras(0.4), codoI: atras(-0.4), cabeza: 0, giroCabeza: 0 }),
-        K(0.07, { manoI: [11, -6, 40], codoI: [0, -1, -0.3] }),
+        // (empieza y termina de pie, los puños a la cintura: es la postura en que reposa en la pantalla de creación.
+        //  Antes pasaba todo el tiempo en cuclillas, también quieto, y parecía sentado en el aire)
+        K(0, { bajar: 1.2, torso: 1, ladeo: 0, giroTorso: 0, giroCadera: 0, lateral: 0, ladeoCadera: 0, respira: 0.3, manoD: [2, 7.4, 31.5], manoI: [2, -7.4, 31.5], codoD: atras(0.4), codoI: atras(-0.4), cabeza: 0, giroCabeza: 0 }),
+        K(0.05, { bajar: 0.6, torso: 0, respira: 0.9 }),
+        K(0.1, { bajar: 7, torso: 6, respira: 0.2, manoD: [2, 7.4, 29.5], manoI: [11, -6, 40], codoI: [0, -1, -0.3] }),
         K(0.14, { bajar: 7.6, lateral: 1.4, ladeoCadera: 2, giroCadera: 12, giroTorso: 24, ladeo: 1.5, manoI: [7, 0, 58.5], codoI: [0.1, -1, 0.35], cabeza: -2, giroCabeza: -22 }),
         K(0.2, { manoI: [9, -11, 47], codoI: [0, -1, 0] }),
         K(0.26, { bajar: 6.4, lateral: -1, ladeoCadera: -2, giroCadera: -14, giroTorso: -30, ladeo: -2, manoD: [23, -1, 45], codoD: [0, 1, -0.3], manoI: [2, -7.4, 30.5], codoI: atras(-0.4), cabeza: 2, giroCabeza: 26, respira: 0 }, true),
         K(0.42, { bajar: 7.8, lateral: 0, ladeoCadera: 0, giroCadera: 0, giroTorso: 0, ladeo: 0, torso: 4, manoD: [12, 9, 37], manoI: [12, -9, 37], codoD: [-0.2, 1, -0.5], codoI: [-0.2, -1, -0.5], cabeza: 2, giroCabeza: 0, respira: 0.8 }),
         K(0.55, { bajar: 6.4, lateral: 1, ladeoCadera: 2, giroCadera: 14, giroTorso: 30, ladeo: 2, manoI: [22, 1, 44], codoI: [0, -1, -0.3], manoD: [2, 7.4, 30.5], codoD: atras(0.4), cabeza: 1, giroCabeza: -26, respira: 0 }, true),
         K(0.72, { bajar: 5, torso: 0, lateral: 0, ladeoCadera: 0, giroCadera: 0, giroTorso: 0, ladeo: 0, manoD: [10, 1.2, 44], manoI: [10, -1.2, 44], codoD: [0, 1, -0.6], codoI: [0, -1, -0.6], cabeza: 6, giroCabeza: 0, respira: 1 }),
-        K(0.86, { bajar: 6.6, torso: 5, manoD: [10, 4, 34], manoI: [10, -4, 34], codoD: [-0.3, 1, -0.6], codoI: [-0.3, -1, -0.6], cabeza: 1, respira: 0.1 }),
+        K(0.84, { bajar: 2, torso: 3, manoD: [10, 1.2, 42], manoI: [10, -1.2, 42], codoD: [-0.2, 1, -0.6], codoI: [-0.2, -1, -0.6], cabeza: 8, respira: 0.4 }),
+        K(0.93, { bajar: 1.2, torso: 1, manoD: [5, 5, 35], manoI: [5, -5, 35], codoD: atras(0.4), codoI: atras(-0.4), cabeza: 0, respira: 0.2 }),
       ], u, { lagCab: 0.03, capa: 0.6 });
       break;
     }

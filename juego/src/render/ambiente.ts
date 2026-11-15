@@ -14,7 +14,9 @@ const temaDe = (j: Juego): string => (ZONAS[j.zona.id] as any)?.tema ?? '';
 export const ambienteCfg = { nivel: 2 };
 
 let zonaDe = '';
-const huellas: { x: number; y: number; t: number; ang: number; lado: number; clara: boolean }[] = [];
+const huellas: { x: number; y: number; t: number; ang: number; lado: number; clara: boolean; rgb?: string; vida?: number; k?: number }[] = [];
+/** Pasos que le quedan al héroe con las botas ensangrentadas (pisó donde acaba de caer alguien). */
+let pasosSangre = 0;
 const ultPaso = new Map<number, [number, number, number]>();
 const chapoteos: { x: number; y: number; t: number }[] = [];
 const ratas: { x: number; y: number; vx: number; vy: number; t: number }[] = [];
@@ -144,28 +146,42 @@ export function ambienteSuelo(j: Juego, dt: number, t: number, aP: AP, bx0: numb
     }
     ((window as any).__amb ??= {}).cuervos = posados;
   }
-  // ---- huellas: quien camina sobre nieve, arena o ceniza deja la pisada, que se va borrando
+  // ---- huellas: todo el que camina deja la pisada, que se va borrando. En lo blando (nieve, arena, tierra, pasto, barro,
+  // ceniza) se hunde; en la piedra solo queda si llueve (mojada) o si el héroe viene de pisar sangre (roja, una docena de pasos)
+  for (const m of j.monstruos) if (m.muerto && ((m as any).tMuerto ?? 9) < 0.5 && !m.dueno && Math.abs(m.x - h.x) + Math.abs(m.y - h.y) < 2.2) pasosSangre = 14;
+  const BLANDO: [RegExp, string, number][] = [[/nieve|hielo/, '70,90,120', 1], [/arena|desierto|arenisca/, '74,50,22', 0.9], [/tierra_infierno|infierno|ceniza/, '20,8,6', 1], [/pantano|selva/, '14,20,10', 1], [/tierra|campamento|paramo|cueva/, '30,20,10', 0.85], [/pasto/, '22,30,12', 0.7]];
   const marca = (e: Ent) => {
-    const p = pisoEn(j, e.x, e.y); if (!p || !/nieve|arena|tierra_infierno/.test(p.id)) return;
+    const p = pisoEn(j, e.x, e.y); if (!p) return;
+    const esH = e === (h as Ent), bl = BLANDO.find((b) => b[0].test(p.id));
+    const sangre = esH && pasosSangre > 0, mojado = !bl && z.lluvia && z.tipo !== 'mazmorra';
+    if (!bl && !sangre && !mojado) { ultPaso.delete(e.id); return; }
     const u = ultPaso.get(e.id);
     if (!u) { ultPaso.set(e.id, [e.x, e.y, 1]); return; }
-    const d = Math.hypot(e.x - u[0], e.y - u[1]); if (d < 0.5) return;
-    if (d < 3) huellas.push({ x: e.x, y: e.y, t: 0, ang: Math.atan2((e.x + e.y - u[0] - u[1]) / 2, e.x - e.y - u[0] + u[1]), lado: u[2], clara: p.id === 'nieve' });
+    const d = Math.hypot(e.x - u[0], e.y - u[1]); if (d < (esH ? 0.42 : 0.55)) return;
+    if (d < 3) {
+      const ang = Math.atan2((e.x + e.y - u[0] - u[1]) / 2, e.x - e.y - u[0] + u[1]), tam = Math.min(1.7, Math.max(0.8, (e as any).escala ?? 1));
+      if (sangre) { huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: '120,8,6', vida: 26, k: (pasosSangre / 14) * tam }); pasosSangre--; }
+      else if (bl) huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: /nieve|hielo/.test(p.id), rgb: bl[1], vida: 18, k: bl[2] * tam });
+      else huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: '8,10,14', vida: 5, k: 0.6 * tam });
+    }
     ultPaso.set(e.id, [e.x, e.y, -u[2]]);
-    if (huellas.length > (E.tactil ? 110 : 200)) huellas.splice(0, huellas.length - (E.tactil ? 110 : 200));
+    if (huellas.length > (E.tactil ? 130 : 240)) huellas.splice(0, huellas.length - (E.tactil ? 130 : 240));
   };
   if (!h.muerto) marca(h);
   for (const m of j.monstruos) if (!m.muerto && Math.abs(m.x - h.x) + Math.abs(m.y - h.y) < 16) marca(m);
   (window as any).__huellas = huellas.length;
   ((window as any).__amb ??= {}).ratas = ratas.length; (window as any).__amb.chapoteos = chapoteos.length;
   for (let i = huellas.length - 1; i >= 0; i--) {
-    const q = huellas[i]; q.t += dt; if (q.t > 16) { huellas.splice(i, 1); continue; }
+    const q = huellas[i], vida = q.vida ?? 16; q.t += dt; if (q.t > vida) { huellas.splice(i, 1); continue; }
     const [px, py] = aP(q.x, q.y); if (px < -8 || px > W + 8 || py < -8 || py > H + 8) continue;
-    // la pisada va a un costado de la línea de marcha (pie izquierdo, pie derecho)
-    const ox = -Math.sin(q.ang) * 2.6 * q.lado, oy = Math.cos(q.ang) * 1.3 * q.lado, a = 0.55 * (1 - q.t / 16);
-    ctx.fillStyle = q.clara ? `rgba(70,90,120,${a})` : `rgba(40,26,12,${a})`;
-    ctx.fillRect(Math.round(px + ox) - 2, Math.round(py + oy), 4, 2);
-    if (q.clara) { ctx.fillStyle = `rgba(240,248,255,${a * 0.7})`; ctx.fillRect(Math.round(px + ox) - 1, Math.round(py + oy) + 2, 3, 1); }
+    // la pisada va a un costado de la línea de marcha (pie izquierdo, pie derecho) y tiene forma de pie: planta y talón
+    const k = q.k ?? 1, ox = -Math.sin(q.ang) * 2.8 * q.lado, oy = Math.cos(q.ang) * 1.4 * q.lado, a = 0.6 * Math.min(1, k) * (1 - q.t / vida) ** 0.8;
+    const fx = px + ox, fy = py + oy, ca = Math.cos(q.ang), sa = Math.sin(q.ang), tm = Math.max(0.8, k);
+    ctx.fillStyle = `rgba(${q.rgb ?? '40,26,12'},${a})`;
+    ctx.beginPath(); ctx.ellipse(fx + ca * 1.2 * tm, fy + sa * 0.6 * tm, 2.5 * tm, 1.25 * tm, q.ang, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(fx - ca * 2.4 * tm, fy - sa * 1.2 * tm, 1.3 * tm, 0.9 * tm, q.ang, 0, Math.PI * 2); ctx.fill();
+    // en la nieve, el borde levantado que da la luz
+    if (q.clara) { ctx.fillStyle = `rgba(240,248,255,${a * 0.6})`; ctx.fillRect(Math.round(fx) - 2, Math.round(fy + 1.6 * tm), 4, 1); }
   }
   // ---- chapoteo: correr bajo la lluvia levanta agua en cada zancada
   if (z.lluvia && z.tipo !== 'mazmorra' && !h.muerto && (h.acc === 'correr' || h.acc === 'caminar')) {

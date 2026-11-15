@@ -194,7 +194,7 @@ function armarTomas() {
     const paso = Math.min(130, W / 9), pan = (0.5 - suave(k)) * paso * 0.8;
     const esc = Math.min(0.9, H / 520);
     CLASES.forEach((c, i) => {
-      const ret = cuadrosRetrato(c.id, 2); const q = ret.length ? ret[Math.floor(t * 11 + i) % ret.length] : cuadrosHeroe(c.id, 'quieto', 's')[0];
+      const ret = cuadrosRetrato(c.id, 2); const q = ret.length ? ret[cuadroPresentar(t + 40 - i * 0.9, ret.length, 6.2)] : cuadrosHeroe(c.id, 'quieto', 's')[0];
       const x = W / 2 + (i - 3.5) * paso + pan, y = H * 0.74 + (i % 2) * 14;
       const a = Math.min(1, Math.max(0, (t - i * 0.3) / 1.2));
       const luz = Math.min(1, Math.max(0, (t - 3 - i * 0.25) / 2));
@@ -488,6 +488,7 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
 
 // crear héroe: ver seleccion.ts
 export { dibujarCrear } from './seleccion';
+import { cuadroPresentar } from './seleccion';
 
 // ------------------------------------------------------------------ opciones
 const opcP = { agarra: '' };

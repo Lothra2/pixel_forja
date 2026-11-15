@@ -15,7 +15,7 @@ import { animClase, zancadaClase, zancadaCorrerMonstruo } from '../juego/anim';
 import ZANCADA_MONSTRUO from '../../../src/engine/gotico/datos/zancada_monstruos.json';
 import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
-import { cuadrosVivos, cambioVisible } from '../motor/pintor';
+import { cuadrosVivos, cuadrosFinos, cambioVisible, FINO_RUMBOS } from '../motor/pintor';
 import { R, rng } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { calorOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
@@ -103,6 +103,16 @@ const fr = (acc: string, t: number, dur: number, e?: Ent, accPies?: string, nRea
 };
 
 function framesHeroe(j: Juego, acc: string, dir: string): Cuadro[] {
+  // caminando o corriendo: el rumbo real en 16 (si ya está pintado y el cuerpo ya giró hasta ahí), para que no patine de lado
+  if ((acc === 'caminar' || acc === 'correr') && !(window as any).__sinFino) {
+    const ru = (j.heroe as any).rumbo as number | undefined;
+    if (ru !== undefined) {
+      const g = ((ru * 180) / Math.PI + 360) % 360, k = Math.round(g / (360 / FINO_RUMBOS)) % FINO_RUMBOS;
+      const gd = ['se', 's', 'so', 'o', 'no', 'n', 'ne', 'e'].indexOf(dir) * 45, dif = Math.abs(((k * (360 / FINO_RUMBOS) - gd + 540) % 360) - 180);
+      if (dif <= 34) { const f = cuadrosFinos(acc, k); if (f && f.length) { (window as any).__fino = k; return f; } }
+    }
+    (window as any).__fino = -1;
+  }
   const vivos = cuadrosVivos(acc, dir);
   if (vivos && vivos.length) return vivos;
   return cuadrosHeroe(j.heroe.d.clase, acc, dir);

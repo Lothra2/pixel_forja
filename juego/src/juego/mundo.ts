@@ -1933,6 +1933,8 @@ function moverHacia(j: Juego, e: Ent, tx: number, ty: number, vel: number, dt: n
   else if (pasable(j.zona, e.x, ny)) e.y = ny;
   else return true;
   e.recorrido = (e.recorrido ?? 0) + Math.hypot(e.x - x0, e.y - y0);
+  // hacia dónde va de verdad (el héroe se dibuja en 16 rumbos al caminar: ver escena)
+  if (e.x !== x0 || e.y !== y0) (e as any).rumbo = Math.atan2(e.y - y0, e.x - x0);
   return l <= paso + 0.01;
 }
 

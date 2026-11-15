@@ -348,7 +348,8 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
     const w = pesoReposo(f / cuadrosDe(acc, cu.presentacion));
     if (w > 0) P = reposar(cu, dir, acc, f, arma, izqTipo, P, w);
   }
-  const th = rad(RUMBO[dir]);
+  // (además de los ocho rumbos, acepta uno cualquiera en grados, 'r22.5': el juego pinta al héroe caminando en 16)
+  const th = rad(RUMBO[dir] ?? +String(dir).slice(1));
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
   const W: Fn = (fw, rt, up) => [F[0] * fw + R[0] * rt, F[1] * fw + R[1] * rt, up];
   // la caída de morir: el cuerpo gira alrededor de los pies hacia caidaDir (0 adelante, 180 de espaldas, ±90 de costado)

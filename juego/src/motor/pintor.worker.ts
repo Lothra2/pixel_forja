@@ -8,13 +8,15 @@ import { tinte } from '../../../src/engine/gotico/apariencia';
 function tenir(equipo: any) { for (const m of JSON.stringify(equipo).matchAll(/cu_tinte_(tela|cuero|metal)_([0-9a-f]{6})/g)) tinte('#' + m[2], m[1] as any); }
 
 self.onmessage = (ev: MessageEvent) => {
-  const { id, cuerpo, equipo, acc, dir, cuadros, calidad } = ev.data;
+  const { id, cuerpo, equipo, acc, dir, cuadros, calidad, base, clave } = ev.data;
   try {
     fijarCalidad(calidad ?? 1);
     tenir(equipo);
     const out: any[] = [];
     const bufs: ArrayBuffer[] = [];
-    for (let f = 0; f < cuadros; f++) {
+    // (`base`: los cuadros que la acción tiene en el motor; si se piden más, salen los intermedios: el motor acepta medios cuadros)
+    for (let i = 0; i < cuadros; i++) {
+      const f = base ? (i * base) / cuadros : i;
       const r = pintarEscena({ ...personajeEscena(cuerpo, equipo, dir, acc, f), sinSombra: true });
       const img = r.img;
       let x0 = img.w, y0 = img.h, x1 = -1, y1 = -1;
@@ -25,8 +27,8 @@ self.onmessage = (ev: MessageEvent) => {
       out.push({ w, h, ax: r.ancla[0] - x0, ay: r.ancla[1] - y0, data: d, hoja: hojaDe(esqueleto, aPantalla, cuerpo, equipo, dir, acc, f) });
       bufs.push(d.buffer as ArrayBuffer);
     }
-    (self as any).postMessage({ id, acc, dir, out }, bufs);
+    (self as any).postMessage({ id, acc, dir, out, clave }, bufs);
   } catch (e) {
-    (self as any).postMessage({ id, acc, dir, error: String(e) });
+    (self as any).postMessage({ id, acc, dir, clave, error: String(e) });
   }
 };

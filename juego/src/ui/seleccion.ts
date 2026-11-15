@@ -32,6 +32,17 @@ export function firmaRama(clase: string, rama: number): Habilidad | undefined {
 const parts: { x: number; y: number; vx: number; vy: number; t: number; d: number; c: string; s: number; atras?: boolean; ang?: number }[] = [];
 let ultima = -1, tCambio = 0, nivelVista = 0;
 /** La presentación 'sel' de la Forja: apagada hasta que llegue su luz de retrato definitiva (window.__sel = true la prueba). */
+/**
+ * Qué cuadro de la presentación toca: el gesto de la clase una vez, entero, y después el héroe reposa (respira entre el
+ * último cuadro y los dos primeros, que son la misma postura) unos segundos antes de repetirlo. En bucle seguido no paraba
+ * nunca y cansaba: un gesto vale porque después hay quietud.
+ */
+export function cuadroPresentar(tt: number, n: number, pausa = 5.5): number {
+  if (n <= 8) return Math.floor(tt * 8) % n;
+  const dur = n / 12, u = ((tt % (dur + pausa)) + dur + pausa) % (dur + pausa);
+  if (u < dur) return Math.min(n - 1, Math.floor(u * 12));
+  return [n - 1, 0, 1, 0][Math.floor((u - dur) * 2.4) % 4];
+}
 const USAR_SEL = false; // (la pose 'sel' encorvaba al héroe con los brazos cruzados y tapaba la mano: va la de retrato)
 /** Las partículas del aura en dos pasadas: `atras` se dibuja antes del héroe y la de adelante después. */
 function particulas(f: Ficha, cx: number, cy: number, dt: number, t: number, pasada: 'atras' | 'adelante') {
@@ -145,7 +156,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   const vista = nivelVista;
   const ret = cuadrosRetrato(c.id, vista);
   const esc = Math.min(1.3, (H * 0.56) / 240);
-  let q: Cuadro | undefined = ret.length ? ret[Math.floor((t - tCambio) * (ret.length > 8 ? 12 : 8)) % ret.length] : undefined;
+  let q: Cuadro | undefined = ret.length ? ret[cuadroPresentar(t - tCambio, ret.length)] : undefined;
   let escQ = esc;
   // la presentación de la Forja (grupo 'sel', al doble): la entrada al elegir la clase y después el reposo en bucle
   const sl = cuadrosSel(c.id, vista), ms = metaSel();

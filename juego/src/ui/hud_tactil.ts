@@ -288,15 +288,19 @@ export function dibujarHudTactil(j: Juego, t: number) {
     const zona = (x: number, y: number) => x < W * 0.42 && y > H * 0.38 && !Object.values(hud).some((r) => dentro(r[0], r[1], r[2], r[3]) && x >= r[0] && x <= r[0] + r[2]);
     if (E.clicIzq && !ui.sobreUI && zona(E.x, E.y)) joy = { x0: E.x, y0: E.y, activo: false, repath: 0 };
     // al soltar no se clava: da el último medio paso frenando
-    if (joy && !E.izq) { if (joy.activo && h.camino?.length) { const [cx, cy] = h.camino[0], l = Math.hypot(cx - h.x, cy - h.y) || 1, q = Math.min(0.45, l); h.camino = [[h.x + ((cx - h.x) / l) * q, h.y + ((cy - h.y) / l) * q]]; } joy = null; }
+    if (joy && !E.izq) { if (joy.activo && h.camino?.length) { const [cx, cy] = h.camino[0], l = Math.hypot(cx - h.x, cy - h.y) || 1, q = Math.min(0.45, l); h.camino = [[h.x + ((cx - h.x) / l) * q, h.y + ((cy - h.y) / l) * q]]; } joy = null; h.correr = true; }
     if (joy) {
       const dx = E.x - joy.x0, dy = E.y - joy.y0, dd = Math.hypot(dx, dy), rad = L(48);
-      if (!joy.activo && dd > L(14)) { joy.activo = true; h.objetivo = null; }
+      // (responde al primer movimiento del pulgar: 8 puntos, no 14)
+      if (!joy.activo && dd > L(8)) { joy.activo = true; h.objetivo = null; }
       if (joy.activo) {
         ui.sobreUI = true;
         joy.repath -= 1 / 60;
-        if (joy.repath <= 0 && dd > L(8)) {
-          joy.repath = 0.12;
+        // la palanca es sensible a cuánto la empujas: hasta el anillo de adentro camina, pasado el anillo corre
+        // (con un poco de holgura para que no cambie de paso a cada rato justo en el borde)
+        { const kk = dd / rad; if (h.correr ? kk < 0.56 : kk > 0.66) h.correr = !h.correr; }
+        if (joy.repath <= 0 && dd > L(5)) {
+          joy.repath = 0.08;
           // la dirección en pantalla, llevada al mundo desde donde está el héroe
           // la palanca es analógica: el héroe va hacia donde apuntas, no solo en ocho rumbos
           const a = Math.atan2(dy, dx);
@@ -309,7 +313,7 @@ export function dibujarHudTactil(j: Juego, t: number) {
         ctx.save();
         { const g = ctx.createRadialGradient(joy.x0, joy.y0, rad * 0.2, joy.x0, joy.y0, rad); g.addColorStop(0, 'rgba(0,0,0,0.18)'); g.addColorStop(1, 'rgba(0,0,0,0.46)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(joy.x0, joy.y0, rad, 0, Math.PI * 2); ctx.fill(); }
         ctx.strokeStyle = 'rgba(160,128,80,0.75)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(joy.x0, joy.y0, rad, 0, Math.PI * 2); ctx.stroke();
-        ctx.strokeStyle = 'rgba(200,164,100,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(joy.x0, joy.y0, rad * 0.62, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = h.correr ? 'rgba(255,190,90,0.7)' : 'rgba(200,164,100,0.34)'; ctx.lineWidth = h.correr ? 1.6 : 1; ctx.beginPath(); ctx.arc(joy.x0, joy.y0, rad * 0.62, 0, Math.PI * 2); ctx.stroke();
         ctx.fillStyle = 'rgba(220,186,120,0.6)'; for (let q = 0; q < 4; q++) { const a = q * Math.PI / 2; ctx.beginPath(); ctx.arc(joy.x0 + Math.cos(a) * rad * 0.82, joy.y0 + Math.sin(a) * rad * 0.82, 1.8, 0, Math.PI * 2); ctx.fill(); }
         const pr = L(21);
         ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.arc(kx, ky + 2, pr + 1, 0, Math.PI * 2); ctx.fill();
