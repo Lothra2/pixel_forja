@@ -365,13 +365,14 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
   const k = 0.5 - 0.5 * Math.cos(u * TAU), k2 = Math.sin(u * TAU);
   plantar(p, [-1.4, 2.2], [0.7, 1.5], [12, 18]);
   // contrapposto: el peso en la pierna derecha (cadera derecha arriba), los hombros compensan
-  p.bajar = 1 - 0.5 * k; p.torso = 4 - 1.5 * k; p.respira = k; p.hombros = [0.8 * k, 0.7 * k];
+  p.bajar = 1 - 0.5 * k; p.torso = 4 - 1.5 * k; p.respira = k; p.hombros = [0.3 * k, 0.3 * k];
   p.lateral = 0.75 + 0.15 * k; p.ladeoCadera = 2.4 + 0.3 * k; p.ladeo = -1.4 - 0.5 * k; p.giroCadera = -5; p.giroTorso = 3 + k;
   p.cabeza = 1.5 - 2 * k; p.giroCabeza = -4 + 3 * k2; p.ladeoCabeza = 2 - 1.2 * k;
   // (los brazos caen cerca del cuerpo y el pecho va arriba: con los brazos abiertos y el torso echado adelante el reposo
   // se leía encorvado, de gorila)
   p.torso = 2 - 1.5 * k; p.cabeza = -4.5 - 2 * k; // (la cabeza un poco levantada hacia la cámara: desde arriba, a nivel se ve solo pelo)
-  p.hombroD = [8 + 3 * k, 7, 20 + 5 * k, 8]; p.hombroI = [6 - 2 * k, 7, 16 + 4 * k, 10];
+  // (los brazos caen pegados al cuerpo y los hombros no se encogen: desde arriba, un brazo abierto se lee como un codo levantado)
+  p.hombroD = [8 + 3 * k, 4, 14 + 4 * k, 8]; p.hombroI = [6 - 2 * k, 4, 12 + 3 * k, 10];
   p.munecaD = 3 * k2;
   p.capa = [0.7 + 0.2 * k, 0.3 * k2]; p.pelo = [0.2 * k, 0.2 * k2];
   // a dos manos: el arma descansa al hombro; el puño derecho delante del pecho, cerca del regatón, el mango apoya
@@ -384,11 +385,11 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
   // los brazos estirados el reposo se leía tieso)
   if (arma === 'ballesta') { p.manoD = [9, 8.5, 33 + 0.6 * k]; p.armaD = [112 - 2 * k, 4]; p.codoD = [-0.6, 0.55, -0.6]; delete p.munecaD; }
   // el arco cuelga natural de la izquierda, la cuerda recta; la derecha descansa
-  if (arma === 'arco') { p.hombroI = [14 + 1.5 * k, 13, 24 + 2 * k, 0]; p.hombroD = [9 + 3 * k, 7, 24 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
+  if (arma === 'arco') { p.hombroI = [14 + 1.5 * k, 8, 24 + 2 * k, 0]; p.hombroD = [9 + 3 * k, 7, 24 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
   // la vara al costado y apenas atrás, con el remate afuera de la silueta de la cabeza (en diagonal, so y o, la vara
   // adelantada quedaba alineada con la cara y el remate la tapaba)
-  if (arma === 'baculo') { p.hombroD = [6 + 2 * k, 24, 56 + 3 * k, 0]; p.vara = [-4 + 1.5 * k2, 10]; }
-  if (arma === 'garras' || arma === 'nada') { p.hombroD = [16 + 3 * k, 14, 44 + 5 * k, 12]; p.hombroI = [14 + 2 * k, 14, 48 + 4 * k, 14]; }
+  if (arma === 'baculo') { p.hombroD = [6 + 2 * k, 16, 50 + 3 * k, 0]; p.vara = [-4 + 1.5 * k2, 10]; }
+  if (arma === 'garras' || arma === 'nada') { p.hombroD = [12 + 3 * k, 8, 30 + 4 * k, 10]; p.hombroI = [10 + 2 * k, 8, 32 + 4 * k, 12]; }
   // la respiración de cada clase (8 cuadros): cuánto se mueve el cuerpo al inspirar y hacia dónde va el peso
   switch (estilo) {
     case 'rugido': {
@@ -397,14 +398,14 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
       const j = jadeo(u);
       // (erguido: con el torso a 13° y la cabeza hundida el reposo se leía de gorila y la cara no se veía nunca; ahora
       // planta los pies abiertos, saca el pecho y levanta la cabeza: sigue jadeando pero de pie, como un guerrero)
-      p.bajar = 1.8 - 0.7 * j; p.torso = 4 - 2.5 * j; p.cabeza = -5 + 2 * j; p.respira = 0.1 + 0.9 * j;
-      p.hombros = [1.2 + 1.5 * j, 1.1 + 1.5 * j];
+      p.bajar = 1.8 - 0.7 * j; p.torso = 2 - 2 * j; p.cabeza = -7 + 2 * j; p.respira = 0.1 + 0.9 * j;
+      p.hombros = [0.3 + 0.8 * j, 0.3 + 0.8 * j];
       p.pasos = [-2.6, 3]; p.abre = [2.6, 2.4]; p.lateral = 0.3 + 0.25 * j; p.ladeoCadera = 1.5; p.ladeo = -1 - 0.6 * j;
       // el hacha baja y atrás junto a la cadera, como al andar (no cambia de postura al arrancar)
-      p.hombroI = [8 + 3 * j, 16, 20 + 6 * j, 10];
+      p.hombroI = [8 + 3 * j, 8, 18 + 5 * j, 10];
       if (arma === 'una') porteBerserker(p, 0, j, k2, 0, 0);
       else if (arma === 'dos') porteDosManos(p, 0, j, k2, 0, 0, true);
-      else p.hombroD = [10 + 4 * j, 16, 22 + 6 * j, 6];
+      else p.hombroD = [10 + 4 * j, 8, 20 + 5 * j, 6];
       p.capa = [0.9 + 0.4 * j, 0.2 * k2]; p.pelo = [0.5 * j, 0.3 * k2];
       break;
     }
@@ -421,7 +422,7 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
       // se mece en el aire
       p.puntillas = [0.45 + 0.15 * k, 0.45 + 0.15 * k]; p.bajar = 0.6 - 0.8 * k; p.torso = 1 - 1.2 * k;
       p.lateral = 0.8 + 0.2 * k; p.ladeoCadera = 2.8; p.ladeo = -1.6 - 0.6 * k; p.ladeoCabeza = 3 - 1.5 * k; p.abre = [0.4, 0.9]; p.pasos = [-0.8, 1.6];
-      if (arma !== 'baculo') p.hombroI = [16 + 3 * k, 22 + 2 * k2, 30 + 6 * k, 6];
+      if (arma !== 'baculo') p.hombroI = [12 + 3 * k, 11 + 2 * k2, 24 + 5 * k, 6];
       p.pelo = [0.4 + 0.3 * k, 0.4 * k2]; p.capa = [0.9 + 0.3 * k, 0.4 * k2];
       break;
     }
@@ -435,14 +436,14 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
       // alto y enjuto, apenas inclinado, quieto como una estatua (sin encoger los hombros: encogido se leía macizo);
       // respira lento y la mano libre, en garra, sube un poco con el aire
       p.torso += 5; p.cabeza -= 3; p.hombros = [0.35 + 0.3 * k, 0.55 + 0.3 * k]; p.bajar += 0.4;
-      if (arma !== 'dos' && arma !== 'baculo') p.hombroI = [22 + 3 * k, 12, 58 + 6 * k, 20];
+      if (arma !== 'dos' && arma !== 'baculo') p.hombroI = [14 + 3 * k, 8, 40 + 5 * k, 16];
       break;
     }
     case 'naturaleza': p.giroCabeza = -6 + 6 * k2; p.cabeza -= 2 * k; break;
     case 'frasco': {
       // nerviosa: el peso cambia de pierna dos veces por ciclo, los hombros arriba y la cabeza que mira a los lados a tirones
       const n2 = Math.sin(u * 2 * TAU), mira = Math.sign(Math.sin(u * TAU + 0.4)) * Math.min(1, Math.abs(Math.sin(u * TAU + 0.4)) * 3);
-      p.lateral = 0.6 * n2; p.ladeoCadera = 2 * n2; p.ladeo = -1.2 * n2; p.hombros = [0.7 + 0.3 * k, 0.6 + 0.3 * k];
+      p.lateral = 0.6 * n2; p.ladeoCadera = 2 * n2; p.ladeo = -1.2 * n2; p.hombros = [0.3 + 0.2 * k, 0.3 + 0.2 * k];
       p.giroCabeza = -4 + 16 * mira; p.ladeoCabeza = 4 - 2 * k; p.giroTorso = 3 + 2 * n2;
       break;
     }

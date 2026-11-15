@@ -315,8 +315,9 @@ const PIE_TALON = 1.6, PIE_PUNTA = 1.25;
  * Escala de la cabeza. Los héroes van con proporción heroica (unas 7 cabezas y cuarto de alto, como en los ARPG clásicos):
  * con la cabeza de siempre medían 6,3 cabezas y se veían cabezones, de muñeco.
  */
-const CABEZA_HEROE = +((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CABEZA_HEROE ?? 1.05);
-const escCab = (cu: Cuerpo) => cu.cabeza ?? (cu.presentacion ? CABEZA_HEROE : 1);
+const CABEZA_HEROE = +((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CABEZA_HEROE ?? 1.2);
+// (opción B de Rick: la cabeza 15 % más grande para que la cara se lea; la demás gente, un poco menos)
+const escCab = (cu: Cuerpo) => cu.cabeza ?? (cu.presentacion ? CABEZA_HEROE : 1 + (CABEZA_HEROE - 1) * 0.6);
 
 export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo, crudo = false, ajusteMano?: number, ajusteRodilla?: number): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
@@ -409,7 +410,8 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   const T: Fn = (fw, rt, up) => Wc(...Tl(fw, rt, up));
   const Pv: Fn = (fw, rt, up) => Wc(...pvL(fw, rt, up));
   const hombroZ = zc + 16.5 * S;
-  const cz = hombroZ + (3.2 + 4.4 * escCab(cu)) * S - (cu.joroba ?? 0) * 2 * S;
+  // (con 3.2 de cuello la cabeza quedaba metida entre los hombros: se lee el cuello cuando hay aire entre el mentón y el trapecio)
+  const cz = hombroZ + (5.0 + 4.4 * escCab(cu)) * S - (cu.joroba ?? 0) * 2 * S;
   const cabeza = rad(P.cabeza - (cu.joroba ?? 0) * 25), gCab = rad(P.giroCabeza ?? 0), lCab = rad(P.ladeoCabeza ?? 0);
   // la cabeza gira sobre el cuello, se ladea y cabecea; todo sobre el torso
   const cab: Fn = (fw, rt, up) => {
@@ -659,7 +661,7 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: st
     // trapecio del cuello al hombro y el deltoides sobre la cabeza del brazo
     const b = e.brazos.find((x) => x.s === s)!;
     const sube = (e.pose?.hombros?.[s > 0 ? 0 : 1] ?? 0) * S;
-    cs.push(hueso(T(-0.6 * S, s * 1.4 * A, hz + 3 * S + sube * 0.3), T(-0.2 * S, s * 5.4 * A, hz + 0.8 * S + sube), (1.7 + mu * 0.6) * A + inf, (1.4 + mu * 0.3) * A + inf, o));
+    cs.push(hueso(T(-0.6 * S, s * 1.4 * A, hz + 2.1 * S + sube * 0.3), T(-0.2 * S, s * 5.4 * A, hz + 0.5 * S + sube), (1.7 + mu * 0.6) * A + inf, (1.4 + mu * 0.3) * A + inf, o));
     cs.push(bulto(add(b.hom, b.d1, 1.4 * S), [(3.0 + mu * 0.6) * fino * A + inf, (2.5 + mu * 0.5) * fino * A + inf, (2.5 + mu * 0.5) * fino * A + inf], { eje: b.d1, mat }));
   }
   if (tiene('cuello')) cs.push(hueso(T(-0.3 * S, 0, hz + 0.4 * S), cab(0.2 * S, 0, e.cz - 2.6 * S), (1.9 + mu * 0.5) * S + inf, (1.7 + mu * 0.2) * S + inf, o));
