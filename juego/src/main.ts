@@ -38,6 +38,7 @@ function empezarCine(acto: number, despues: () => void, clave = claveCine(acto))
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, costoMana, DIR_VEC, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, anotarMapas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, nivelHab, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad, volverAEmpezar } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
+import { libreCerca } from './mundo/zona';
 import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA } from './mundo/actos';
 import { POBLACION, MONSTRUOS } from './datos/monstruos';
 import { GENTE } from './datos/npcs';
@@ -63,6 +64,8 @@ let pickEncima: Pick | null = null;
 
 // ------------------------------------------------------------------ guardado
 function cargarPartidas() { try { heroes = JSON.parse(localStorage.getItem('marca.heroes') ?? '[]'); } catch { heroes = []; } }
+/** Cuándo se guardó por última vez (para el aviso «Partida guardada»). */
+let guardadoEn = -1e9, avisoGuardado = -1e9;
 function guardarPartidas() {
   try { localStorage.setItem('marca.heroes', JSON.stringify(heroes)); } catch { /* sin espacio */ }
 }
@@ -73,12 +76,17 @@ function guardar() {
   const d = j.heroe.d;
   d.vidaActual = Math.max(1, j.heroe.vida); d.manaActual = j.heroe.mana;
   anotarMapas(j);
-  // se guarda en el pueblo del acto (las zonas se regeneran al volver)
+  // se guarda la zona y el punto exacto donde está: al volver a abrir el juego sigue ahí mismo (los mundos salen
+  // iguales para el mismo héroe y ciclo, así que el lugar existe; los monstruos de alrededor se despejan al cargar).
+  // Muerto, se guarda en el pueblo del acto.
   const i = heroes.findIndex((h) => h.id === d.id);
   const copia: DatosHeroe = JSON.parse(JSON.stringify(d));
-  if (ZONAS[copia.zona]?.tipo !== 'pueblo') copia.zona = PUEBLO_DE[copia.acto];
+  copia.zona = j.zona.id;
+  if (j.heroe.muerto || !ZONAS[copia.zona]) { copia.zona = PUEBLO_DE[copia.acto]; delete (copia as any).pos; }
+  else (copia as any).pos = [Math.round(j.heroe.x * 100) / 100, Math.round(j.heroe.y * 100) / 100];
   if (i >= 0) heroes[i] = copia; else heroes.unshift(copia);
   guardarPartidas(); guardarCofre();
+  guardadoEn = performance.now();
 }
 
 // ------------------------------------------------------------------ carga de atlas
@@ -167,6 +175,13 @@ async function empezarPartida(d: DatosHeroe) {
   ui.cofre = cargarCofre();
   const zid = ZONAS[d.zona] ? d.zona : PUEBLO_DE[d.acto] ?? 'a1_refugio';
   await irAZona(zid, 'centro');
+  // seguir donde quedó: el punto guardado, si todavía se puede pisar; lo que ronde cerca se despeja para no despertar rodeado
+  { const pos = (d as any).pos as [number, number] | undefined, jj = j!, z = jj.zona;
+    if (pos && z.id === d.zona && z.tipo !== 'pueblo') {
+      const [cx, cy] = libreCerca(z, pos[0], pos[1]);
+      if (Math.hypot(cx + 0.5 - pos[0], cy + 0.5 - pos[1]) < 6) { jj.heroe.x = cx + 0.5; jj.heroe.y = cy + 0.5; jj.heroe.camino = null; jj.heroe.destino = null; }
+      jj.monstruos = jj.monstruos.filter((m) => !!m.dueno || m.def.jefe || m.calidad >= 3 || Math.hypot(m.x - jj.heroe.x, m.y - jj.heroe.y) > 10);
+    } }
   pintarHeroe(d.clase, cuerpoDe(d.clase), equipoVisual(d), firmaVisual(d));
   if (!d.misiones.m1_hambre && d.nivel === 1) msg(j, ['Habla con el Maestre Odrán junto al fuego.', 'Speak with Master Odran by the fire.'], '#ffd080');
   // héroe nuevo: la carta del acto 1 antes de empezar
@@ -175,6 +190,8 @@ async function empezarPartida(d: DatosHeroe) {
 
 // ------------------------------------------------------------------ control del héroe
 let mantenerT = 0, derT = 0;
+/** El botón se apretó sobre un panel, una ficha o un botón: hasta que se suelte no cuenta como «mantener para caminar». */
+let presaEnMenu = false;
 /** El clic izquierdo sostenido empezó sobre un monstruo: si ese muere, sigue con el que esté bajo el cursor. */
 let mantenerMonstruo = false;
 /** Colchón de entrada: un clic de habilidad durante un golpe o un hechizo se guarda y sale apenas termina la animación. */
@@ -270,7 +287,7 @@ function controlar(jj: Juego, dt: number) {
       else if (p?.tipo === 'portal') (h as any).portal = true;
       else caminarA(jj, mx, my);
       if (h.recoger || h.usar || h.hablar || (h as any).salida || (h as any).portal) { const r = h.recoger ?? h.usar ?? h.hablar ?? (h as any).salida; if ((h as any).portal) { const pp = jj.zona.tipo === 'pueblo' ? jj.zona.entradas.portal : [jj.portal!.x, jj.portal!.y]; caminarA(jj, pp[0], pp[1]); } else if ((h as any).salida) { const [sx, sy] = puntoSalida(jj.zona, (h as any).salida); caminarA(jj, sx, sy); } else caminarA(jj, (r.x ?? r.cx + 0.5), (r.y ?? r.cy + 0.5)); }
-    } else if (E.izq && !h.objetivo && !h.recoger && !h.usar && !h.hablar && !(h as any).salida) {
+    } else if (E.izq && !presaEnMenu && !h.objetivo && !h.recoger && !h.usar && !h.hablar && !(h as any).salida) {
       mantenerT += dt;
       const bajoCursor = pickEncima?.tipo === 'monstruo' ? pickEncima.ref as Monstruo : null;
       if (E.shift) enSitio(jj, 'izq', mx, my, bajoCursor, false);
@@ -280,7 +297,7 @@ function controlar(jj: Juego, dt: number) {
     }
     // botón derecho: la habilidad derecha (o el ataque básico) en el sitio hacia el cursor, sin caminar
     // (un clic muy rápido puede bajar y subir en el mismo cuadro: el clic cuenta igual)
-    if (E.der || E.clicDer) {
+    if ((E.der && !presaEnMenu) || E.clicDer) {
       derT -= dt;
       if (E.clicDer || derT <= 0) {
         derT = 0.05;
@@ -723,6 +740,10 @@ function paso(dt: number) {
       dibujarPaneles(jj, tiempo);
       if (E.tactil) dibujarHudTactil(jj, tiempo); else dibujarBarra(jj, tiempo);
       if (clicAntes && !manoAntes && ui.mano && E.izq && !E.soltoIzq) arrastre = { x: E.x, y: E.y };
+      // el clic lo usó un menú (se puso una prenda, se cerró una ficha, se tocó un botón) o el botón está apretado sobre
+      // un panel: mientras siga apretado no es una orden de caminar, aunque el panel ya se haya cerrado debajo del cursor
+      if ((clicAntes && !E.clicIzq) || ((E.izq || E.der) && ui.sobreUI)) presaEnMenu = true;
+      if ((!E.izq && !E.der) || (window as any).__sinPresa) presaEnMenu = false;
       if (!jj.heroe.muerto) controlar(jj, dt); else { dibujarMuerte(); controlar(jj, dt); }
       dibujarTooltipObjeto(jj);
       dibujarFicha(jj, tiempo);
@@ -735,6 +756,10 @@ function paso(dt: number) {
       // capa de combate de la música según cuántos monstruos despiertos hay cerca
       if (Math.floor(tiempo * 2) !== Math.floor((tiempo - dt) * 2)) { let n = 0; for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado === 'perseguir' && dist(m.x, m.y, jj.heroe.x, jj.heroe.y) < 12) n++; Sonido.combate(Math.min(1, n / 6)); }
       guardadoT += dt; if (guardadoT > 45) { guardadoT = 0; guardar(); }
+      if ((ui as any).guardarAhora) { (ui as any).guardarAhora = false; guardar(); avisoGuardado = performance.now(); Sonido.efecto('click'); }
+      { const dtg = (performance.now() - Math.max(avisoGuardado, guardadoEn)) / 1000, fuerte = performance.now() - avisoGuardado < 2600;
+        if (dtg < (fuerte ? 2.6 : 1.4)) { const a = Math.min(1, dtg * 4, ((fuerte ? 2.6 : 1.4) - dtg) * 3) * (fuerte ? 1 : 0.55);
+          ctx.save(); ctx.globalAlpha = a; texto('◆ ' + T('Partida guardada', 'Game saved'), W / 2, fuerte ? H * 0.3 : 16, { alin: 'center', tam: fuerte ? 20 : 11, color: fuerte ? '#ffe0a0' : '#b8a070', fuente: fuerte ? undefined : undefined }); ctx.restore(); } }
       jj.heroe.d.jugado += dt;
       dibujarCursor(pickEncima?.tipo === 'monstruo' ? 'atacar' : pickEncima?.tipo === 'npc' ? 'hablar' : pickEncima ? 'agarrar' : 'senalar');
       break;

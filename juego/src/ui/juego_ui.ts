@@ -1317,17 +1317,19 @@ function panelMisiones(j: Juego, x: number, y: number) {
   }
 }
 function panelMenu(j: Juego, x: number, y: number) {
-  marco(x, y, 320, 432); titulo(T('Menú', 'Menu'), x, y, 320);
-  let yy = y + 80;
-  const op = (s: string, f: () => void) => { if (boton(s, x + 40, yy, 240, 30)) { E.clicIzq = false; f(); } yy += 35; };
+  marco(x, y, 320, 432); titulo(T('Pausa', 'Paused'), x, y, 320);
+  texto(T('El mundo está detenido', 'The world is on hold'), x + 160, y + 62, { alin: 'center', tam: 11, color: '#a09070' });
+  let yy = y + 74;
+  const op = (s: string, f: () => void) => { if (boton(s, x + 40, yy, 240, 30)) { E.clicIzq = false; f(); } yy += 34; };
   op(T('Volver al juego', 'Return to game'), () => { ui.izq = null; });
+  op(T('Guardar partida', 'Save game'), () => { (ui as any).guardarAhora = true; });
   op(T('Opciones', 'Options'), () => j.eventos.push({ tipo: 'opciones' }));
   op(T('Misiones (Q)', 'Quests (Q)'), () => { ui.izq = 'misiones'; });
   op(T('Códice (J)', 'Codex (J)'), () => { ui.izq = 'codice'; });
   if (j.zona.tipo !== 'pueblo') op(T('Portal al campamento (B)', 'Portal to camp (B)'), () => { ui.izq = null; abrirPortal(j); });
   op(T('Guardar y salir', 'Save and quit'), () => j.eventos.push({ tipo: 'salir' }));
   texto(T('Teclas: clic izq. caminar/atacar · clic der. habilidad · 1-4 pociones · 5-0 atajos · I inventario · C personaje · T habilidades · Q misiones · Tab mapa · Alt botín · R correr · Shift atacar sin moverse · B portal', 'Keys: left click walk/attack · right click skill · 1-4 potions · I inventory · C character · T skills · Q quests · Tab map · Alt loot · R run · Shift attack in place · B portal'), x + 18, y + 330, { tam: 1 });
-  envolver(T('Clic izquierdo camina y ataca · clic derecho usa la habilidad · 1-4 pociones · I inventario · C personaje · T habilidades · Q misiones · J códice · Tab mapa · Alt muestra el botín · R correr o caminar · Shift ataca sin moverte · B portal al campamento', 'Left click walks and attacks · right click uses the skill · 1-4 potions · I inventory · C character · T skills · Q quests · J codex · Tab map · Alt shows loot · R run or walk · Shift attacks in place · B portal to camp'), 280, 11).forEach((l, i) => texto(l, x + 20, y + 290 + i * 14, { tam: 11, color: '#a09070' }));
+  envolver(T('Clic izquierdo camina y ataca · clic derecho usa la habilidad · 1-4 pociones · I inventario · C personaje · T habilidades · Q misiones · J códice · Tab mapa · Alt muestra el botín · R correr o caminar · Shift ataca sin moverte · B portal al campamento', 'Left click walks and attacks · right click uses the skill · 1-4 potions · I inventory · C character · T skills · Q quests · J codex · Tab map · Alt shows loot · R run or walk · Shift attacks in place · B portal to camp'), 280, 11).forEach((l, i) => texto(l, x + 20, y + 338 + i * 14, { tam: 11, color: '#a09070' }));
 }
 
 // ------------------------------------------------------------------ mapa (Tab) y minimapa
