@@ -1,5 +1,5 @@
 import { type Pose, keyed } from '../rig/pose';
-import { type AnimDef, P, feet } from './types';
+import { type AnimDef, type Ctx, P, feet } from './types';
 import { run } from './premium';
 import { shotP } from './footballPremium';
 
@@ -185,20 +185,26 @@ export const NEKKETSU_FUTBOL: AnimDef[] = [nkGoalRun, nkGoalJump, nkBanzai, nkSh
 // ---------- Propuesta (nkx_): las acciones que más flojas se veían, dibujadas de cero ----------
 
 const hurt = { eyes: 'hurt' as const, mouth: 'o' as const };
+/**
+ * De frente y de espalda el tronco no se inclina (se vería igual): lo que se ve es el giro de lado. Una pose acostada o
+ * que se va de lado se dibuja ahí girada lo mismo que se inclina de costado, así la caída, la barrida y la estirada del
+ * arquero también se leen cuando el jugador mira a la cámara o le da la espalda.
+ */
+const sideways = (c: Ctx, poses: Pose[], k = 1): Pose[] => (c.view === 'front' || c.view === 'back' ? poses.map((p) => ({ ...p, roll: p.torso * k * (c.view === 'back' ? -1 : 1) })) : poses);
 
-/** La barrida de Nintendo World Cup: se tira casi acostado, una pierna estirada adelante, la otra doblada y un brazo al cielo. */
+/** La barrida de Nintendo World Cup: salta, cae de costado casi acostado con una pierna estirada adelante y el brazo apuntando, y resbala. */
 export const nkxSlide: AnimDef = {
   name: 'nkx_slide', pack: 'football', fps: 14, loop: false, hairTrail: -1,
-  events: [{ type: 'impacto', phase: 3 / 8, joint: 'footNear' }],
+  events: [{ type: 'despegue', phase: 1 / 8 }, { type: 'impacto', phase: 3 / 8, joint: 'footNear' }],
   build: (c) => {
-    const L = c.L;
-    const dip = P(c, { torso: 18, legs: feet(c, 0.7, 0.3), arms: { near: { shoulder: -50, elbow: 40 }, far: { shoulder: 60, elbow: 40 } }, face: fury, support: 'both' });
-    const throwIt = P(c, { torso: -34, x: 0.1 * L, legs: { near: { x: 0.85 * L, y: 0.45 * L, toe: -20 }, far: { x: 0.1 * L, y: 0.6 * L, toe: 30 } },
-      arms: { near: { shoulder: 120, elbow: 20, spread: 30 }, far: { shoulder: -60, elbow: 30, spread: 30 } }, face: fury, fit: true });
-    const low = (k: number) => P(c, { torso: -66, x: (0.15 + k * 0.05) * L, freeArms: true, legs: { near: { x: 1.08 * L, y: 0.1 * L, toe: -25 }, far: { x: 0.38 * L, y: 0.3 * L, toe: 20 } },
-      arms: { near: { shoulder: 150 + k * 10, elbow: 10, spread: 40 }, far: { shoulder: -35, elbow: 50, spread: 30 } }, head: { dx: 0, dy: 0, tilt: 10 }, face: fury, fit: true });
-    const sit = P(c, { torso: -28, legs: { near: { x: 0.8 * L, y: 0.2 * L, toe: -20 }, far: { x: 0.5 * L, y: 0.3 * L, toe: 0 } }, arms: { near: { shoulder: -40, elbow: 30 }, far: { shoulder: -50, elbow: 30 } }, face: { eyes: 'angry', mouth: 'line' }, fit: true });
-    return [dip, throwIt, low(0), low(1), low(0), low(1), sit, sit];
+    const L = c.L, u = c.u;
+    const dip = P(c, { torso: 22, legs: feet(c, 0.75, 0.3), arms: { near: { shoulder: -60, elbow: 40 }, far: { shoulder: 60, elbow: 40 } }, face: fury, support: 'both' });
+    const leap = P(c, { torso: -40, air: 4 * u, x: 0.1 * L, freeArms: true, legs: { near: { x: 0.9 * L, y: 0.4 * L, toe: -20 }, far: { x: -0.1 * L, y: 0.6 * L, toe: 40 } },
+      arms: { near: { shoulder: 80, elbow: 10, spread: 20 }, far: { shoulder: -80, elbow: 20, spread: 40 } }, face: fury, fit: true });
+    const low = (k: number) => P(c, { torso: -80, x: (0.15 + k * 0.06) * L, freeArms: true, legs: { near: { x: 1.15 * L, y: 0.04 * L, toe: -30 }, far: { x: 0.2 * L, y: (0.28 - k * 0.06) * L, toe: 30 } },
+      arms: { near: { shoulder: 66 + k * 8, elbow: 0, spread: 10 }, far: { shoulder: -110, elbow: 30, spread: 40 } }, hands: { near: 'dedo' as const }, head: { dx: 0, dy: 0, tilt: 26 }, face: fury, fit: true });
+    const sit = P(c, { torso: -30, legs: { near: { x: 0.85 * L, y: 0.18 * L, toe: -20 }, far: { x: 0.45 * L, y: 0.3 * L, toe: 0 } }, arms: { near: { shoulder: -40, elbow: 30 }, far: { shoulder: -50, elbow: 30 } }, face: { eyes: 'angry', mouth: 'line' }, fit: true });
+    return sideways(c, [dip, leap, low(0), low(1), low(2), low(1), sit, sit], 0.9);
   },
 };
 
@@ -208,11 +214,11 @@ export const nkxPass: AnimDef = {
   events: [{ type: 'impacto', phase: 3 / 8 }],
   build: (c) => {
     const L = c.L, u = c.u;
-    const wind = P(c, { torso: -14, legs: { far: { x: 0.2 * L, y: L - 0.4, toe: 0 }, near: { x: -0.7 * L, y: 0.5 * L, toe: 55 } },
+    const wind = P(c, { torso: -22, legs: { far: { x: 0.2 * L, y: L - 0.4, toe: 0 }, near: { x: -0.8 * L, y: 0.42 * L, toe: 60 } },
       arms: { near: { shoulder: -80, elbow: 20, spread: 30 }, far: { shoulder: 100, elbow: 10, spread: 65 } }, face: fury, support: 'far' });
-    const hit = P(c, { torso: 20, air: 2 * u, legs: { far: { x: 0.1 * L, y: L - 0.6, toe: 20 }, near: { x: 0.8 * L, y: 0.6 * L, toe: -15 } },
+    const hit = P(c, { torso: 26, air: 3 * u, legs: { far: { x: 0.1 * L, y: L - 0.6, toe: 20 }, near: { x: 0.8 * L, y: 0.6 * L, toe: -15 } },
       arms: { near: { shoulder: 80, elbow: 20, spread: 30 }, far: { shoulder: -70, elbow: 20, spread: 50 } }, face: fury });
-    const through = P(c, { torso: 8, air: 3 * u, legs: { far: { x: -0.1 * L, y: L - 0.7, toe: 30 }, near: { x: 0.9 * L, y: 0.35 * L, toe: -5 } },
+    const through = P(c, { torso: -6, air: 5 * u, legs: { far: { x: -0.1 * L, y: L - 0.7, toe: 30 }, near: { x: 0.9 * L, y: 0.35 * L, toe: -5 } },
       arms: { near: { shoulder: 110, elbow: 10, spread: 40 }, far: { shoulder: -90, elbow: 10, spread: 50 } }, face: { eyes: 'angry', mouth: 'grin' } });
     const land = P(c, { torso: 14, legs: { near: { x: 0.4 * L, y: L - 0.5, toe: 0 }, far: { x: -0.35 * L, y: 0.8 * L, toe: 40 } }, arms: { near: { shoulder: 30, elbow: 50 }, far: { shoulder: -20, elbow: 50 } }, face: { eyes: 'angry', mouth: 'line' }, support: 'near' });
     return [wind, wind, hit, hit, through, through, land, P(c, { torso: 8, legs: feet(c, 0.3, 0.24) })];
@@ -232,7 +238,7 @@ export const nkxFly: AnimDef = {
       arms: { near: { shoulder: 150 - k * 30, elbow: 15, spread: 55 }, far: { shoulder: 120 + k * 40, elbow: 15, spread: 55 } }, head: { dx: 0, dy: 0, tilt: -20 }, face: hurt, fit: true });
     const down = P(c, { torso: -88, legs: { near: { x: 0.8 * L, y: 0.1 * L, toe: -30 }, far: { x: 0.7 * L, y: 0.22 * L, toe: -30 } },
       arms: { near: { shoulder: 130, elbow: 30, spread: 40 }, far: { shoulder: 150, elbow: 30, spread: 40 } }, face: { eyes: 'closed', mouth: 'o' }, fit: true });
-    return [snap, air(5, -50, 1), air(10, -72, -1), air(12, -92, 1), air(9, -100, -1), air(4, -92, 1), down, { ...down, air: 3 * u }, down, down];
+    return sideways(c, [snap, air(5, -50, 1), air(10, -72, -1), air(12, -92, 1), air(9, -100, -1), air(4, -92, 1), down, { ...down, air: 3 * u }, down, down]);
   },
 };
 
@@ -241,13 +247,13 @@ export const nkxDizzy: AnimDef = {
   name: 'nkx_dizzy', pack: 'football', fps: 9, loop: true,
   build: (c) => {
     const u = c.u, L = c.L;
-    return [0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+    return sideways(c, [0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
       const a = (i / 8) * Math.PI * 2, s = Math.sin(a), co = Math.cos(a);
       return P(c, { torso: s * 18, x: s * 2.5 * u, head: { tilt: s * 26 + co * 8, dx: co * 2 * u, dy: Math.abs(s) * u },
         legs: { near: { x: (0.3 + s * 0.12) * L, y: L - 0.8 - Math.abs(co), toe: 0 }, far: { x: (-0.3 + s * 0.12) * L, y: L - 0.8 - Math.abs(co), toe: 0 } },
         arms: { near: { shoulder: -s * 34 + 6, elbow: 14, spread: 18 }, far: { shoulder: -s * 34 - 6, elbow: 14, spread: 18 } },
         face: { eyes: i % 4 < 2 ? 'hurt' as const : 'closed' as const, mouth: 'o' as const }, support: 'both' });
-    });
+    }));
   },
 };
 
@@ -263,7 +269,7 @@ export const nkxGetup: AnimDef = {
     const tuck = P(c, { torso: 10, air: 8 * u, legs: { near: { x: 0.3 * L, y: 0.5 * L, toe: 20 }, far: { x: -0.2 * L, y: 0.55 * L, toe: 40 } }, arms: { near: { shoulder: 40, elbow: 80, spread: 20 }, far: { shoulder: 30, elbow: 80, spread: 20 } }, face: fury });
     const land = P(c, { torso: 22, legs: feet(c, 0.7, 0.3), arms: { near: { shoulder: 20, elbow: 60, spread: 30 }, far: { shoulder: 10, elbow: 60, spread: 30 } }, face: { eyes: 'angry', mouth: 'line' }, support: 'both' });
     const fist = P(c, { torso: 4, legs: feet(c, 0.25, 0.28), arms: { near: { shoulder: 60, elbow: 120, spread: 10 }, far: { shoulder: 10, elbow: 80, spread: 10 } }, face: { eyes: 'angry', mouth: 'grin' }, support: 'both' });
-    return [down, curl, kip, tuck, tuck, land, fist, fist];
+    return [...sideways(c, [down, curl]), kip, tuck, tuck, land, fist, fist];
   },
 };
 
@@ -276,10 +282,10 @@ export const nkxKeeperDive: AnimDef = {
     const L = c.L, u = c.u;
     const load = P(c, { torso: 30, legs: feet(c, 0.95, 0.34), arms: { near: { shoulder: -50, elbow: 30, spread: 40 }, far: { shoulder: -40, elbow: 30, spread: 40 } }, face: fury, support: 'both' });
     const launch = P(c, { air: 5 * u, torso: 58, freeArms: true, legs: { near: { x: -0.6 * L, y: 0.6 * L, toe: 55 }, far: { x: -0.78 * L, y: 0.78 * L, toe: 65 } }, arms: { near: { shoulder: 165, elbow: 8 }, far: { shoulder: 158, elbow: 8 } }, face: { eyes: 'wide', mouth: 'open' } });
-    const fly = (h: number, k: number) => P(c, { air: h * u, torso: 88, flat: true, freeArms: true, legs: { near: { x: -0.98 * L, y: (0.04 + k * 0.1) * L, toe: 80 }, far: { x: -0.9 * L, y: (0.22 - k * 0.1) * L, toe: 80 } },
+    const fly = (h: number, k: number) => P(c, { air: h * u, torso: 84 + k * 8, flat: true, freeArms: true, legs: { near: { x: -0.98 * L, y: (0.04 + k * 0.1) * L, toe: 80 }, far: { x: -0.9 * L, y: (0.22 - k * 0.1) * L, toe: 80 } },
       arms: { near: { shoulder: 178, elbow: 0 }, far: { shoulder: 172, elbow: 0 } }, hands: palms, face: { eyes: 'wide', mouth: 'open' } });
     const ground = P(c, { torso: 86, flat: true, freeArms: true, legs: { near: { x: -0.9 * L, y: 0, toe: 80 }, far: { x: -0.8 * L, y: 0.2 * L, toe: 80 } }, arms: { near: { shoulder: 160, elbow: 50 }, far: { shoulder: 150, elbow: 55 } }, face: { eyes: 'closed', mouth: 'grin' } });
-    return [load, launch, fly(10, 0), fly(12, 1), fly(11, 0), fly(6, 1), ground, ground];
+    return sideways(c, [load, launch, fly(11, 0), fly(14, 1), fly(13, 0), fly(7, 1), ground, ground]);
   },
 };
 
@@ -324,12 +330,12 @@ export const nkxSad: AnimDef = {
   },
 };
 
-/** Esperando, como Kunio: en guardia, los puños arriba y rebotando en las puntas. */
+/** Esperando, como Kunio: en guardia, rebota de verdad en las puntas (baja y sube medio cuerpo) y bombea los puños. */
 export const nkxIdle: AnimDef = {
-  name: 'nkx_idle', pack: 'football', fps: 8, loop: true, steady: true,
-  build: (c) => [0, 1, 2, 1, 0, 1, 2, 1].map((b, i) => P(c, { torso: 10 + b, legs: feet(c, 0.22 + b * 0.1, 0.3),
-    arms: { near: { shoulder: 38 + b * 4, elbow: 105, spread: 14 }, far: { shoulder: 22 + b * 4, elbow: 105, spread: 14 } },
-    head: { dx: 0, dy: 0, tilt: 0 }, face: { eyes: i === 5 ? 'closed' as const : 'angry' as const, mouth: 'line' as const }, support: 'both' })),
+  name: 'nkx_idle', pack: 'football', fps: 9, loop: true,
+  build: (c) => [0, 1, 2, 1, 0, 1, 2, 1].map((b, i) => P(c, { torso: 6 + b * 6, air: b === 0 ? Math.round(1.5 * c.u) : 0, legs: feet(c, 0.15 + b * 0.22, 0.32),
+    arms: { near: { shoulder: 30 + b * 18 + (i < 4 ? 10 : -6), elbow: 110, spread: 16 }, far: { shoulder: 18 + b * 18 + (i < 4 ? -6 : 10), elbow: 110, spread: 16 } },
+    head: { dx: 0, dy: 0, tilt: i < 4 ? 3 : -3 }, face: { eyes: i === 5 ? 'closed' as const : 'angry' as const, mouth: 'line' as const }, support: 'both' })),
 };
 
 /** La carrera de Kunio: el cuerpo adelante, los codos doblados barriendo de adelante a atrás y las rodillas bien arriba, con vuelo. */
