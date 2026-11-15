@@ -704,6 +704,8 @@ export function conectar(z: Zona) {
         const x0 = Math.round(o.cx - (o.hw - 1) / 2), y0 = Math.round(o.cy - (o.hh - 1) / 2);
         if (x < x0 || x >= x0 + o.hw || y < y0 || y >= y0 + o.hh) continue;
         if (/rio_lava|arroyo/.test(o.id)) { if (/arroyo/.test(o.id)) o.v = 'vado_y'; else { o.id = 'inf2_puente'; o.v = 'piedra'; } }
+        // (un cofre, un santuario o cualquier cosa con la que se interactúa no se borra por estorbar: se queda y deja pasar)
+        else if (o.bloquea && o.tag) o.bloquea = false;
         else if (o.bloquea) z.objetos.splice(oi, 1);
         for (let yy = Math.max(0, y0); yy < Math.min(H, y0 + o.hh); yy++) for (let xx = Math.max(0, x0); xx < Math.min(W, x0 + o.hw); xx++) if (z.bloq[yy * W + xx] === 1) z.bloq[yy * W + xx] = 0;
       }
@@ -1332,11 +1334,15 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     if (def.lateral) { const c = k.poner(def.tema === 'tumba' || def.tema === 'templo' ? 'cofre_sarcofago_tesoro' : 'cofre_noble', pN[0] + 4, pN[1] + 5, 'cerrado', true, 'cofre'); if (c) z.marcas.push({ tipo: 'cofre', cx: c.cx, cy: c.cy }); }
   }
   if (def.casa) {
-    const c = k.poner('cofre_noble', pN[0], pN[1], 'cerrado', true, 'cofre'); if (c) { c.dato = { casa: true }; z.marcas.push({ tipo: 'cofre', cx: c.cx, cy: c.cy }); }
+    // (el cofre sale siempre: si el centro del cuarto ya está ocupado por otra cosa, va al lado)
+    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [2, 1], [-2, 1], [2, -1], [-2, -1], [0, 2], [3, 0], [-3, 0]]) {
+      const x = pN[0] + dx, y = pN[1] + dy; if ((dx || dy) && z.bloq[y * z.W + x]) continue;
+      const c = k.poner('cofre_noble', x, y, 'cerrado', true, 'cofre'); if (c) { c.dato = { casa: true }; z.marcas.push({ tipo: 'cofre', cx: c.cx, cy: c.cy }); break; }
+    }
     z.spawns.push({ cx: pN[0] + 2, cy: pN[1] + 3, tipo: r() < 0.5 ? 'unico' : 'campeon', fuerza: 1 });
     for (const [dx, dy, id] of [[-3, 0, 'mue_velas'], [3, 0, 'mue_velas'], [0, -3, 'mue_alfombra']] as [number, number, string][]) k.poner(id, pN[0] + dx, pN[1] + dy);
     // y lo que dejó escrito el que vivía aquí: una página de la historia del acto (se lee como los libros malditos)
-    for (const [dx, dy] of [[-2, 3], [2, -2], [-3, -2], [3, 3]]) if (k.poner('mis_libro_maldito', pN[0] + dx, pN[1] + dy)) break;
+    for (const [dx, dy] of [[-2, 3], [2, -2], [-3, -2], [3, 3]]) { const x = pN[0] + dx, y = pN[1] + dy; if (!z.bloq[y * z.W + x] && k.poner('mis_libro_maldito', x, y, undefined, true)) break; }
   }
   // red de seguridad: si algo de lo que adorna la sala del jefe tapó un paso (el mapa quedó en más pedazos), se quita
   // de atrás hacia adelante hasta que vuelva a estar entero
