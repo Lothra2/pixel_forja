@@ -34,6 +34,12 @@ export const portadaLista = () => !!man && !!lista(man.fondo.capas[0].archivo) &
 
 // ------------------------------------------------------------------ estado de la escena
 let t0 = -1, proxRayo = 1.4, rayo = -1, rayoEspejo = false, trueno = -1;
+/** Sprites de luz precalculados (halos, rayos, luna, niebla, brasas): un degradado por cuadro salía carísimo. */
+const sprites = new Map<string, HTMLCanvasElement>();
+function sprite(k: string, n: number, pintar: (c: CanvasRenderingContext2D, n: number) => void): HTMLCanvasElement {
+  let im = sprites.get(k); if (im) return im;
+  im = document.createElement('canvas'); im.width = im.height = n; pintar(im.getContext('2d')!, n); sprites.set(k, im); return im;
+}
 interface Part { x: number; y: number; vx: number; vy: number; s: number; a: number; f: number; v: number; vida?: number }
 const parts = new Map<string, Part[]>();
 const R = Math.random, entre = (r: [number, number]) => r[0] + R() * (r[1] - r[0]);
@@ -52,7 +58,7 @@ export function dibujarPortada(tReal: number): { botones: number; yBotones: numb
   const f = man.fondo, base = man.base;
   // escala: cubre la pantalla con la base de 1280x720; en vertical se escala por alto y se centra en la catedral
   const vertical = H > W;
-  const esc = vertical ? H / base.h : Math.max(W / base.w, H / base.h);
+  const esc = (vertical ? H / base.h : Math.max(W / base.w, H / base.h)) * (1.03 + 0.03 * (0.5 - 0.5 * Math.cos((2 * Math.PI * t) / 52)));
   const ox = vertical ? W / 2 - man.fondo.foco.x * esc : (W - base.w * esc) / 2, oy = (H - base.h * esc) / 2;
   const cam = f.camara;
   const cx = Math.sin((2 * Math.PI * t) / cam.periodo_x_s) * cam.deriva_x + (E.x / W - 0.5) * 2 * cam.raton;
@@ -101,8 +107,73 @@ export function dibujarPortada(tReal: number): { botones: number; yBotones: numb
       }
     }
   };
+  // ---- lo que la Forja no trae y hace la escena: la luna de sangre detrás de la catedral con sus rayos, los cuervos
+  // que rondan las agujas, la niebla en capas y las brasas grandes de primer plano. Todo en coordenadas de la base.
+  const P = (bx: number, by: number, par: number): [number, number] => [ox + (bx - cx * par) * esc, oy + (by - cy * par) * esc];
+  const luna = () => {
+    const [lx, ly] = P(f.foco.x + 70, 250, 0.07), r = 150 * esc;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    // el resplandor: tres halos, el de afuera llena medio cielo
+    const halo = sprite('halo', 256, (c, n) => { const g = c.createRadialGradient(n / 2, n / 2, n * 0.06, n / 2, n / 2, n / 2); g.addColorStop(0, 'rgba(255,70,24,1)'); g.addColorStop(1, 'rgba(120,10,0,0)'); c.fillStyle = g; c.fillRect(0, 0, n, n); });
+    // (los tres halos van compuestos en un solo sprite: tres pasadas sumadas a pantalla completa costaban la mitad de los cuadros)
+    const halos = sprite('halos', 384, (c, n) => { c.globalCompositeOperation = 'lighter'; for (const [k, a] of [[1, 0.16], [0.5, 0.2], [0.29, 0.26]]) { c.globalAlpha = a; c.drawImage(halo, n / 2 - (n / 2) * k, n / 2 - (n / 2) * k, n * k, n * k); } });
+    ctx.globalAlpha = fondoK; ctx.drawImage(halos, lx - r * 3.8, ly - r * 3.8, r * 7.6, r * 7.6);
+    // los rayos: abanico que gira muy despacio y respira
+    const rayos = sprite('rayos', 512, (c, n) => { c.translate(n / 2, n / 2); for (let q = 0; q < 14; q++) { const a = (q / 14) * Math.PI * 2, an = 0.05 + 0.035 * Math.sin(q * 2.4), R2 = n / 2; const g = c.createLinearGradient(0, 0, Math.cos(a) * R2, Math.sin(a) * R2); g.addColorStop(0, `rgba(255,120,50,${0.5 + 0.3 * Math.sin(q * 1.7)})`); g.addColorStop(1, 'rgba(255,60,20,0)'); c.fillStyle = g; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a - an) * R2, Math.sin(a - an) * R2); c.lineTo(Math.cos(a + an) * R2, Math.sin(a + an) * R2); c.closePath(); c.fill(); } });
+    ctx.globalAlpha = (0.16 + 0.06 * Math.sin(t * 0.5)) * fondoK; ctx.translate(lx, ly); ctx.rotate(t * 0.012); ctx.drawImage(rayos, -r * 3.6, -r * 3.6, r * 7.2, r * 7.2);
+    ctx.restore(); ctx.save(); ctx.globalAlpha = fondoK;
+    // el disco: claro arriba a la izquierda, rojo oscuro en el borde, con sus mares y la sombra que le come el borde de abajo
+    const disco = sprite('luna', 384, (c, n) => { const R2 = n / 2; const d = c.createRadialGradient(R2 * 0.7, R2 * 0.68, R2 * 0.1, R2, R2, R2); d.addColorStop(0, '#ffe2b0'); d.addColorStop(0.45, '#ff9a4c'); d.addColorStop(0.85, '#c8361a'); d.addColorStop(1, '#6a0e08');
+      c.fillStyle = d; c.beginPath(); c.arc(R2, R2, R2 - 1, 0, Math.PI * 2); c.fill(); c.save(); c.beginPath(); c.arc(R2, R2, R2 - 1, 0, Math.PI * 2); c.clip();
+      for (const [mx2, my2, mr, ma] of [[-0.3, -0.25, 0.3, 0.2], [0.25, -0.05, 0.22, 0.18], [-0.05, 0.35, 0.34, 0.16], [0.45, 0.42, 0.18, 0.2], [-0.5, 0.2, 0.16, 0.16], [0.1, -0.5, 0.14, 0.14]]) { c.fillStyle = `rgba(90,14,8,${ma})`; c.beginPath(); c.ellipse(R2 + mx2 * R2, R2 + my2 * R2, mr * R2, mr * R2 * 0.8, 0.4, 0, Math.PI * 2); c.fill(); }
+      const sm = c.createLinearGradient(0, R2 * 0.9, 0, n); sm.addColorStop(0, 'rgba(20,2,2,0)'); sm.addColorStop(1, 'rgba(20,2,2,0.8)'); c.fillStyle = sm; c.fillRect(0, 0, n, n); c.restore(); });
+    ctx.drawImage(disco, lx - r, ly - r, r * 2, r * 2);
+    ctx.restore();
+  };
+  const cuervosPortada = () => {
+    ctx.save(); ctx.globalAlpha = fondoK; ctx.strokeStyle = '#070304'; ctx.lineCap = 'round';
+    for (let i = 0; i < 17; i++) {
+      // cada cuervo da vueltas alrededor de las agujas en su propia órbita achatada; tres cruzan el cielo de lado a lado
+      const hsh = (n: number) => { const q = Math.sin(i * 91.7 + n * 37.3) * 43758.5; return q - Math.floor(q); };
+      let bx: number, by: number, tam: number;
+      if (i < 14) { const a = t * (0.12 + hsh(1) * 0.2) * (hsh(2) < 0.5 ? 1 : -1) + hsh(3) * 6.28, rx = 80 + hsh(4) * 300, ry = 22 + hsh(5) * 80; bx = f.foco.x + 30 + Math.cos(a) * rx; by = 170 + hsh(6) * 130 + Math.sin(a) * ry; tam = 6 + hsh(7) * 7 + Math.sin(a) * 2; }
+      else { const u = ((t * (0.018 + hsh(1) * 0.012) + hsh(2)) % 1); bx = -80 + u * (base.w + 160); by = 110 + hsh(3) * 150 + Math.sin(u * 14) * 10; tam = 9 + hsh(4) * 6; }
+      const [x, y] = P(bx, by, 0.3), q = tam * esc, ala = Math.sin(t * (7 + hsh(8) * 4) + i) * 0.75;
+      ctx.lineWidth = Math.max(1.5, q * 0.3); ctx.beginPath(); ctx.moveTo(x - q, y - q * ala); ctx.quadraticCurveTo(x - q * 0.4, y - q * 0.25 * ala - q * 0.15, x, y); ctx.quadraticCurveTo(x + q * 0.4, y - q * 0.25 * ala - q * 0.15, x + q, y - q * ala); ctx.stroke();
+    }
+    ctx.restore();
+  };
+  const nieblaCapas = (y0: number, par: number, n: number, rgb: string, a: number) => {
+    const im = sprite('niebla' + rgb, 128, (c, m) => { const g = c.createRadialGradient(m / 2, m / 2, 0, m / 2, m / 2, m / 2); g.addColorStop(0, `rgba(${rgb},1)`); g.addColorStop(1, `rgba(${rgb},0)`); c.fillStyle = g; c.fillRect(0, 0, m, m); });
+    ctx.save();
+    for (let i = 0; i < n; i++) {
+      const hsh = (m: number) => { const q = Math.sin(i * 57.3 + m * 19.1 + y0) * 43758.5; return q - Math.floor(q); };
+      const an = 260 + hsh(1) * 380, v = 5 + hsh(2) * 9, bx = ((hsh(3) * (base.w + an * 2) + t * v * (i % 2 ? 1 : -1)) % (base.w + an * 2) + (base.w + an * 2)) % (base.w + an * 2) - an, by = y0 + (hsh(4) - 0.5) * 50;
+      const [x, y] = P(bx, by, par), rx = an * esc, ry = (26 + hsh(5) * 34) * esc;
+      ctx.globalAlpha = a * (0.6 + 0.4 * Math.sin(t * 0.3 + i)) * fondoK; ctx.drawImage(im, x - rx, y - ry, rx * 2, ry * 2);
+    }
+    ctx.restore();
+  };
+  const brasasCerca = () => {
+    const im = sprite('brasa', 64, (c, m) => { const g = c.createRadialGradient(m / 2, m / 2, 0, m / 2, m / 2, m / 2); g.addColorStop(0, 'rgba(255,190,80,1)'); g.addColorStop(0.4, 'rgba(255,110,30,0.5)'); g.addColorStop(1, 'rgba(255,80,20,0)'); c.fillStyle = g; c.fillRect(0, 0, m, m); });
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 26; i++) {
+      const hsh = (m: number) => { const q = Math.sin(i * 23.9 + m * 71.7) * 43758.5; return q - Math.floor(q); };
+      const u = (t * (0.035 + hsh(1) * 0.05) + hsh(2)) % 1, bx = hsh(3) * base.w + Math.sin(u * 6 + i) * 46, by = base.h + 30 - u * (base.h * 0.95), r = (2.5 + hsh(4) * 8) * esc;
+      const [x, y] = P(bx, by, 1.5);
+      ctx.globalAlpha = Math.sin(u * Math.PI) * (0.14 + hsh(5) * 0.34) * fondoK * (0.7 + 0.3 * Math.sin(t * 9 + i)); ctx.drawImage(im, x - r, y - r, r * 2, r * 2);
+    }
+    ctx.restore();
+  };
+  // la catedral, un tercio más grande, crecida desde su puerta: manda en la escena
+  const KC = 1.3, [pcx, pcy] = P(f.foco.puerta[0], 600, 0.45);
   for (const c of f.capas) {
     if (c.id === 'vineta') continue;
+    const off = ((window as any).__pOff ?? '') as string;
+    if (c.id === 'nubes' && !off.includes('luna')) luna();
+    if (c.id === 'cementerio' && !off.includes('niebla')) { nieblaCapas(560, 0.8, 4, '60,16,12', 0.6); }
+    const esCat = String(c.id).startsWith('catedral');
+    if (esCat) { const kc = off.includes('cat') ? 1 : KC; ctx.save(); ctx.translate(pcx, pcy); ctx.scale(kc, kc); ctx.translate(-pcx, -pcy); }
     if (c.id === 'relampago') {
       if (enRayo) {
         const im = lista(rel.archivo); if (im) {
@@ -122,8 +193,15 @@ export function dibujarPortada(tReal: number): { botones: number; yBotones: numb
     if (c.id === 'catedral_fuego' && enRayo) alfa = 0.6;
     if (c.anim?.tipo === 'latir') alfa = (0.7 + 0.3 * (0.5 + 0.5 * Math.sin((t / c.anim.periodo_s) * 6.28))) * luzCat;
     capa(c, alfa, c.anim?.tipo === 'deriva' ? (c.anim.px_por_segundo < 0 ? -dx : dx) : 0);
+    if (esCat) ctx.restore();
     ceniza(c.id);
+    if (c.id === 'ruinas_llamas' && !off.includes('niebla')) nieblaCapas(500, 0.3, 3, '150,40,20', 0.2);
+    if (c.id === 'catedral_fuego') cuervosPortada();
+    if (c.id === 'cementerio' && !off.includes('niebla')) { nieblaCapas(690, 1.2, 4, '10,4,4', 0.7); brasasCerca(); }
   }
+  // el grado de color: arriba casi negro (el título se despega), el horizonte al rojo vivo y el piso otra vez oscuro
+  { const gr = sprite('grado', 256, (c, n) => { const g = c.createLinearGradient(0, 0, 0, n); g.addColorStop(0, 'rgba(8,0,4,0.74)'); g.addColorStop(0.34, 'rgba(8,0,4,0.12)'); g.addColorStop(0.62, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.6)'); c.fillStyle = g; c.fillRect(0, 0, n, n); });
+    ctx.globalAlpha = fondoK; ctx.globalCompositeOperation = 'source-over'; ctx.drawImage(gr, 0, 0, W, H); }
   ctx.globalCompositeOperation = 'source-over';
   // destello del relámpago en toda la pantalla
   if (enRayo) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = rel.destello[iRayo] ?? 0; ctx.fillStyle = '#c8d8ff'; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'; }
@@ -144,7 +222,8 @@ function nueva(pc: any, alAzar: boolean): Part {
 /** El título en su lugar de la portada; tRel < 0 todavía no aparece. */
 function dibujarTitulo(tRel: number, vertical: boolean) {
   const ti = man.titulo[IDI ? 'en' : 'es'], col = man.titulo.colocacion?.[vertical ? 'movil_vertical' : 'escritorio'] ?? { ancho_rel: 0.54, centro_y_rel: 0.235 };
-  const w = W * col.ancho_rel, h = w * 0.6, x = W / 2 - w / 2, y = H * col.centro_y_rel - h / 2;
+  // (se mide por ancho, pero nunca más alto que el 40 % de la pantalla: en monitores anchos crecía hasta tapar la catedral)
+  const w = Math.min(W * col.ancho_rel, H * 0.4 / 0.6), h = w * 0.6, x = W / 2 - w / 2, y = Math.max(-h * 0.08, H * (vertical ? col.centro_y_rel : 0.19) - h / 2);
   if (tRel < 0) return;
   const hoja = (a: any, i: number) => { const n = Math.floor(i / a.por_hoja), j = i % a.por_hoja; const im = lista(a.hojas[n]); if (!im) return false; ctx.drawImage(im, (j % a.columnas) * a.w, Math.floor(j / a.columnas) * a.h, a.w, a.h, x, y, w, h); return true; };
   const rv = ti.revelar['800'], an = ti.anim['800'];

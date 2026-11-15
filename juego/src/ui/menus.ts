@@ -348,7 +348,8 @@ export function menuPrincipal(t: number, hayPartidas: boolean, ultimo?: DatosHer
   if (ultimo && !angosto) {
     const fs = cuadrosHeroe(ultimo.clase, 'quieto', 'so');
     if (fs.length) {
-      const hx = x0 + ancho + 46, hy = y0 + altoSub + paso + 34, esc = Math.max(1.5, Math.min(2.2, H / 380));
+      // (abajo, al pie de la columna, donde el piso es oscuro: más arriba quedaba flotando sobre las ruinas)
+      const hx = x0 + ancho + 40, hy = y0 + alto + 6, esc = Math.max(1.5, Math.min(2.5, H / 330));
       const lg = ctx.createRadialGradient(hx, hy, 4, hx, hy, 120); lg.addColorStop(0, `rgba(255,130,40,${0.34 + 0.06 * Math.sin(t * 7)})`); lg.addColorStop(1, 'rgba(255,110,30,0)');
       ctx.fillStyle = lg; ctx.fillRect(hx - 130, hy - 130, 260, 200);
       ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.ellipse(hx, hy, 30 * esc * 0.5, 9 * esc * 0.5, 0, 0, Math.PI * 2); ctx.fill();
