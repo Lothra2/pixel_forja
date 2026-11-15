@@ -6,7 +6,7 @@ const { entrar } = require('./comun');
   const info = await p.evaluate(() => { const j = window.__juego(), z = j.zona; return (z.puentes ?? []).map((q) => { const rows = []; for (let y = q.cy - 3.5; y <= q.cy + 3.5; y++) { let s = ''; for (let x = q.cx - 5.5; x <= q.cx + 5.5; x++) s += z.bloq[Math.floor(y) * z.W + Math.floor(x)]; rows.push(s); } return { q, rows }; }); });
   for (const i of info) { console.log(JSON.stringify(i.q)); console.log(i.rows.join('\n')); }
   if (info.length) {
-    const q = info[0].q;
+    const q = (info.find((i) => i.q.cy > 20 && i.q.cy < 110) ?? info[0]).q;
     for (const [dx, dy] of [[0, 0], [0, 1], [0, -1]]) {
       const r = await p.evaluate(async ([q, dy]) => { const j = window.__juego(), h = j.heroe; j.monstruos.forEach((m) => { if (!m.dueno) { m.muerto = true; m.vida = 0; m.tMuerto = 99; } }); h.x = q.cx - 4.5; h.y = q.cy + dy; h.camino = null; h.destino = null; return [h.x, h.y]; }, [q, dy]);
       const s = await p.evaluate(([q, dy]) => window.__aPant(q.cx + 4.5, q.cy + dy), [q, dy]);

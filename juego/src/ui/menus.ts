@@ -2,7 +2,7 @@
 import { cuadrosDeFirma } from '../motor/pintor';
 import { ctx, W, H, E } from '../nucleo/lienzo';
 import { texto, T, TT, IDI, boton, marco, dentro, envolver, TITULO, fijarIdioma } from './comun';
-import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
+import { cuadrosHeroe, cuadrosPiso, variantePiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
 import { generarPaisaje, type MapaGotico } from '../../../src/engine/gotico/index';
 import { CLASES } from '../datos/clases';
 import { INTRO, ENTREACTO, REVELACION, OPCIONES_BRASA, TRAS_ELEGIR, type FinalElegido } from '../mundo/actos';
@@ -28,7 +28,7 @@ function pintarMapa(m: MapaGotico, camX: number, camY: number, t: number, extra?
   const f25 = Math.floor(t * 25);
   for (let by = 0; by < m.alto; by++) for (let bx = 0; bx < m.ancho; bx++) {
     const p = m.pisos[by * m.ancho + bx]; if (!p) continue;
-    const fs = cuadrosPiso(p.id, p.v); if (!fs.length) continue;
+    const fs = cuadrosPiso(p.id, variantePiso(p.id, p.v, bx, by)); if (!fs.length) continue;
     const [px, py] = aP(bx * 5 + 2.5, by * 5 + 2.5); dibujar(ctx, fs[Math.floor(f25 / 4) % fs.length], px, py);
   }
   const items: { prof: number; draw: () => void }[] = [];

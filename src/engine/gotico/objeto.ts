@@ -74,6 +74,7 @@ const ESCALA_OBRA: [RegExp, number][] = [
   [/^cem2_mausoleo_(chico|familiar)$/, 1.3], [/^cem_entrada_cripta$/, 1.35], [/^cem2_capilla_ruinas$/, 1.4], [/^(cem_mausoleo|cem2_mausoleo_gotico)$/, 1.25],
   [/^ahg_torre_(farol|campanario)$/, 1.3], [/^for2_torre$/, 1.3],
   [/^dec_(ruina|hito)$/, 1.6], [/^dec_planta$/, 1.4],
+  [/^acto_hito$/, 2.4], [/^dec_muro$/, 1.25],
 ];
 function escalarPiezas(ps: Pieza[], s: number): Pieza[] {
   const P = (v: V3): V3 => [v[0] * s, v[1] * s, v[2] * s];

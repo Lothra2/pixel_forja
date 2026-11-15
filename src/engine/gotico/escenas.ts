@@ -168,11 +168,22 @@ export const PAISAJES: Paisaje[] = [
     k.regar(k.buscar(['pueblo'], ['fuego', 'escomb', 'farol', 'cepo', 'horca', 'jaula', 'puesto', 'cerca']), 14, 1, 1, k.W - 1, k.H - 1);
     k.regar(ARBOLES_MUERTOS(k), 5, 0, 0, k.W, k.H);
   } },
-  { id: 'desierto', nombre: ['Pueblo del desierto', 'Desert town'], ambiente: 'desierto', tam: [6, 6], armar: (k) => {
-    k.piso('arena'); k.piso('arenisca', 2, 2, 4, 4);
-    k.regar(k.buscar(['desierto'], ['casa', 'puerta', 'palac']), 3, 3, 3, k.W - 3, k.H - 3);
-    k.regar(k.buscar(['desierto'], ['palm', 'cactus', 'arbust']), 10, 0, 0, k.W, k.H);
-    k.regar(k.buscar(['desierto'], ['puesto', 'toldo', 'carpa', 'jarr', 'cant', 'alfom', 'caja', 'pozo', 'santu']), 16, 2, 2, k.W - 2, k.H - 2);
+  { id: 'desierto', nombre: ['Pueblo del desierto', 'Desert town'], ambiente: 'desierto', tam: [9, 9], armar: (k) => {
+    // El oasis (45 x 45 celdas): la poza con sus palmeras en un rincón, la puerta del palacio al fondo, dos casas, el
+    // zoco de puestos y toldos a un costado, tiendas de caravana al frente y el pozo. El centro, despejado para la gente.
+    k.piso('arena'); k.piso('arenisca', 3, 3, 6, 6); k.piso('agua', 1, 1, 3, 3);
+    const de = (...pal: string[]) => k.buscar(['desierto'], pal)[0];
+    const palma = k.buscar(['desierto'], ['palm']);
+    for (const [x, y] of [[4, 16], [16, 4], [17, 11], [10, 17], [3, 10], [16, 16], [12, 3]]) k.poner(palma[0], x, y);
+    k.poner(de('puerta_palacio'), 26, 5);
+    k.poner(de('casa'), 37, 12); k.poner(de('casa'), 9, 32);
+    for (const [x, y] of [[33, 23], [35, 30], [31, 36]]) k.poner(de('puesto'), x, y);
+    k.poner(de('toldo'), 12, 24); k.poner(de('toldo'), 18, 38);
+    k.poner(de('tienda'), 38, 39); k.poner(de('tienda'), 26, 40);
+    k.poner(de('pozo'), 22, 34); k.poner(de('santuario'), 6, 23); k.poner(de('columnas'), 39, 20);
+    k.poner(k.buscar(['comun'], ['viaje', 'waypoint'])[0], 31, 12);
+    k.poner(k.buscar(['comun', 'campamento'], ['baul', 'alijo', 'stash'])[0], 13, 20);
+    k.regar(k.buscar(['desierto'], ['jarr', 'cant', 'alfom', 'caja', 'cactus', 'arbust']), 24, 3, 3, k.W - 3, k.H - 3);
   } },
   { id: 'tumba', nombre: ['Tumba del desierto', 'Desert tomb'], ambiente: 'cripta', tam: [5, 5], armar: (k) => {
     k.piso('arenisca');
@@ -216,10 +227,23 @@ export const PAISAJES: Paisaje[] = [
     k.regar(k.buscar(['arcano']), 10, 10, 0, 15, k.H);
     k.regar(k.buscar(['arcano']), 6, 0, 10, k.W, 15);
   } },
-  { id: 'fortaleza', nombre: ['Fortaleza del cielo', 'Heavenly fortress'], ambiente: 'noche', tam: [5, 5], armar: (k) => {
-    k.piso('fortaleza'); k.piso('arcano', 0, 0, 5, 1);
-    k.regar(k.buscar(['fortaleza'], ['muro', 'pared', 'puerta']), 3, 0, 0, k.W, 4);
-    k.regar(k.buscar(['fortaleza']), 12, 2, 5, k.W - 2, k.H - 2);
+  { id: 'fortaleza', nombre: ['Fortaleza del cielo', 'Heavenly fortress'], ambiente: 'noche', tam: [9, 9], armar: (k) => {
+    // El bastión (45 x 45 celdas): muralla y torres por detrás con el portón al fondo, la estatua del rey frente a él, la
+    // armería y la mesa de guerra a los lados, la forja, el aljibe, las máquinas de asedio hacia el frente y braseros
+    // marcando el patio. El centro queda despejado para la gente.
+    k.piso('fortaleza');
+    const de = (...pal: string[]) => k.buscar(['fortaleza'], pal)[0];
+    const muralla = k.buscar(['fortaleza'], ['muralla']);
+    borde(k, muralla, 'x', 2, 5, k.W - 3); borde(k, muralla, 'y', 2, 5, k.H - 3);
+    for (const [x, y] of [[5, 5], [k.W - 6, 5], [5, k.H - 6]]) k.poner(de('torre'), x, y);
+    k.poner(de('porton'), 22, 4); k.poner(de('estatua_rey'), 22, 10);
+    k.poner(de('brasero'), 22, 22);
+    for (const [x, y] of [[11, 22], [33, 22], [22, 34], [14, 13], [30, 13]]) k.poner(de('estandarte'), x, y);
+    k.poner(de('armeria'), 9, 15); k.poner(de('mesa_guerra'), 35, 14); k.poner(de('forja'), 37, 31); k.poner(de('aljibe'), 11, 31);
+    k.poner(de('catapulta'), 12, 39); k.poner(de('ballesta'), 38, 39); k.poner(de('campana'), 32, 6);
+    k.poner(k.buscar(['comun'], ['viaje', 'waypoint'])[0], 31, 9);
+    k.poner(k.buscar(['comun', 'campamento'], ['baul', 'alijo', 'stash'])[0], 14, 27);
+    k.regar(k.buscar(['fortaleza'], ['pertrech', 'barric', 'caldero', 'escombr', 'antorch', 'brasero', 'cristal']), 18, 4, 4, k.W - 3, k.H - 3);
   } },
 ];
 

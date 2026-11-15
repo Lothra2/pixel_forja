@@ -58,7 +58,7 @@ const TALLAS = ['alta_a', 'alta_b', 'alta_c', 'alta_d', 'media_a', 'media_b', 'b
 function remate(a: Arma, ps: Pieza[], e: Estilo, p: V3, s: number) {
   const [x, y, z] = p;
   if (e === 'paramo') ps.push(a.elipsoide(x, y, z, 7 * s, 6 * s, 2.2 * s, { mat: 'bor_musgo', giro: a.r() * 180 }));
-  else if (e === 'nieve') { ps.push(a.elipsoide(x, y, z + 1, 10 * s, 9 * s, 3.4 * s, { mat: 'bor_nieve', giro: a.r() * 180 })); if (a.r() < 0.5) ps.push(a.palo([x + 4 * s, y + 3 * s, z], [x + 4.5 * s, y + 3.5 * s, z - 9 * s], 1.3 * s, { mat: 'bor_nieve', r1: 0.2 })); }
+  else if (e === 'nieve') { ps.push(a.elipsoide(x, y, z - 2.5 * s, 8.5 * s, 8 * s, 6 * s, { mat: 'bor_nieve', giro: a.r() * 180 })); ps.push(a.elipsoide(x + 3 * s, y + 3 * s, z - 7 * s, 6 * s, 6 * s, 5 * s, { mat: 'bor_nieve' })); if (a.r() < 0.5) ps.push(a.palo([x + 4 * s, y + 3 * s, z], [x + 4.5 * s, y + 3.5 * s, z - 9 * s], 1.3 * s, { mat: 'bor_nieve', r1: 0.2 })); }
   else if (e === 'selva') { ps.push(a.elipsoide(x, y, z, 8 * s, 7 * s, 2.4 * s, { mat: 'bor_liana', giro: a.r() * 180 })); let q: V3 = [x + 5 * s, y + 4 * s, z]; for (let k = 0; k < 4; k++) { const w: V3 = [q[0] + (a.r() - 0.3) * 3, q[1] + (a.r() - 0.3) * 3, q[2] - (8 + a.r() * 8) * s]; ps.push(a.palo(q, w, 0.9, { mat: 'bor_liana' })); q = w; } }
   else if (e === 'infierno') { for (let k = 0; k < 2; k++) { const t = a.r() * 2 * PI; ps.push(a.palo([x + Math.cos(t) * 5 * s, y + Math.sin(t) * 5 * s, z + 1], [x + Math.cos(t) * 9 * s, y + Math.sin(t) * 9 * s, z - (10 + a.r() * 14) * s], 1.1 * s, { mat: 'bor_lava', r1: 0.4 })); } }
   else if (e === 'ahogada') { for (let k = 0; k < 5; k++) { const t = a.r() * 2 * PI, d = a.r() * 7 * s; ps.push(a.elipsoide(x + Math.cos(t) * d, y + Math.sin(t) * d, z - a.r() * 6 * s, 1.6 * s, 1.6 * s, 1.5 * s, { mat: 'bor_percebe' })); } }
@@ -78,7 +78,7 @@ registrar({
     if (!talla.startsWith('baja')) {
       const alta = talla.startsWith('alta');
       // el desierto y el cielo son más anchos y bajos (mesetas y bloques); la nieve y el infierno, más agudos
-      const k = e === 'desierto' || e === 'celestial' ? 0.8 : e === 'infierno' || e === 'nieve' ? 1.15 : 1;
+      const k = e === 'desierto' || e === 'celestial' ? 0.8 : e === 'infierno' ? 1.15 : e === 'nieve' ? 0.92 : 1;
       const alto = (alta ? 96 + a.r() * 46 : 50 + a.r() * 22) * k, g = a.r() * PI;
       const cimas = farallon(a, ps, g, 20 + a.r() * 8, alto, 17 / Math.sqrt(k), mat);
       cimas.push(...farallon(a, ps, g + PI / 2 + (a.r() - 0.5) * 0.8, 14, alto * (0.5 + a.r() * 0.3), 15, mat));

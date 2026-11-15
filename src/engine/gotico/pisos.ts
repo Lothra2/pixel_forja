@@ -25,10 +25,21 @@ export interface PisoDef {
 }
 
 const P = BALDOSA;
+/**
+ * Período de la textura, en baldosas. Los pisos quietos de 8 variantes se repiten cada DOS baldosas (no cada una): las
+ * variantes 0-3 son los cuatro cuadrantes del dibujo y 4-7 los mismos cuadrantes con otros detalles. `variantePiso`
+ * dice cuál toca en cada baldosa del mapa. Los animados y los de pocas variantes siguen repitiéndose cada baldosa.
+ */
+let PER = 1;
+export const pisoDoble = (d: PisoDef) => d.variantes >= 8 && !d.cuadros && !d.pintar;
+export function variantePiso(id: string, v: number, bx: number, by: number): number {
+  const d = PISOS.find((q) => q.id === id); if (!d) return v;
+  return pisoDoble(d) ? (bx & 1) + 2 * (by & 1) + 4 * (v & 1) : v % d.variantes;
+}
 // ruido de valor que se repite cada `per` (para que las baldosas peguen)
 function rper(x: number, y: number, per: number, s = 0): number {
   const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
-  const h = (a: number, b: number) => hash3(((a % per) + per) % per, ((b % per) + per) % per, s);
+  const pp = per * PER, h = (a: number, b: number) => hash3(((a % pp) + pp) % pp, ((b % pp) + pp) % pp, s);
   const sm = (t: number) => t * t * (3 - 2 * t), u = sm(xf), v = sm(yf);
   return (h(xi, yi) * (1 - u) + h(xi + 1, yi) * u) * (1 - v) + (h(xi, yi + 1) * (1 - u) + h(xi + 1, yi + 1) * u) * v;
 }
@@ -39,7 +50,7 @@ function voronoi(x: number, y: number, n: number, s = 0): [number, number, numbe
   const c = P / n, cx = Math.floor(x / c), cy = Math.floor(y / c);
   let d1 = 1e9, d2 = 1e9, id = 0;
   for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
-    const gx = cx + i, gy = cy + j, wx = ((gx % n) + n) % n, wy = ((gy % n) + n) % n;
+    const nn = n * PER, gx = cx + i, gy = cy + j, wx = ((gx % nn) + nn) % nn, wy = ((gy % nn) + nn) % nn;
     const px = (gx + 0.15 + hash3(wx, wy, s) * 0.7) * c, py = (gy + 0.15 + hash3(wx, wy, s + 9) * 0.7) * c;
     const d = Math.hypot(x - px, y - py);
     if (d < d1) { d2 = d1; d1 = d; id = wx * 131 + wy; } else if (d < d2) d2 = d;
@@ -47,7 +58,7 @@ function voronoi(x: number, y: number, n: number, s = 0): [number, number, numbe
   return [d1, d2, id];
 }
 /** Para detalles de variante: cerca del borde no (para no romper la costura). */
-const lejosBorde = (x: number, y: number, m = 8) => x > m && y > m && x < P - m && y < P - m;
+const lejosBorde = (x0: number, y0: number, m = 8) => { const x = x0 % P, y = y0 % P; return x > m && y > m && x < P - m && y < P - m; };
 const det = (x: number, y: number, v: number, k: number) => hash3(Math.floor(x / k), Math.floor(y / k), v * 7 + 3);
 
 function lajas(n: number, matA: string, matJ: string, tostado = 0) {
@@ -100,7 +111,7 @@ export const PISOS: PisoDef[] = [
     const r = lajas(4, 'piedra_gris', 'musgo')(x, y, v);
     return fr(x, y, 5, 11) > 0.62 && r[1] > 0 ? ['piedra_musgo', r[1], r[2]] : r;
   } },
-  { id: 'baldosa_catedral', nombre: ['Piso de catedral', 'Cathedral floor'], tema: 'monasterio', variantes: 6, punto: (x, y, v) => {
+  { id: 'baldosa_catedral', nombre: ['Piso de catedral', 'Cathedral floor'], tema: 'monasterio', variantes: 8, punto: (x, y, v) => {
     const c = 20, i = Math.floor(x / c), j = Math.floor(y / c), ux = x % c, uy = y % c;
     if (ux < 1 || uy < 1) return ['negro', -1, 0];
     const blanco = (i + j) % 2 === 0;
@@ -108,7 +119,7 @@ export const PISOS: PisoDef[] = [
     if (v > 0 && lejosBorde(x, y) && det(x, y, v, 20) > 0.75) tono -= 0.25;
     return [blanco ? 'marmol' : 'marmol_negro', 1, tono];
   } },
-  { id: 'madera', nombre: ['Piso de tablas', 'Wooden floor'], tema: 'muebles', variantes: 6, punto: (x, y, v) => {
+  { id: 'madera', nombre: ['Piso de tablas', 'Wooden floor'], tema: 'muebles', variantes: 8, punto: (x, y, v) => {
     const ancho = 8, tabla = Math.floor(x / ancho);
     if (x % ancho < 1) return ['negro', -1, 0];
     const corte = (y + hash3(tabla % 10, 0, 5) * P) % 40 < 0.8;
@@ -131,7 +142,7 @@ export const PISOS: PisoDef[] = [
     if (v > 0 && lejosBorde(x, y) && det(x, y, v, 16) > 0.8) tono -= 0.2;
     return ['arenisca_lisa', 1, tono];
   } },
-  { id: 'ladrillo_cloaca', nombre: ['Ladrillo de cloaca', 'Sewer bricks'], tema: 'cloaca', variantes: 6, punto: (x, y) => {
+  { id: 'ladrillo_cloaca', nombre: ['Ladrillo de cloaca', 'Sewer bricks'], tema: 'cloaca', variantes: 8, punto: (x, y) => {
     const ux = (x + (Math.floor(y / 6) % 2) * 6) % 12, uy = y % 6;
     if (ux < 1 || uy < 1) return ['negro', -1, 0];
     const humedo = fr(x, y, 4, 18) > 0.6;
@@ -142,7 +153,7 @@ export const PISOS: PisoDef[] = [
     if (v > 0 && lejosBorde(x, y) && fr(x, y, 10, 40 + v) > 0.78) return ['roca', 1, 0.15];
     return ['nieve', n * 3, (n - 0.5) * 0.2];
   } },
-  { id: 'hielo', nombre: ['Hielo', 'Ice'], tema: 'hielo', variantes: 6, punto: (x, y) => {
+  { id: 'hielo', nombre: ['Hielo', 'Ice'], tema: 'hielo', variantes: 8, punto: (x, y) => {
     const [d1, d2] = voronoi(x, y, 5, 21);
     return d2 - d1 < 0.9 ? ['nieve', 0, 0.1] : ['hielo', 0.5, (fr(x, y, 4, 22) - 0.5) * 0.3];
   } },
@@ -160,7 +171,7 @@ export const PISOS: PisoDef[] = [
     const ola = Math.sin(((x - y) / P) * Math.PI * 2 * 3 + (f / 6) * Math.PI * 2) + Math.sin(((x + 2 * y) / P) * Math.PI * 2 * 2 - (f / 6) * Math.PI * 2) * 0.6;
     return ['agua', ola * 0.6, ola * 0.08 + (fr(x, y, 6, 27) - 0.5) * 0.15];
   } },
-  { id: 'hueso', nombre: ['Suelo de huesos', 'Bone floor'], tema: 'catacumbas', variantes: 6, punto: (x, y) => {
+  { id: 'hueso', nombre: ['Suelo de huesos', 'Bone floor'], tema: 'catacumbas', variantes: 8, punto: (x, y) => {
     const [d1, d2, id] = voronoi(x, y, 14, 28);
     if (d2 - d1 < 1) return ['tierra', -1, -0.15];
     return [hash3(id, 2, 2) > 0.85 ? 'piedra' : 'hueso', Math.min(2, d2 - d1), (hash3(id, 5, 5) - 0.5) * 0.3 - 0.1];
@@ -216,14 +227,16 @@ export function pintarPiso(id: string, v = 0, f = 0): Raster {
   if (!d) throw new Error(`No hay piso "${id}"`);
   if (d.pintar) { const r = d.pintar(v, f); cache.set(k, r); return r; }
   const W = 160, H = 80, img = createRaster(W, H);
-  const alto = (x: number, y: number) => d.punto(((x % P) + P) % P, ((y % P) + P) % P, v, f)[1];
+  PER = pisoDoble(d) ? 2 : 1;
+  const PP = P * PER, ox = PER === 2 ? (v & 1) * P : 0, oy = PER === 2 ? ((v >> 1) & 1) * P : 0, vd = PER === 2 ? v >> 2 : v;
+  const alto = (x: number, y: number) => d.punto(((x % PP) + PP) % PP, ((y % PP) + PP) % PP, vd, f)[1];
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
     const sx = px - 80 + 0.5, sy = py - 40 + 0.5;
     if (Math.abs(sx) / 80 + Math.abs(sy) / 40 > 1.0001) continue;
     // del pixel al piso: x - y = sx, x + y = 2 sy (con el origen en el centro de la baldosa)
     const x = (2 * sy + sx) / 2 + 40, y = (2 * sy - sx) / 2 + 40;
-    const xx = ((x % P) + P) % P, yy = ((y % P) + P) % P;
-    const [mat, h, tono] = d.punto(xx, yy, v, f);
+    const xx = (((x + ox) % PP) + PP) % PP, yy = (((y + oy) % PP) + PP) % PP;
+    const [mat, h, tono] = d.punto(xx, yy, vd, f);
     const m = MATERIALES[mat] ?? MATERIALES.tierra;
     let s: number;
     if (m.emite) s = 0.6 + tono;

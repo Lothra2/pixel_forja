@@ -3,7 +3,7 @@ import { createRaster, type Raster } from '../core/raster';
 import { encodePng, encodePngPaleta } from '../export/png';
 import { MATERIALES } from './materiales';
 import { REGISTRO, objeto, pintarObjeto, herramientas, huellaDe } from './objeto';
-import { PISOS, pintarPiso } from './pisos';
+import { PISOS, pintarPiso, variantePiso } from './pisos';
 import { aPantalla, CELDA, BALDOSA, type Escena } from './render';
 import { DIRS } from './figura';
 
@@ -116,7 +116,7 @@ export function pintarMapa(m: MapaGotico, o: OpcPintar = {}): Raster {
     const j = s - i; if (j < 0 || j >= m.alto) continue;
     const p = m.pisos[j * m.ancho + i]; if (!p) continue;
     const def = PISOS.find((q) => q.id === p.id); if (!def) continue;
-    const t = pintarPiso(p.id, p.v % def.variantes, f % (def.cuadros ?? 1));
+    const t = pintarPiso(p.id, variantePiso(p.id, p.v, i, j), f % (def.cuadros ?? 1));
     const [sx, sy] = aPantalla([i * BALDOSA + 40, j * BALDOSA + 40, 0]);
     pegar(t, Math.round(ox + sx - 80), Math.round(oy + sy - 40));
   }

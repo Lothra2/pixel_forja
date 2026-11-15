@@ -111,6 +111,9 @@ function lista(grupo: 'h' | 'm' | 'p' | 'i' | 'r' | 'sel', clave: string): Cuadr
 export const cuadrosHeroe = (clase: string, acc: string, dir: string) => lista('h', `${clase}/${acc}/${dir}`);
 export const cuadrosMonstruo = (id: string, acc: string, dir: string) => lista('m', `${id}/${acc}/${dir}`);
 export const cuadrosPiso = (id: string, v: number) => lista('p', `${id}|${v}`);
+/** Pisos cuya textura se repite cada dos baldosas (ver pisos.ts de la Forja): la variante sale de la posición de la baldosa. */
+const PISO_DOBLE = new Set(['pasto', 'pasto_seco', 'tierra', 'empedrado', 'lajas', 'lajas_musgo', 'baldosa_catedral', 'madera', 'cueva', 'arena', 'arenisca', 'ladrillo_cloaca', 'nieve', 'hielo', 'selva', 'hueso', 'tierra_infierno']);
+export const variantePiso = (id: string, v: number, bx: number, by: number) => (PISO_DOBLE.has(id) ? (bx & 1) + 2 * (by & 1) + 4 * (v & 1) : v);
 /** Retrato grande de la clase en su pose de presentación (nivel 0 novato, 2 leyenda). */
 export const cuadrosRetrato = (id: string, nivel: number) => lista('r', `${id}/${nivel}`);
 /** Presentación de la selección de personaje (grupo 'sel' de la Forja): 48 cuadros, los 12 primeros son la entrada. */

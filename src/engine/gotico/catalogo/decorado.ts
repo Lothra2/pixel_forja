@@ -35,7 +35,7 @@ const adelantar = (a: Arma, v: string) => { let n = 0; for (const c of v) n += c
 function capa(a: Arma, ps: Pieza[], e: Estilo, x: number, y: number, z: number, w: number) {
   if (a.r() > 0.6) return;
   if (e === 'paramo' || e === 'selva') ps.push(a.elipsoide(x, y, z, w * 0.55, w * 0.5, 1.6, { mat: e === 'selva' ? 'bor_liana' : 'bor_musgo', giro: a.r() * 180 }));
-  else if (e === 'nieve') ps.push(a.elipsoide(x, y, z + 0.6, w * 0.6, w * 0.55, 2.4, { mat: 'bor_nieve', giro: a.r() * 180 }));
+  else if (e === 'nieve') ps.push(a.elipsoide(x, y, z - 1.5, w * 0.62, w * 0.58, 4, { mat: 'bor_nieve', giro: a.r() * 180 }));
   else if (e === 'infierno') ps.push(a.caja(x, y, z - 0.5, w * 0.7, 1.2, 1.4, { mat: 'dec_brasa', giro: a.r() * 180 }));
   else if (e === 'ahogada') for (let k = 0; k < 3; k++) ps.push(a.elipsoide(x + (a.r() - 0.5) * w, y + (a.r() - 0.5) * w, z, 1.4, 1.4, 1.3, { mat: 'bor_percebe' }));
   else if (e === 'celestial') ps.push(a.caja(x, y, z, w * 0.9, w * 0.9, 1.4, { mat: 'bor_oro', giro: a.r() * 20 }));

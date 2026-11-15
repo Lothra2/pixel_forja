@@ -7,7 +7,7 @@ import { puntoSalida } from '../mundo/zona';
 import { esquivarHud, etiquetasMundo, hud } from '../ui/hud_rects';
 import { NPCS } from '../datos/npcs';
 import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
-import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
+import { cuadrosPiso, variantePiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto, Mancha } from '../juego/mundo';
 import { CUADROS, DIRS, DIR_VEC, ZANCADA, ALTO_CLASE } from '../juego/mundo';
 import { sensacionDe, cuadroAtaque } from '../juego/sensacion';
@@ -221,7 +221,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   const by0 = Math.max(0, Math.floor(wy0 / 5) - 1), by1 = Math.min(z.th - 1, Math.ceil(wy1 / 5) + 1);
   for (let by = by0; by <= by1; by++) for (let bx = bx0; bx <= bx1; bx++) {
     const p = z.pisos[by * z.tw + bx]; if (!p) continue;
-    const fs = cuadrosPiso(p.id, p.v); if (!fs.length) continue;
+    const fs = cuadrosPiso(p.id, variantePiso(p.id, p.v, bx, by)); if (!fs.length) continue;
     const q = fs[Math.floor(f25 / 4) % fs.length];
     const [px, py] = aPant(bx * 5 + 2.5, by * 5 + 2.5);
     if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
@@ -971,6 +971,28 @@ function detalleBaldosa(z: Juego['zona'], bx: number, by: number): HTMLCanvasEle
   const clave = z.id + ':' + z.semilla; if (detallesDe !== clave) { detallesDe = clave; detalles.clear(); }
   const idx = by * z.tw + bx; if (detalles.has(idx)) return detalles.get(idx)!;
   const p = z.pisos[idx]!; let c: HTMLCanvasElement | null = null, g: CanvasRenderingContext2D | null = null;
+  // donde la baldosa vecina es de otro piso, ese piso entra en esta por manchas irregulares a lo largo del borde (la
+  // textura de cada piso se repite por baldosa, así que dibujada aquí continúa sin costura): se acaban los parches cuadrados
+  const VIVO = /agua|lava|arcano|pentagrama/;
+  if (!VIVO.test(p.id)) for (const [dx, dy, x1, y1, x2, y2] of [[0, -1, 88, 8, 168, 48], [1, 0, 168, 48, 88, 88], [0, 1, 88, 88, 8, 48], [-1, 0, 8, 48, 88, 8]]) {
+    const X = bx + dx, Y = by + dy; if (X < 0 || Y < 0 || X >= z.tw || Y >= z.th) continue;
+    const o = z.pisos[Y * z.tw + X]; if (!o || o.id === p.id || VIVO.test(o.id) || !(o.id < p.id)) continue;
+    const q = cuadrosPiso(o.id, variantePiso(o.id, o.v, bx, by))[0]; if (!q) continue; // (con la fase de ESTA baldosa: así continúa el dibujo)
+    if (!g) { c = document.createElement('canvas'); c.width = 176; c.height = 96; g = c.getContext('2d')!; }
+    g.save(); g.beginPath();
+    for (let i = 0; i < 7; i++) {
+      const t = (i + 0.5) / 7, h1 = hashCelda(bx * 5.1 + i * 1.7 + dx * 3, by * 4.3 + i * 0.9 + dy * 7), h2 = hashCelda(bx * 2.9 + i * 3.1 + dy, by * 6.7 + i * 2.3 + dx);
+      const ex = x1 + (x2 - x1) * t, ey = y1 + (y2 - y1) * t, r = 9 + h1 * 17;
+      // hacia adentro de la baldosa (el centro está en 88,48)
+      const ix = 88 - ex, iy = 48 - ey, il = Math.hypot(ix, iy) || 1, m = r * 0.35 + h2 * 5;
+      g.moveTo(ex + (ix / il) * m + r, ey + (iy / il) * m); g.ellipse(ex + (ix / il) * m, ey + (iy / il) * m, r, r * 0.55, 0, 0, Math.PI * 2);
+    }
+    g.clip();
+    // recortado además al rombo de la baldosa
+    g.beginPath(); g.moveTo(88, 7); g.lineTo(169, 48); g.lineTo(88, 89); g.lineTo(7, 48); g.closePath(); g.clip();
+    const ok = dibujar(g, q, 88, 48); g.restore();
+    if (!ok) return null; // el atlas del vecino todavía no cargó: se intenta en el próximo cuadro (sin guardar nada)
+  }
   if (!/agua|lava|arcano|pentagrama|madera|baldosa/.test(p.id)) for (let cy = by * 5; cy < by * 5 + 5; cy++) for (let cx = bx * 5; cx < bx * 5 + 5; cx++) {
     const dens = 0.17, h = hashCelda(cx * 1.37 + 5, cy * 0.91 + 3); if (h > dens) continue;
     if (z.bloq[cy * z.W + cx] === 2 || (z.hueco && z.hueco[cy * z.W + cx])) continue;
