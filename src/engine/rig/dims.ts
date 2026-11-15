@@ -35,6 +35,13 @@ const PRESETS: Record<PresetName, Record<CellSize, Base>> = {
     48: { headW: 20, torsoW: 10, torsoH: 9, pantsRows: 3, legUpper: 4, legLower: 4, legT: 3, hipSpread: 4, armUpper: 4, armLower: 3, armT: 2, hand: 3, footLen: 4, footH: 2 },
     64: { headW: 26, torsoW: 13, torsoH: 12, pantsRows: 4, legUpper: 6, legLower: 5, legT: 4, hipSpread: 5, armUpper: 5, armLower: 4, armT: 3, hand: 4, footLen: 6, footH: 3 },
   },
+  // el cabezón de Kunio: la cabeza un poco más chica que el chibi, y brazos y piernas largos y gruesos con puños y pies
+  // grandes, que son los que cuentan el golpe y la patada a 30 px
+  nekketsu: {
+    32: { headW: 13, torsoW: 8, torsoH: 6, pantsRows: 2, legUpper: 3, legLower: 3, legT: 3, hipSpread: 3, armUpper: 4, armLower: 3, armT: 2, hand: 3, footLen: 4, footH: 2 },
+    48: { headW: 18, torsoW: 11, torsoH: 9, pantsRows: 3, legUpper: 5, legLower: 4, legT: 4, hipSpread: 4, armUpper: 6, armLower: 5, armT: 3, hand: 5, footLen: 6, footH: 3 },
+    64: { headW: 24, torsoW: 15, torsoH: 12, pantsRows: 4, legUpper: 7, legLower: 6, legT: 5, hipSpread: 5, armUpper: 8, armLower: 7, armT: 4, hand: 6, footLen: 8, footH: 4 },
+  },
   // cabeza de un cuarto de la altura, piernas más largas
   juvenil: {
     32: { headW: 11, torsoW: 6, torsoH: 7, pantsRows: 2, legUpper: 4, legLower: 4, legT: 2, hipSpread: 3, armUpper: 4, armLower: 3, armT: 2, hand: 2, footLen: 3, footH: 1 },
