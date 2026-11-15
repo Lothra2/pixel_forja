@@ -606,7 +606,7 @@ function porteDosManos(p: Pose, m: number, b0: number, b1: number, b2: number, p
   else { p.hombroD = [A + 1.5 * b0, B, C + 2 * b0, 0]; p.armaRel = [D + 1.5 * b1, E]; }
 }
 /** El porte al hombro: brazo [adelante, afuera, codo] y arma [ángulo desde el antebrazo, giro hacia afuera]. */
-const PORTE_HOMBRO: number[] = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.PORTE_HOMBRO?.split(',').map(Number) ?? [12, 10, 106, 120, 30];
+const PORTE_HOMBRO: number[] = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.PORTE_HOMBRO?.split(',').map(Number) ?? [6, 8, 42, 148, 20]; // (porte bajo: el puño junto a la cadera y el arma subiendo pegada al hombro. Con el codo a 106° el brazo iba levantado como un ala)
 
 /**
  * La bestia (necrófago, diablillo): anda y corre agachada y animal, el torso muy adelante, la cabeza arriba mirando la
@@ -720,22 +720,27 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       // atravesada sobre la cabeza, los brazos en V y los puños abiertos en el mango (la cabeza del hacha a la izquierda,
       // un poco más alta): los puños quedan por encima de la coronilla, nunca delante de la cara
       const sube: Vals = { agarreI: ag, manoD: [una ? 16 : 20, una ? 3 : 6.5, una ? 36 : 38], armaD: [una ? 62 : 50, -72] };
-      const arriba: Vals = { agarreI: agArriba, manoD: [-4.5, 6.5, 66], armaD: [76, -90] };
-      const cumbre: Vals = { agarreI: agArriba, manoD: [-5, 6.5, 66.5], armaD: [72, -90] };
+      // (arriba el hacha se para sobre la cabeza y se echa atrás, el filo mirando adelante y abajo: la carga del hachazo.
+      //  Antes subía acostada, de costado, igual que la llevaba abajo: se movía el brazo pero el hacha no cambiaba)
+      const arriba: Vals = { agarreI: agArriba, manoD: [-2, 6.5, 66], armaD: [30, -90] };
+      const cumbre: Vals = { agarreI: agArriba, manoD: [-4, 6.5, 67], armaD: [10, -90] };
       const cl: Clave[] = [
-        K(0, { ...apoyado, respira: 0.15, hombros: [1.6, 1.4] }),
-        K(0.08, { respira: 0.95, hombros: [2.4, 2.2], torso: t0 - 2, cabeza: c0 - 2 }),
-        K(0.16, { respira: 0.05, hombros: [1.4, 1.2], bajar: b0 + 0.8, torso: t0 + 4, cabeza: c0 + 2 }, true),
-        K(0.3, { bajar: 2, torso: 6, ladeo: 1, giroTorso: 2, lateral: 0.3, ladeoCadera: 1, respira: 0.6, hombros: [1.8, 1.8], cabeza: -14, ...sube, pisoArma: 0 }),
+        K(0, { ...apoyado, respira: 0.15, hombros: [1, 0.9] }),
+        K(0.08, { respira: 0.95, hombros: [1.5, 1.4], torso: t0 - 2, cabeza: c0 - 2 }),
+        K(0.16, { respira: 0.05, hombros: [0.9, 0.8], bajar: b0 + 0.8, torso: t0 + 4, cabeza: c0 + 2 }, true),
+        // (los tiempos van abiertos: el alzado ocupa tres cuadros y la descarga dos; antes cada uno era un salto de un cuadro)
+        K(0.24, { bajar: 2, torso: 6, ladeo: 1, giroTorso: 2, lateral: 0.3, ladeoCadera: 1, respira: 0.6, hombros: [1.2, 1.2], cabeza: -14, ...sube, pisoArma: 0 }),
+        K(0.32, { bajar: 1.6, torso: -2, ladeo: 1.5, giroTorso: 1, lateral: 0.45, ladeoCadera: 1.5, respira: 0.8, hombros: [1.4, 1.4], cabeza: -22, agarreI: agArriba, manoD: [una ? 6 : 8, 6.5, 53], armaD: [una ? 52 : 48, -84] }),
         // arriba ruge al cielo debajo del hacha, el cuerpo echado atrás y el pecho inflado
-        K(0.37, { bajar: 1, torso: -10, ladeo: 2, giroTorso: 0, lateral: 0.6, ladeoCadera: 2, respira: 1, hombros: [2.6, 2.6], cabeza: -30, giroCabeza: 0, ladeoCabeza: 3, ...arriba }),
-        K(0.5, { bajar: 0.8, torso: -13, cabeza: -34, ...cumbre }, true),
-        K(0.56, { agarreI: ag, bajar: una ? 10 : 9, torso: una ? 40 : 36, ladeo: -3, giroTorso: 6, giroCadera: 4, lateral: -0.8, ladeoCadera: -2, respira: 0.3, hombros: [1, 1], cabeza: -12, ladeoCabeza: -1, manoD: [una ? 16 : 19, una ? 3 : 6, 30], armaD: [150, -4], pisoArma: 1 }),
-        K(0.64, { bajar: una ? 9.5 : 8.5, torso: una ? 41.5 : 37.5, cabeza: -12, manoD: [una ? 14 : 17, una ? 3 : 6, 31], armaD: [158, -4], respira: 0.1 }, true),
+        K(0.42, { bajar: 1, torso: -10, ladeo: 2, giroTorso: 0, lateral: 0.6, ladeoCadera: 2, respira: 1, hombros: [1.6, 1.6], cabeza: -30, giroCabeza: 0, ladeoCabeza: 3, ...arriba }),
+        K(0.54, { bajar: 0.8, torso: -13, cabeza: -34, ...cumbre }, true),
+        K(0.6, { agarreI: ag, bajar: 4, torso: 12, ladeo: -1, giroTorso: 3, lateral: 0, ladeoCadera: 0, respira: 0.6, hombros: [1, 1], cabeza: -20, manoD: [una ? 12 : 14, 6, 50], armaD: [96, -30] }),
+        K(0.66, { agarreI: ag, bajar: una ? 8 : 7.5, torso: una ? 36 : 33, ladeo: -3, giroTorso: 6, giroCadera: 4, lateral: -0.8, ladeoCadera: -2, respira: 0.3, hombros: [1, 1], cabeza: -12, ladeoCabeza: -1, manoD: [una ? 16 : 19, una ? 3 : 6, 30], armaD: [150, -4], pisoArma: 1 }),
+        K(0.74, { bajar: una ? 7.6 : 7, torso: una ? 37.5 : 34.5, cabeza: -12, manoD: [una ? 14 : 17, una ? 3 : 6, 31], armaD: [158, -4], respira: 0.1 }, true),
       ];
       // el hacha corta sale del piso y vuelve a la guardia, cruzada delante del cuerpo
-      if (una) cl.push(K(0.72, { bajar: 4.5, torso: 20, giroTorso: 5, cabeza: -10, manoD: [16, 5, 31], armaD: [100, -45], pisoArma: 0 }));
-      cl.push(K(0.8, { ...apoyado, respira: 0.7, hombros: [2, 1.8] }), K(0.9, { respira: 0.1, hombros: [1.4, 1.2], torso: t0 + 1 }));
+      if (una) cl.push(K(0.82, { bajar: 4.5, torso: 20, giroTorso: 5, cabeza: -10, manoD: [16, 5, 31], armaD: [100, -45], pisoArma: 0 }));
+      cl.push(K(0.9, { ...apoyado, respira: 0.7, hombros: [1.2, 1.1] }), K(0.96, { respira: 0.1, hombros: [1, 0.9], torso: t0 + 1 }));
       actuar(p, cl, u, { lagCab: 0.035, capa: 1 });
       break;
     }
@@ -769,10 +774,11 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       const cl: Clave[] = [
         K(0, { bajar: 0.8, torso: 2, ladeo: 0, lateral: 0.4, ladeoCadera: 1.5, giroTorso: 0, giroCadera: 0, respira: 0.2, puntillas: [0, 0], manoI: [6, -8, 30], manoD: [5, 10, 33], vara: [-3, 12], armaD: [35, 5] }),
         K(0.1, { bajar: 1.6, torso: 4, respira: 0, manoI: [9, -6, 30], manoD: [5, 10.5, 32], lateral: 0.6 }, true),
-        K(0.2, { bajar: 0.7, torso: 0, ladeo: -2, lateral: 0.2, respira: 0.4, manoI: sig(60), manoD: [5, 9, 35], vara: [-2, 10], giroTorso: -4 }),
-        K(0.3, { bajar: 0, torso: -6, ladeo: -5, lateral: 0.5, puntillas: [0.35, 0.35], manoI: sig(150), manoD: [4, 9, 37], vara: [-8, 16], giroTorso: -8 }),
-        K(0.4, { bajar: -0.6, torso: -8, ladeo: 4, lateral: -0.4, puntillas: [0.6, 0.6], respira: 0.8, manoI: sig(240), manoD: [5, 8, 39], vara: [-4, 4], giroTorso: 6 }),
-        K(0.5, { bajar: -0.4, torso: -4, ladeo: 2, puntillas: [0.5, 0.5], manoI: sig(330), vara: [0, 8], giroTorso: 2 }),
+        K(0.18, { bajar: 0.7, torso: 0, ladeo: -2, lateral: 0.2, respira: 0.4, manoI: sig(0), manoD: [5, 9, 35], vara: [-2, 10], giroTorso: -4 }),
+        K(0.26, { bajar: 0.3, torso: -4, ladeo: -4, lateral: 0.4, puntillas: [0.2, 0.2], manoI: sig(90), manoD: [4, 9, 36], vara: [-6, 14], giroTorso: -7 }),
+        K(0.34, { bajar: 0, torso: -6, ladeo: -3, lateral: 0.3, puntillas: [0.4, 0.4], manoI: sig(180), manoD: [4, 9, 37], vara: [-8, 14], giroTorso: -4 }),
+        K(0.42, { bajar: -0.5, torso: -7, ladeo: 3, lateral: -0.3, puntillas: [0.55, 0.55], respira: 0.8, manoI: sig(270), manoD: [5, 8, 39], vara: [-4, 6], giroTorso: 4 }),
+        K(0.5, { bajar: -0.4, torso: -4, ladeo: 2, puntillas: [0.5, 0.5], manoI: sig(360), vara: [0, 8], giroTorso: 2 }),
         K(0.6, { bajar: -1.1, torso: -10, ladeo: -2, lateral: 0.3, puntillas: [0.9, 0.9], respira: 1, manoI: [6, -11, 46], manoD: [4, 8.5, 40], vara: [-12, 12], armaD: [5, 5], giroTorso: -12 }, true),
         K(0.68, { bajar: -1.6, torso: 9, ladeo: 0, lateral: -0.2, puntillas: [1, 1], respira: 0.4, manoI: [21, -1, 46], manoD: [9, 9.5, 42], vara: [22, 24], armaD: [70, 0], giroTorso: 8 }),
         K(0.78, { bajar: -1.5, torso: 10, puntillas: [1, 1], manoI: [21.5, -1, 46.5], manoD: [9.5, 9.5, 42.5], vara: [24, 24] }, true),
@@ -812,14 +818,15 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       p.pegaI = 0;
       const garra: Vals = { armaD: [160, 25] };
       actuar(p, [
-        K(0, { bajar: 5, torso: 30, ladeo: 4, giroTorso: -8, giroCadera: -4, lateral: -0.5, ladeoCadera: -1.5, hombros: [1.5, 2.2], respira: 0, cabeza: 14, giroCabeza: 6, ladeoCabeza: 4, manoI: [15, -3, 7], codoI: [0.2, -1, 0.5], manoD: [2, 9, 28], ...garra }),
-        K(0.12, { bajar: 5.6, torso: 33, manoI: [16, -3, 5], hombros: [1.7, 2.6], cabeza: 17 }, true),
-        K(0.3, { bajar: 4.2, torso: 22, ladeo: 3, manoI: [15, -4, 18], cabeza: 8, respira: 0.3, hombros: [1.4, 2] }),
-        K(0.48, { bajar: 2.2, torso: 8, ladeo: 0, giroTorso: -14, giroCadera: -6, lateral: 0.2, ladeoCadera: 0.5, manoI: [13, -5, 38], cabeza: -10, giroCabeza: 4, ladeoCabeza: 0, respira: 0.7, manoD: [2, 10, 31] }),
+        // (encorvado sobre lo que saca del piso, pero de pie: con la cadera a 5 se leía en cuclillas)
+        K(0, { bajar: 2.4, torso: 26, ladeo: 4, giroTorso: -8, giroCadera: -4, lateral: -0.5, ladeoCadera: -1.5, hombros: [0.8, 1.3], respira: 0, cabeza: 10, giroCabeza: 6, ladeoCabeza: 4, manoI: [15, -3, 14], codoI: [0.2, -1, 0.5], manoD: [2, 9, 28], ...garra }),
+        K(0.12, { bajar: 2.9, torso: 30, manoI: [16, -3, 11], hombros: [0.9, 1.5], cabeza: 13 }, true),
+        K(0.3, { bajar: 2.2, torso: 20, ladeo: 3, manoI: [15, -4, 22], cabeza: 6, respira: 0.3, hombros: [0.8, 1.2] }),
+        K(0.48, { bajar: 1.4, torso: 8, ladeo: 0, giroTorso: -14, giroCadera: -6, lateral: 0.2, ladeoCadera: 0.5, manoI: [13, -5, 38], cabeza: -10, giroCabeza: 4, ladeoCabeza: 0, respira: 0.7, manoD: [2, 10, 31] }),
         K(0.62, { bajar: 0.6, torso: -6, ladeo: -3, manoI: [10, -6, 59], cabeza: -30, giroCabeza: 0, ladeoCabeza: -3, respira: 1, hombros: [0.6, 1.4], manoD: [3, 11, 34] }),
         K(0.72, { manoI: [10.5, -6.4, 60], cabeza: -32 }, true),
-        K(0.82, { bajar: 4, torso: 22, ladeo: 3, manoI: [15, -4, 16], cabeza: 8, giroCabeza: 6, ladeoCabeza: 3, respira: 0.1, lateral: -0.3, hombros: [1.4, 2], manoD: [2, 9, 29] }),
-        K(0.92, { bajar: 4.8, torso: 29, ladeo: 4, manoI: [15, -3, 9], cabeza: 12, hombros: [1.5, 2.1], lateral: -0.5 }),
+        K(0.82, { bajar: 2.2, torso: 20, ladeo: 3, manoI: [15, -4, 20], cabeza: 6, giroCabeza: 6, ladeoCabeza: 3, respira: 0.1, lateral: -0.3, hombros: [0.8, 1.2], manoD: [2, 9, 29] }),
+        K(0.92, { bajar: 2.4, torso: 25, ladeo: 4, manoI: [15, -3, 15], cabeza: 9, hombros: [0.8, 1.3], lateral: -0.5 }),
       ], u, { lagCab: 0.04, capa: 0.8, tela: 1.2 });
       // temblor de la garra mientras sostiene lo que invocó
       if (u > 0.55 && u < 0.8 && p.manoI) { const tr = Math.sin(u * TAU * 7) * 0.5; p.manoI = [p.manoI[0] + tr * 0.4, p.manoI[1] + tr, p.manoI[2] + tr * 0.6]; }

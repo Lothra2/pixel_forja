@@ -1452,13 +1452,23 @@ function efectos(cu: Cuerpo, eq: Equipo, e: Esqueleto, dir: Dir, f: number): Pie
   const h = (i: number) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
   switch (cu.presentacion) {
     case 'conjuro': {
-      // el sigilo queda escrito en el aire detrás de la mano y, al lanzarlo, vuela adelante y se apaga
-      const u0 = 0.16, u1 = Math.min(u, 0.6);
-      if (u < u0 || u > 0.8) break;
-      const vuela = u > 0.62 ? (u - 0.62) / 0.18 : 0;
-      for (let q = u0; q <= u1 + 1e-6; q += 0.0125) {
-        const c = add(mano(q, 1), e.F, vuela * 16 * S);
-        ps.push(esfera(...c, (0.55 - vuela * 0.35) * S * (0.7 + 0.3 * Math.sin(q * 60)), { mat: 'magia' }));
+      // el sigilo: un círculo entero que la mano cierra en el aire. Mientras lo dibuja queda el trazo; al cerrarlo se
+      // enciende completo con su estrella adentro, late un instante y sale empujado adelante, creciendo y apagándose
+      const u0 = 0.18, uC = 0.5, u1 = Math.min(u, uC);
+      if (u < u0 || u > 0.86) break;
+      const cerrado = u >= uC, vuela = u > 0.62 ? Math.min(1, (u - 0.62) / 0.2) : 0, late = cerrado && !vuela ? 1 + 0.25 * Math.sin((u - uC) * 80) : 1;
+      const pts: V3[] = []; for (let q = u0; q <= u1 + 1e-6; q += 0.008) pts.push(mano(q, 1));
+      if (!pts.length) break;
+      // el centro del círculo, para crecer desde ahí cuando vuela
+      const ce: V3 = [0, 0, 0]; for (const q of pts) { ce[0] += q[0] / pts.length; ce[1] += q[1] / pts.length; ce[2] += q[2] / pts.length; }
+      const sale = (q: V3): V3 => add(add(ce, sub(q, ce), 1 + vuela * 0.5), e.F, vuela * 20 * S);
+      const gr = (0.62 - vuela * 0.36) * S * late;
+      for (const q of pts) ps.push(esfera(...sale(q), gr, { mat: 'magia' }));
+      if (cerrado) {
+        // la estrella de cinco puntas inscrita: cuerdas entre cada punto del círculo y el segundo que le sigue
+        const P5 = [0, 1, 2, 3, 4].map((k) => pts[Math.min(pts.length - 1, Math.round((k / 5) * (pts.length - 1)))]);
+        for (let k = 0; k < 5; k++) { const a = P5[k], b = P5[(k + 2) % 5]; for (let t2 = 0.12; t2 < 0.9; t2 += 0.13) ps.push(esfera(...sale(mez(a, b, t2)), gr * 0.6, { mat: 'magia' })); }
+        ps.push(esfera(...sale(ce), gr * 1.5, { mat: 'magia' }));
       }
       break;
     }
