@@ -1,7 +1,7 @@
 // Fuera del juego: intro, menú principal, elegir y crear héroe, opciones y pantalla de carga.
 import { cuadrosDeFirma } from '../motor/pintor';
 import { ctx, W, H, E } from '../nucleo/lienzo';
-import { texto, T, TT, IDI, boton, marco, dentro, envolver, TITULO, fijarIdioma } from './comun';
+import { texto, T, TT, IDI, boton, dentro, envolver, TITULO, fijarIdioma } from './comun';
 import { cuadrosHeroe, cuadrosPiso, variantePiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
 import { generarPaisaje, type MapaGotico } from '../../../src/engine/gotico/index';
 import { CLASES } from '../datos/clases';
@@ -361,34 +361,127 @@ export function menuPrincipal(t: number, hayPartidas: boolean, ultimo?: DatosHer
 }
 
 // ------------------------------------------------------------------ elegir héroe
-export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): { accion: 'jugar' | 'crear' | 'borrar' | 'volver' | 'dificultad' | null; sel: number } {
+// ---- piezas comunes de las pantallas de menú: títulos grabados, rombos y rayas de oro
+const rombo2 = (x: number, y: number, q: number, c: string) => { ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x, y - q); ctx.lineTo(x + q, y); ctx.lineTo(x, y + q); ctx.lineTo(x - q, y); ctx.closePath(); ctx.fill(); };
+/** Un título grabado en oro (Cinzel, mayúsculas espaciadas), con sombra dura y, si se pide, resplandor de brasa. */
+function grabado(sx: string, x: number, y: number, tam: number, o: { alin?: CanvasTextAlign; brillo?: number; apagado?: boolean } = {}) {
+  ctx.save(); ctx.font = `700 ${Math.round(tam)}px ${TITULO}`; ctx.textAlign = o.alin ?? 'left'; ctx.textBaseline = 'alphabetic';
+  const S = sx.toUpperCase().split('').join(' ');
+  ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillText(S, x + 1, y + 2);
+  if (o.brillo) { ctx.shadowColor = `rgba(255,140,40,${0.8 * o.brillo})`; ctx.shadowBlur = 18 * o.brillo; }
+  const g = ctx.createLinearGradient(0, y - tam, 0, y + 2);
+  if (o.apagado) { g.addColorStop(0, '#b8a888'); g.addColorStop(1, '#6e5e44'); } else { g.addColorStop(0, '#fff3c8'); g.addColorStop(0.55, '#f0c060'); g.addColorStop(1, '#a86a28'); }
+  ctx.fillStyle = g; ctx.fillText(S, x, y); const w = ctx.measureText(S).width; ctx.restore(); return w;
+}
+/** Una raya de oro que se apaga en las puntas, con su rombo al centro. */
+function rayaOro(x: number, y: number, w: number, a = 1) {
+  const g = ctx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, 'rgba(214,168,88,0)'); g.addColorStop(0.5, `rgba(214,168,88,${0.9 * a})`); g.addColorStop(1, 'rgba(214,168,88,0)');
+  ctx.fillStyle = g; ctx.fillRect(x, y, w, 1.5); rombo2(x + w / 2, y + 0.75, 4, `rgba(232,186,100,${a})`);
+}
+/** El fondo de las pantallas de menú: el campamento casi a oscuras, con un pozo de luz de fuego donde se pide. */
+function fondoVigilia(t: number, lx: number, ly: number, r: number) {
   dibujarFondoMenu(t);
+  ctx.fillStyle = 'rgba(6,4,4,0.5)'; ctx.fillRect(0, 0, W, H);
+  const parpa = 1 + Math.sin(t * 8.3) * 0.04 + Math.sin(t * 13.1) * 0.03;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(lx, ly); ctx.scale(1, 0.5);
+  const g = ctx.createRadialGradient(0, 0, 6, 0, 0, r * parpa); g.addColorStop(0, 'rgba(255,140,50,0.5)'); g.addColorStop(0.5, 'rgba(200,80,24,0.22)'); g.addColorStop(1, 'rgba(160,50,10,0)');
+  ctx.fillStyle = g; ctx.fillRect(-r * 1.2, -r * 1.2, r * 2.4, r * 2.4); ctx.restore();
+  // la franja de arriba y la de abajo, para que los títulos y la galería se lean
+  const a = ctx.createLinearGradient(0, 0, 0, H * 0.22); a.addColorStop(0, 'rgba(0,0,0,0.7)'); a.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = a; ctx.fillRect(0, 0, W, H * 0.22);
+  const b = ctx.createLinearGradient(0, H * 0.62, 0, H); b.addColorStop(0, 'rgba(0,0,0,0)'); b.addColorStop(1, 'rgba(0,0,0,0.92)'); ctx.fillStyle = b; ctx.fillRect(0, H * 0.62, W, H * 0.38);
+}
+const selP = { k: [] as number[], ult: 0, t0: -1, sel: -1, tCambio: 0, desde: 0 };
+const horas = (seg: number) => { const m = Math.floor((seg ?? 0) / 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`; };
+/**
+ * Elegir héroe: la vigilia. El héroe elegido de pie junto al fuego, grande; a su lado su nombre grabado y lo que lleva
+ * vivido (nivel, acto, horas, muertes, oro); abajo, la galería de tus héroes en nichos de piedra, con uno vacío para el próximo.
+ */
+export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): { accion: 'jugar' | 'crear' | 'borrar' | 'volver' | 'dificultad' | null; sel: number } {
   let accion: 'jugar' | 'crear' | 'borrar' | 'volver' | 'dificultad' | null = null;
-  const x = Math.max(20, W / 2 - 420), y = 40, w = 360, h = H - 120;
-  marco(x, y, w, h, 0.9);
-  texto(T('Tus héroes', 'Your heroes'), x + w / 2, y + 30, { alin: 'center', tam: 18, color: '#e0c890', fuente: TITULO });
-  heroes.forEach((hr, i) => {
-    const yy = y + 50 + i * 64; if (yy > y + h - 70) return;
-    const enc = dentro(x + 12, yy, w - 24, 58);
-    ctx.fillStyle = i === sel ? 'rgba(120,80,30,0.35)' : enc ? 'rgba(80,60,30,0.25)' : 'rgba(0,0,0,0.3)'; ctx.fillRect(x + 12, yy, w - 24, 58);
-    const fs = cuadrosHeroe(hr.clase, 'quieto', 'so'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], x + 44, yy + 56, 0.62);
-    texto(hr.nombre, x + 80, yy + 22, { tam: 16, color: '#f0e0b0', fuente: TITULO });
-    texto(`${TT(CLASES.find((c) => c.id === hr.clase)!.nombre)} · ${T('Nivel', 'Level')} ${hr.nivel} · ${T('Acto', 'Act')} ${hr.acto}${hr.dificultad ? ' · ' + [T('Normal', 'Normal'), T('Pesadilla', 'Nightmare'), T('Infierno', 'Hell')][hr.dificultad] : ''}${hr.ciclo ? ' · ' + T('Ciclo', 'Cycle') + ' ' + (hr.ciclo + 1) : ''}`, x + 80, yy + 42, { tam: 12, color: hr.dificultad ? '#ff8060' : '#a09070' });
-    if (enc && E.clicIzq) { sel = i; E.clicIzq = false; Sonido.efecto('click'); }
-  });
-  if (!heroes.length) texto(T('Todavía no hay héroes.', 'No heroes yet.'), x + w / 2, y + 90, { alin: 'center', color: '#a09070' });
-  const bx = W / 2 + 40, by = H * 0.35;
-  if (heroes[sel]) {
-    const hr = heroes[sel];
-    // con su equipo si el pintor ya lo tiene; si no, el cuerpo horneado mientras tanto
+  const dt = Math.min(0.05, Math.max(0, t - selP.ult)); selP.ult = t; if (dt === 0 || selP.t0 < 0 || t - selP.t0 > 600 || t < selP.t0) selP.t0 = t;
+  if (selP.sel !== sel) { selP.sel = sel; selP.tCambio = t; }
+  const chico = H < 520 || W < 760, pant: Record<string, [number, number]> = ((window as any).__pantalla = {});
+  // ---- medidas
+  const nichoH = Math.round(chico ? Math.max(74, H * 0.23) : Math.min(150, H * 0.2)), nichoW = Math.round(nichoH * 0.78), galY = H - nichoH - (chico ? 8 : 20);
+  const hx = Math.round(chico ? W * 0.27 : W * 0.33), hy = Math.round(galY - (chico ? 14 : 34)), esc = Math.max(1.5, Math.min(3, Math.floor(((galY - (chico ? 60 : 110)) / 92) * 2) / 2));
+  fondoVigilia(t, hx, hy, chico ? 190 : 300);
+  brasas(t, 26);
+  // ---- cabecera
+  const tt = chico ? 17 : 24; grabado(T('Tus héroes', 'Your heroes'), W / 2, chico ? 26 : 46, tt, { alin: 'center' }); rayaOro(W / 2 - 150, (chico ? 26 : 46) + 9, 300);
+  if (boton('‹ ' + T('Volver', 'Back'), 14, chico ? 8 : 20, chico ? 96 : 120, chico ? 26 : 32, { tam: 13 })) accion = 'volver';
+  pant.volver = [14 + 50, (chico ? 8 : 20) + 14];
+  const hr = heroes[sel];
+  // ---- el héroe: de pie junto a su fuego, con su equipo si el pintor ya lo tiene
+  if (hr) {
+    const entra = suave(Math.max(0, Math.min(1, (t - selP.tCambio) / 0.35)));
     const vivo = cuadrosDeFirma((window as any).__firmaSel ?? '', 'quieto', 's');
-    const fs = vivo?.length ? vivo : cuadrosHeroe(hr.clase, 'quieto', 's'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], bx + 140, by + 30, 2);
-    if (boton(T('Jugar', 'Play'), bx + 40, by + 80, 200, 38, { tam: 16 })) accion = 'jugar';
-    if ((hr.actosHechos ?? []).includes(7) && boton(T('Volver a empezar: ', 'Start over: ') + TT(siguienteCiclo(hr)), bx + 40, by + 268, 260, 30, { tam: 13, color: '#ff8060' })) accion = 'dificultad';
-    if (boton((window as any).__borrar === hr.id ? T('¿Seguro? Clic otra vez', 'Sure? Click again') : T('Borrar', 'Delete'), bx + 40, by + 128, 200, 30, { tam: 13, color: (window as any).__borrar === hr.id ? '#ff6060' : undefined })) accion = 'borrar';
+    const fs = vivo?.length ? vivo : cuadrosHeroe(hr.clase, 'quieto', 's');
+    ctx.fillStyle = `rgba(0,0,0,${0.6 * entra})`; ctx.beginPath(); ctx.ellipse(hx, hy, 26 * esc * 0.62, 8 * esc * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+    if (fs.length) { ctx.save(); ctx.globalAlpha = entra; ctx.imageSmoothingEnabled = false; dibujar(ctx, fs[Math.floor(t * 6) % fs.length], hx, hy + (1 - entra) * 10, esc); ctx.restore(); }
+    // la brasa a sus pies y las chispas que suben
+    for (let c = 0; c < 9; c++) { const u = (t * 0.45 + c * 0.113) % 1, sx = hx + 60 * esc * 0.36 + Math.sin(u * 9 + c * 1.7) * 14; ctx.fillStyle = `rgba(255,${150 + (c % 3) * 30},70,${(1 - u) * 0.85})`; ctx.fillRect(Math.round(sx), Math.round(hy + 6 - u * 130 * esc * 0.4), 2, 2); }
+    rombo2(hx + 60 * esc * 0.36, hy + 6, 7 + Math.sin(t * 9) * 1.2, '#ff8a2a'); rombo2(hx + 60 * esc * 0.36, hy + 6, 3.2, '#fff0b0');
+    // ---- su ficha: nombre grabado, clase y lo vivido
+    const fx = Math.round(chico ? W * 0.47 : W * 0.54), fw = Math.min(W - fx - 20, chico ? 380 : 460); let fy = Math.round(chico ? 52 : H * 0.2);
+    const tn = chico ? 24 : Math.min(44, Math.max(30, H * 0.058));
+    ctx.save(); ctx.globalAlpha = entra;
+    const clase = CLASES.find((c) => c.id === hr.clase)!;
+    fy += tn; grabado(hr.nombre, fx + (1 - entra) * 18, fy, tn, { brillo: 0.5 });
+    fy += chico ? 17 : 24; texto(`${TT(clase.nombre)}${hr.dificultad ? ' · ' + [T('Normal', 'Normal'), T('Pesadilla', 'Nightmare'), T('Infierno', 'Hell')][hr.dificultad] : ''}${hr.ciclo ? ' · ' + T('Ciclo', 'Cycle') + ' ' + (hr.ciclo + 1) : ''}`, fx + 2, fy, { tam: chico ? 12 : 15, color: hr.dificultad ? '#ff9070' : '#c8b088', fuente: TITULO });
+    fy += chico ? 8 : 14; { const g = ctx.createLinearGradient(fx, 0, fx + fw, 0); g.addColorStop(0, 'rgba(214,168,88,0.9)'); g.addColorStop(1, 'rgba(214,168,88,0)'); ctx.fillStyle = g; ctx.fillRect(fx, fy, fw, 1.5); rombo2(fx, fy + 0.75, 4, '#e8ba64'); }
+    // lo vivido, en dos columnas: la cifra grande en oro y debajo qué es
+    const datos: [string, string][] = [[String(hr.nivel), T('Nivel', 'Level')], [String(hr.acto), T('Acto', 'Act')], [horas(hr.jugado), T('Jugado', 'Played')], [String(hr.muertes ?? 0), T('Muertes', 'Deaths')], [String((hr as any).oro ?? 0), T('Oro', 'Gold')], [String((hr.actosHechos ?? []).length) + ' / 7', T('Actos hechos', 'Acts done')]];
+    const cols = chico ? 6 : 3, cw = fw / cols, dh = chico ? 34 : 58; fy += chico ? 8 : 18;
+    datos.forEach(([v, n], q) => { const dx = fx + (q % cols) * cw, dy = fy + Math.floor(q / cols) * dh; grabado(v, dx, dy + (chico ? 15 : 24), chico ? 14 : 22); texto(n.toUpperCase(), dx + 1, dy + (chico ? 27 : 42), { tam: chico ? 8 : 10, color: '#8a7a5a', fuente: TITULO }); });
+    fy += Math.ceil(datos.length / cols) * dh + (chico ? 4 : 10);
+    ctx.restore();
+    // ---- jugar: la placa grande, con su brasa
+    const jw = Math.min(fw, chico ? 190 : 280), jh = chico ? 36 : 50;
+    if (boton(T('Jugar', 'Play'), fx, fy, jw, jh, { tam: chico ? 16 : 21, color: '#ffe9b0' })) accion = 'jugar';
+    pant.jugar = [fx + jw / 2, fy + jh / 2];
+    const lat = 0.6 + 0.4 * Math.sin(t * 3); ctx.strokeStyle = `rgba(255,150,50,${0.35 * lat})`; ctx.lineWidth = 2; ctx.strokeRect(fx - 3, fy - 3, jw + 6, jh + 6);
+    const bw2 = chico ? 120 : 150, by2 = chico ? fy + 4 : fy + jh + 12, bx2 = chico ? fx + jw + 10 : fx;
+    if ((hr.actosHechos ?? []).includes(7) && boton(T('Volver a empezar: ', 'Start over: ') + TT(siguienteCiclo(hr)), bx2, by2 + (chico ? 0 : 38), chico ? 200 : 280, 28, { tam: 12, color: '#ff8060' })) accion = 'dificultad';
+    const seguro = (window as any).__borrar === hr.id;
+    if (boton(seguro ? T('¿Seguro? Otra vez', 'Sure? Again') : T('Borrar héroe', 'Delete hero'), chico ? bx2 : fx + jw - bw2, by2 + (chico && (hr.actosHechos ?? []).includes(7) ? 32 : 0), bw2, 28, { tam: 12, color: seguro ? '#ff6060' : '#a89878' })) accion = 'borrar';
+  } else {
+    grabado(T('Todavía no hay héroes', 'No heroes yet'), W / 2, H * 0.42, chico ? 18 : 26, { alin: 'center', apagado: true });
+    texto(T('Enciende el primero en el nicho vacío.', 'Light the first one in the empty niche.'), W / 2, H * 0.42 + 30, { alin: 'center', tam: 14, color: '#a09070' });
   }
-  if (boton(T('Crear héroe nuevo', 'Create new hero'), bx + 40, by + 178, 200, 34, { tam: 14 })) accion = 'crear';
-  if (boton(T('Volver', 'Back'), bx + 40, by + 222, 200, 30, { tam: 13 })) accion = 'volver';
+  // ---- la galería: un nicho de piedra por héroe y uno vacío para el próximo
+  const n = heroes.length + 1, sep = chico ? 8 : 14, caben = Math.max(2, Math.floor((W - 40 + sep) / (nichoW + sep)));
+  if (sel < selP.desde) selP.desde = sel; if (sel >= selP.desde + caben - 1) selP.desde = Math.max(0, sel - caben + 2); selP.desde = Math.max(0, Math.min(selP.desde, Math.max(0, n - caben)));
+  const vis = Math.min(n, caben), gx0 = Math.round(W / 2 - (vis * nichoW + (vis - 1) * sep) / 2);
+  for (let q = 0; q < vis; q++) {
+    const i = selP.desde + q, x = gx0 + q * (nichoW + sep), nuevo = i >= heroes.length, act = i === sel && !nuevo, enc = dentro(x, galY, nichoW, nichoH);
+    selP.k[i] = Math.max(0, Math.min(1, (selP.k[i] ?? 0) + (act || enc ? dt * 6 : -dt * 4))); const k = suave(selP.k[i]), y = galY - k * (chico ? 4 : 8);
+    // el nicho: un arco apuntado de piedra oscura con filo de oro
+    const arco = () => { const r = nichoW / 2; ctx.beginPath(); ctx.moveTo(x, y + nichoH); ctx.lineTo(x, y + r * 0.9); ctx.quadraticCurveTo(x, y + r * 0.1, x + r, y); ctx.quadraticCurveTo(x + nichoW, y + r * 0.1, x + nichoW, y + r * 0.9); ctx.lineTo(x + nichoW, y + nichoH); ctx.closePath(); };
+    ctx.save();
+    if (k > 0.02) { ctx.shadowColor = `rgba(255,130,40,${0.6 * k})`; ctx.shadowBlur = 18 * k; }
+    const g = ctx.createLinearGradient(0, y, 0, y + nichoH); g.addColorStop(0, act ? '#3a2616' : '#1c1612'); g.addColorStop(1, '#090706'); ctx.fillStyle = g; arco(); ctx.fill(); ctx.shadowBlur = 0;
+    if (!nuevo || k > 0.02) { ctx.save(); arco(); ctx.clip(); const lg = ctx.createRadialGradient(x + nichoW / 2, y + nichoH * 0.86, 2, x + nichoW / 2, y + nichoH * 0.86, nichoH * 0.8); lg.addColorStop(0, `rgba(255,130,40,${0.16 + 0.3 * k})`); lg.addColorStop(1, 'rgba(255,110,30,0)'); ctx.fillStyle = lg; ctx.fillRect(x, y, nichoW, nichoH); ctx.restore(); }
+    ctx.lineWidth = act ? 2 : 1; ctx.strokeStyle = act ? '#f0c060' : k > 0.3 ? '#c09a58' : '#5e4c30'; arco(); ctx.stroke();
+    rombo2(x + nichoW / 2, y, act ? 5 : 3.5, act ? '#ffb050' : '#8a7046');
+    if (nuevo) {
+      const cx = x + nichoW / 2, cy = y + nichoH * 0.5, q2 = nichoH * 0.13; ctx.strokeStyle = k > 0.3 ? '#ffd080' : '#8a7046'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - q2, cy); ctx.lineTo(cx + q2, cy); ctx.moveTo(cx, cy - q2); ctx.lineTo(cx, cy + q2); ctx.stroke();
+      texto(T('Nuevo héroe', 'New hero').toUpperCase(), cx, y + nichoH - (chico ? 8 : 14), { alin: 'center', tam: chico ? 8 : 10, color: k > 0.3 ? '#ffe0a0' : '#9a8866', fuente: TITULO });
+      pant.crear = [cx, galY + nichoH / 2];
+      if (enc && E.clicIzq) { accion = 'crear'; Sonido.efecto('click'); }
+    } else {
+      const h2 = heroes[i], fs = cuadrosHeroe(h2.clase, 'quieto', 'so'), e2 = Math.max(0.6, (nichoH - (chico ? 30 : 44)) / 88);
+      ctx.save(); arco(); ctx.clip(); if (!act) ctx.globalAlpha = 0.62 + 0.38 * k; ctx.imageSmoothingEnabled = false;
+      if (fs.length) dibujar(ctx, fs[Math.floor(t * 6 + i * 2) % fs.length], x + nichoW / 2, y + nichoH - (chico ? 20 : 30), e2); ctx.restore();
+      texto(h2.nombre.toUpperCase(), x + nichoW / 2, y + nichoH - (chico ? 9 : 15), { alin: 'center', tam: chico ? 9 : 11, color: act ? '#fff0c0' : '#c8b890', fuente: TITULO, max: nichoW - 8 });
+      texto(`${T('Nv', 'Lv')} ${h2.nivel}`, x + nichoW / 2, y + nichoH - (chico ? 1 : 4), { alin: 'center', tam: chico ? 8 : 9, color: h2.dificultad ? '#ff9070' : '#8a7a5a', fuente: TITULO });
+      pant['heroe' + i] = [x + nichoW / 2, galY + nichoH / 2];
+      if (enc && E.clicIzq && !act) { sel = i; E.clicIzq = false; Sonido.efecto('click'); (window as any).__borrar = null; }
+    }
+    ctx.restore();
+  }
+  // flechas si hay más héroes que nichos
+  if (selP.desde > 0) grabado('‹', gx0 - 22, galY + nichoH / 2 + 8, 24, { apagado: true });
+  if (selP.desde + vis < n) grabado('›', gx0 + vis * (nichoW + sep) - sep + 8, galY + nichoH / 2 + 8, 24, { apagado: true });
   return { accion, sel };
 }
 
@@ -396,28 +489,70 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
 export { dibujarCrear } from './seleccion';
 
 // ------------------------------------------------------------------ opciones
+const opcP = { agarra: '' };
+/**
+ * Opciones: una losa grabada en el centro. Cada volumen es una vara de hierro con su tramo al rojo y una brasa por
+ * perilla (se arrastra, y muestra su tanto por ciento); el idioma y la pantalla completa son llaves de dos posiciones.
+ */
 export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
-  if (fondo) dibujarFondoMenu(t); else { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, W, H); }
-  const w = 420, h = 372, x = W / 2 - w / 2, y = H / 2 - h / 2;
-  marco(x, y, w, h);
-  texto(T('Opciones', 'Options'), W / 2, y + 34, { alin: 'center', tam: 20, color: '#e0c890', fuente: TITULO });
-  const barra = (n: string, k: keyof Opciones, yy: number) => {
-    texto(n, x + 30, yy + 14, {});
-    const bx = x + 170, bw = 200;
-    ctx.fillStyle = '#1a1510'; ctx.fillRect(bx, yy + 4, bw, 12); ctx.fillStyle = '#a07a30'; ctx.fillRect(bx, yy + 4, bw * (opciones[k] as number), 12);
-    ctx.strokeStyle = '#5a4a30'; ctx.strokeRect(bx + 0.5, yy + 4.5, bw, 12);
-    if (E.izq && dentro(bx - 4, yy, bw + 8, 20)) { (opciones as any)[k] = Math.max(0, Math.min(1, (E.x - bx) / bw)); aplicarVolumen(); guardarOpciones(); }
+  const chico = H < 520;
+  if (fondo) { fondoVigilia(t, W / 2, H * 0.62, 320); brasas(t, 22); } else { ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fillRect(0, 0, W, H); }
+  const fh = chico ? 30 : 44, w = Math.min(W - 24, chico ? 560 : 600), cab = chico ? 44 : 74, pie = chico ? 46 : 70, h = Math.min(H - 12, cab + fh * 7 + (chico ? 10 : 34) + pie), x = Math.round(W / 2 - w / 2), y = Math.round(H / 2 - h / 2);
+  const pant: Record<string, [number, number]> = ((window as any).__pantalla = {});
+  // la losa: esquinas cortadas, hierro oscuro, doble filo de oro y rombos en los cuatro costados
+  const c = 14, losa = (m: number) => { ctx.beginPath(); ctx.moveTo(x + c + m, y + m); ctx.lineTo(x + w - c - m, y + m); ctx.lineTo(x + w - m, y + c + m); ctx.lineTo(x + w - m, y + h - c - m); ctx.lineTo(x + w - c - m, y + h - m); ctx.lineTo(x + c + m, y + h - m); ctx.lineTo(x + m, y + h - c - m); ctx.lineTo(x + m, y + c + m); ctx.closePath(); };
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 40;
+  const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, 'rgba(34,26,20,0.97)'); g.addColorStop(0.5, 'rgba(18,14,11,0.97)'); g.addColorStop(1, 'rgba(8,6,5,0.98)'); ctx.fillStyle = g; losa(0); ctx.fill(); ctx.restore();
+  ctx.lineWidth = 1.5; ctx.strokeStyle = '#b08a4a'; losa(0); ctx.stroke(); ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(176,138,74,0.35)'; losa(5); ctx.stroke();
+  for (const [rx, ry] of [[x + w / 2, y], [x + w / 2, y + h], [x, y + h / 2], [x + w, y + h / 2]]) rombo2(rx, ry, 6, '#e0b060');
+  grabado(T('Opciones', 'Options'), W / 2, y + (chico ? 28 : 46), chico ? 18 : 26, { alin: 'center', brillo: 0.4 }); rayaOro(W / 2 - 130, y + (chico ? 34 : 56), 260);
+  const lx = x + (chico ? 22 : 36), vx = x + w * 0.44, vw = w * 0.56 - (chico ? 70 : 96);
+  let yy = y + cab;
+  const rotulo = (sx: string) => texto(sx.toUpperCase(), lx, yy + fh / 2 + 4, { tam: chico ? 11 : 13, color: '#d8c8a0', fuente: TITULO });
+  const vara = (nom: string, k: keyof Opciones) => {
+    rotulo(nom);
+    const v = opciones[k] as number, cy = yy + fh / 2, enc = dentro(vx - 12, yy, vw + 24, fh);
+    if (E.izq && (opcP.agarra === k || (enc && !opcP.agarra))) { opcP.agarra = k; (opciones as any)[k] = Math.max(0, Math.min(1, (E.x - vx) / vw)); aplicarVolumen(); guardarOpciones(); }
+    const act = opcP.agarra === k || enc;
+    ctx.fillStyle = '#050403'; ctx.fillRect(vx - 1, cy - 4, vw + 2, 8); ctx.fillStyle = '#231b14'; ctx.fillRect(vx, cy - 3, vw, 6);
+    const tg = ctx.createLinearGradient(vx, 0, vx + vw * v, 0); tg.addColorStop(0, '#6a2408'); tg.addColorStop(0.7, '#d0601a'); tg.addColorStop(1, '#ffc060'); ctx.fillStyle = tg; ctx.fillRect(vx, cy - 3, vw * v, 6);
+    ctx.fillStyle = 'rgba(255,230,170,0.25)'; ctx.fillRect(vx, cy - 3, vw * v, 2);
+    for (let q = 1; q < 4; q++) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(Math.round(vx + (vw * q) / 4), cy - 3, 1, 6); }
+    const px = vx + vw * v, lat = 0.8 + 0.2 * Math.sin(t * 9 + vx);
+    const hg = ctx.createRadialGradient(px, cy, 0, px, cy, act ? 22 : 15); hg.addColorStop(0, `rgba(255,150,50,${(act ? 0.7 : 0.4) * lat})`); hg.addColorStop(1, 'rgba(255,120,30,0)'); ctx.fillStyle = hg; ctx.fillRect(px - 24, cy - 24, 48, 48);
+    rombo2(px, cy, act ? 9 : 7.5, '#1a0e06'); rombo2(px, cy, act ? 7.5 : 6, '#ff8a2a'); rombo2(px, cy, 3, '#fff0b0');
+    texto(`${Math.round(v * 100)} %`, x + w - (chico ? 20 : 34), cy + 5, { alin: 'right', tam: chico ? 12 : 14, color: act ? '#ffe0a0' : '#b8a480', fuente: TITULO });
+    pant[k as string] = [vx + vw / 2, cy]; yy += fh;
   };
-  barra(T('Volumen general', 'Master volume'), 'general', y + 60);
-  barra(T('Música', 'Music'), 'musica', y + 92);
-  barra(T('Efectos', 'Effects'), 'efectos', y + 124);
-  barra(T('Efectos de horror', 'Horror effects'), 'horror', y + 156);
-  barra(T('Brillo', 'Brightness'), 'brillo', y + 188);
-  if (boton(`${T('Idioma', 'Language')}: ${IDI ? 'English' : 'Español'}`, x + 30, y + 228, w - 60, 30, { tam: 13 })) { opciones.idioma = IDI ? 0 : 1; fijarIdioma(opciones.idioma); guardarOpciones(); E.clicIzq = false; }
-  if (boton(T('Pantalla completa', 'Fullscreen'), x + 30, y + 268, w - 60, 30, { tam: 13 })) { E.clicIzq = false; try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch { /* nada */ } }
-  if (boton(T('Volver', 'Back'), x + w / 2 - 80, y + h - 48, 160, 32)) { E.clicIzq = false; return 'volver'; }
+  if (!E.izq) opcP.agarra = '';
+  vara(T('Volumen general', 'Master volume'), 'general');
+  vara(T('Música', 'Music'), 'musica');
+  vara(T('Efectos', 'Effects'), 'efectos');
+  vara(T('Horror', 'Horror'), 'horror');
+  vara(T('Brillo', 'Brightness'), 'brillo');
+  yy += chico ? 4 : 12; rayaOro(x + 40, yy - (chico ? 2 : 6), w - 80, 0.5); yy += chico ? 2 : 6;
+  // llave de dos posiciones: la elegida al rojo, la otra apagada
+  const llave = (nom: string, ops: [string, string], cual: number, id: string): number | null => {
+    rotulo(nom); let r: number | null = null; const tw = Math.min(150, (w * 0.56 - (chico ? 30 : 40)) / 2), th = fh - (chico ? 6 : 12), ty = yy + (fh - th) / 2;
+    ops.forEach((o, q) => { const bx = vx + q * (tw + 8), sel2 = q === cual, enc = dentro(bx, ty, tw, th);
+      const gg = ctx.createLinearGradient(0, ty, 0, ty + th); gg.addColorStop(0, sel2 ? '#5a2a10' : '#1e1812'); gg.addColorStop(1, sel2 ? '#2a1206' : '#0c0a08'); ctx.fillStyle = gg; ctx.fillRect(bx, ty, tw, th);
+      ctx.strokeStyle = sel2 ? '#f0b858' : enc ? '#a08450' : '#4e4028'; ctx.lineWidth = 1; ctx.strokeRect(bx + 0.5, ty + 0.5, tw - 1, th - 1);
+      if (sel2) rombo2(bx + 11, ty + th / 2, 3.5, '#ffb050');
+      texto(o.toUpperCase(), bx + tw / 2 + (sel2 ? 5 : 0), ty + th / 2 + 4, { alin: 'center', tam: chico ? 10 : 12, color: sel2 ? '#fff0c0' : enc ? '#d8c8a0' : '#8a7a5c', fuente: TITULO });
+      if (enc && E.clicIzq && !sel2) { r = q; Sonido.efecto('click'); }
+      pant[id + q] = [bx + tw / 2, ty + th / 2]; });
+    yy += fh; return r;
+  };
+  const li = llave(T('Idioma', 'Language'), ['Español', 'English'], IDI ? 1 : 0, 'idioma');
+  if (li !== null) { opciones.idioma = li as 0 | 1; fijarIdioma(opciones.idioma); guardarOpciones(); E.clicIzq = false; }
+  const completa = typeof document !== 'undefined' && !!document.fullscreenElement;
+  const lp = llave(T('Pantalla', 'Screen'), [T('Ventana', 'Window'), T('Completa', 'Full')], completa ? 1 : 0, 'pantalla');
+  if (lp !== null) { E.clicIzq = false; try { if (lp === 0) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch { /* nada */ } }
+  const bw = chico ? 150 : 200, bh = chico ? 30 : 40;
+  pant.volver = [W / 2, y + h - pie / 2 - (chico ? 0 : 4)];
+  if (boton(T('Volver', 'Back'), W / 2 - bw / 2, y + h - pie / 2 - bh / 2 - (chico ? 0 : 4), bw, bh, { tam: chico ? 14 : 16 })) { E.clicIzq = false; return 'volver'; }
   // créditos de terceros (licencia MIT)
-  texto(T('Efectos: pixelfx (MIT) de Patch, Hugo Duprez y Hollow Crown', 'Effects: pixelfx (MIT) by Patch, Hugo Duprez and Hollow Crown'), W / 2, Math.min(H - 6, y + h + 16), { alin: 'center', tam: 10, color: '#7a6a50' });
+  texto(T('Efectos: pixelfx (MIT) de Patch, Hugo Duprez y Hollow Crown', 'Effects: pixelfx (MIT) by Patch, Hugo Duprez and Hollow Crown'), W / 2, Math.min(H - 4, y + h + 14), { alin: 'center', tam: 10, color: '#7a6a50' });
   return null;
 }
 
