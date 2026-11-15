@@ -712,7 +712,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     }
     // exceso de daño: si el golpe que lo mata pasa de la mitad de su vida, revienta (los jefes no)
     if (m.vida <= 0 && !m.dueno && m.calidad < 3 && !m.def.jefe && total > m.vidaMax * 0.5 && !sangraHueso(m)) reventar(j, m);
-    if (m.vida <= 0) morirMonstruo(j, m, g);
+    if (m.vida <= 0) { (g as any).fueCrit = crit; morirMonstruo(j, m, g); }
   }
   return total;
 }
@@ -891,6 +891,36 @@ function lejosDelJefe(j: Juego, m: Monstruo): [number, number] {
   for (let i = 0; i < 10; i++) { const a = R() * Math.PI * 2, r = entre(3.5, 6); const q = libreCerca(j.zona, m.x + Math.cos(a) * r, m.y + Math.sin(a) * r); if (dist(q[0] + 0.5, q[1] + 0.5, m.x, m.y) >= 3) return q; }
   return libreCerca(j.zona, m.x + 4, m.y + 4);
 }
+/**
+ * La muerte se ve: un abanico de sangre hacia donde iba el golpe, el chorro que sigue latiendo unos instantes sobre el
+ * cuerpo, una nube roja, astillas si era de hueso, la cabeza que vuela con un crítico, sangre en el lente si fue pegado a
+ * ti, y las rachas (varias muertes seguidas) que sacuden la pantalla y se anuncian.
+ */
+const TINTA: Record<string, [string, string]> = { rojo: ['#8a0808', '#c81818'], negro: ['#1e1e18', '#3c3a2c'], verde: ['#2a5a10', '#5aa020'] };
+function muerteBrutal(j: Juego, m: Monstruo, g?: Golpe) {
+  const h = j.heroe, o = j as any, hueso = sangraHueso(m), pal = paletaDe(m), [c1, c2] = TINTA[pal], crit = !!(g as any)?.fueCrit, rev = !!(m as any).reventado;
+  const fx = g?.fuente?.x ?? h.x, fy = g?.fuente?.y ?? h.y, dx = m.x - fx, dy = m.y - fy, l = Math.hypot(dx, dy) || 1, ang = Math.atan2(dy / l, dx / l), esc = m.escala ?? 1;
+  if (hueso) {
+    // el esqueleto se desarma: astillas y huesos que saltan en abanico
+    if (j.particulas.length < 1000) for (let i = 0; i < 16; i++) { const a = ang + (R() - 0.5) * 1.6, v = 2 + R() * 5; j.particulas.push({ x: m.x, y: m.y, z: 20 * esc + R() * 20, vx: Math.cos(a) * v, vy: Math.sin(a) * v, vz: 50 + R() * 130, t: 0, dur: 0.9 + R() * 0.7, color: R() < 0.5 ? '#d8d0b8' : '#a89c80', tam: 2 + R() * 3, grav: 320, tipo: 'sangre' } as any); }
+    particulas(j, m.x, m.y, 5, 'humo', '#8a8474', 0.9, 24 * esc);
+  } else {
+    // abanico de sangre en el piso, hacia donde iba el golpe
+    for (let i = 0, n = 3 + (crit ? 2 : 0) + (esc > 1.3 ? 1 : 0); i < n; i++) { const a = ang + (R() - 0.5) * 1.2, d = 0.9 + R() * 1.9 * Math.min(1.6, esc); ponerMancha(j, { x: m.x + Math.cos(a) * d, y: m.y + Math.sin(a) * d, r: 0.4 + R() * 0.55, color: colorSangre(m), t: 0, tipo: 'sangre', forma: 'salpicadura', ang: a, sem: Math.floor(R() * 8), pal }); }
+    // el chorro: late un segundo largo sobre el cuerpo
+    if (!rev) (o.chorros ??= []).push({ x: m.x, y: m.y, t: 0, ac: 0, dur: 0.9 + R() * 0.7 + (crit ? 0.5 : 0), ang: ang + (R() - 0.5) * 1.2, esc, c1, c2 });
+    particulas(j, m.x, m.y, crit ? 9 : 5, 'humo', c1, 0.8, 26 * esc);
+    // un crítico arranca algo: la cabeza (o lo que tenga) sale volando
+    if (crit && !rev) { const gibs: Gib[] = (o.gibs ??= []); const v = 3 + R() * 3, a = ang + (R() - 0.5) * 0.5; gibs.push({ id: 'gore_gib_craneo', pal: PAL_GIB[pal], x: m.x, y: m.y, z: 44 * esc, vx: Math.cos(a) * v, vy: Math.sin(a) * v, vz: 120 + R() * 80, ang: R() * 8, va: (R() - 0.5) * 34, t: 0, vida: 20 + R() * 20 }); sonar(j, 'desgarro', m.x, m.y, 0.8); }
+  }
+  // sangre en el lente: cuando revienta o cae de un crítico pegado a ti
+  if (!hueso && (rev || crit) && dist(m.x, m.y, h.x, h.y) < 2.6) o.lente = { t: j.t, sem: R() * 100, n: rev ? 10 : 6, color: c1 };
+  // rachas: varias muertes seguidas
+  o.racha = j.t - (o.rachaT ?? -9) < 2.4 ? (o.racha ?? 0) + 1 : 1; o.rachaT = j.t;
+  const RACHA: Record<number, [[string, string], string, number]> = { 3: [['¡Triple!', 'Triple!'], '#ffd070', 0.2], 5: [['¡Carnicería!', 'Carnage!'], '#ff9040', 0.35], 8: [['¡MATANZA!', 'SLAUGHTER!'], '#ff5030', 0.5], 12: [['¡EXTERMINIO!', 'EXTERMINATION!'], '#ff2020', 0.7] };
+  const ra = RACHA[o.racha];
+  if (ra) { letrero(j, h, ra[0], ra[1]); j.sacudida = Math.max(j.sacudida, ra[2]); if (o.racha >= 8) j.congela = Math.max(j.congela ?? 0, 0.11); sonar(j, 'reventon', h.x, h.y, 0.5); }
+}
 function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   if (sangraHueso(m) && !m.dueno) sonar(j, 'hueso_cruje', m.x, m.y, 0.8);
   if (g?.arma && !m.dueno) efectoLegMuerte(j, m);
@@ -916,6 +946,8 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   const rm = (0.8 + R() * 0.8) * m.escala * ((m as any).reventado ? 1.4 : 1);
   ponerMancha(j, { x: m.x, y: m.y, r: rm * 0.25, rmax: rm, color: colorSangre(m), t: 0, tipo: 'sangre', forma: sangraHueso(m) ? undefined : 'charco', sem: Math.floor(R() * 8), pal: paletaDe(m) });
   particulas(j, m.x, m.y, 14, 'sangre', m.def.sonido === 'hueso' ? '#d8d0b8' : '#7a0808', 1.4, 30);
+  muerteBrutal(j, m, g);
+  if (m.def.jefe || m.calidad >= 3) { ((j as any).caidas ??= []).push({ x: m.x, y: m.y, t: 0, prox: 0.15, esc: Math.max(1, m.escala ?? 1), elem: m.def.elem ?? 'fisico', pal: paletaDe(m), hueso: sangraHueso(m) }); j.congela = Math.max(j.congela ?? 0, 0.22); }
   // experiencia (con castigo si el monstruo es muy bajo)
   const dif = h.d.nivel - m.nivel;
   const k = dif > 5 ? Math.max(0.05, 1 - (dif - 5) * 0.15) : 1;
@@ -1704,6 +1736,38 @@ export function actualizar(j: Juego, dt: number) {
   for (const m of j.monstruos) actualizarMonstruo(j, m, dt);
   // charcos que crecen bajo los muertos y rastro de sangre del que huye herido
   for (const mc of j.manchas) { if (mc.forma === 'charco' && mc.t < 10) mc.t += dt; if (mc.rmax && mc.r < mc.rmax) mc.r = Math.min(mc.rmax, mc.r + (mc.rmax - mc.r) * dt * 0.45 + dt * 0.02); }
+  // la caída de un jefe: dos segundos de estallidos sobre el cuerpo, y al final la onda que barre la sala y la lluvia de sangre
+  { const cs: any[] | undefined = (j as any).caidas;
+    if (cs?.length) {
+      const EST: Record<string, string> = { fuego: 'explosion_fuego', frio: 'estallido_esquirlas', rayo: 'impacto_rayo', veneno: 'impacto_veneno', sombra: 'estallido_cadaver', luz: 'castigo', fisico: 'estallido_cadaver', sangre: 'estallido_cadaver' };
+      for (const c of cs) {
+        c.t += dt; c.prox -= dt;
+        if (c.t < 2 && c.prox <= 0) {
+          c.prox = 0.16 + R() * 0.14; const a = R() * Math.PI * 2, d = R() * 1.6 * c.esc, x = c.x + Math.cos(a) * d, y = c.y + Math.sin(a) * d;
+          efecto(j, EST[c.elem] ?? 'estallido_cadaver', x, y, 0, 0.6 + R() * 0.7); j.sacudida = Math.max(j.sacudida, 0.28);
+          particulas(j, x, y, 8, c.hueso ? 'humo' : 'sangre', c.hueso ? '#b8b0a0' : TINTA[c.pal][R() < 0.4 ? 1 : 0], 1.8, 30 * c.esc);
+          sonar(j, 'explosion', x, y, 0.35);
+        }
+        if (c.t >= 2 && !c.fin) {
+          c.fin = true; efecto(j, 'onda_aterrizaje', c.x, c.y, 0, 3.2 * c.esc); efecto(j, 'grito_guerra', c.x, c.y, 0, 2.4); j.sacudida = 1; j.congela = Math.max(j.congela ?? 0, 0.16);
+          sonar(j, 'reventon', c.x, c.y, 1); sonar(j, 'trueno', c.x, c.y, 0.6);
+          // la lluvia: sangre (o ceniza de hueso) que cae sobre toda la sala y la mancha
+          if (j.particulas.length < 1100) for (let i = 0; i < 70; i++) { const a = R() * Math.PI * 2, d = R() * 6.5; j.particulas.push({ x: c.x + Math.cos(a) * d, y: c.y + Math.sin(a) * d, z: 120 + R() * 260, vx: (R() - 0.5) * 0.6, vy: (R() - 0.5) * 0.6, vz: -40 - R() * 60, t: 0, dur: 1.6 + R() * 0.8, color: c.hueso ? '#c8c0a8' : TINTA[c.pal][R() < 0.35 ? 1 : 0], tam: 1.2 + R() * 2, grav: 260, tipo: 'sangre' } as any); }
+          if (!c.hueso) for (let i = 0; i < 12; i++) { const a = R() * Math.PI * 2, d = 1 + R() * 5; ponerMancha(j, { x: c.x + Math.cos(a) * d, y: c.y + Math.sin(a) * d, r: 0.4 + R() * 0.7, color: TINTA[c.pal][0], t: 0, tipo: 'sangre', forma: 'salpicadura', ang: a, sem: Math.floor(R() * 8), pal: c.pal }); }
+        }
+      }
+      (j as any).caidas = cs.filter((c) => c.t < 2.2);
+    } }
+  // chorros de sangre que laten sobre los recién caídos
+  { const ch: any[] | undefined = (j as any).chorros;
+    if (ch?.length) {
+      for (const c of ch) {
+        c.t += dt; c.ac += dt; const pulso = Math.max(0, Math.sin(c.t * 15)), k = 1 - c.t / c.dur;
+        while (c.ac > 0.03) { c.ac -= 0.03; if (pulso < 0.25 || j.particulas.length > 1000) continue; const a = c.ang + (R() - 0.5) * 0.4, v = (1 + 2.8 * pulso) * k + 0.3;
+          j.particulas.push({ x: c.x, y: c.y, z: 12 * c.esc, vx: Math.cos(a) * v, vy: Math.sin(a) * v, vz: (60 + 110 * pulso) * k + 25, t: 0, dur: 0.75, color: R() < 0.3 ? c.c2 : c.c1, tam: 1 + R() * 1.8, grav: 300, tipo: 'sangre' } as any); }
+      }
+      (j as any).chorros = ch.filter((c) => c.t < c.dur);
+    } }
   // pedazos que vuelan: gravedad, giro (8 cuadros por vuelta) y salpicadura donde caen; se van a los 20-40 s
   const gibs: Gib[] | undefined = (j as any).gibs;
   if (gibs?.length) {
@@ -1959,6 +2023,10 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
   m.t += dt; m.destello = Math.max(0, m.destello - dt);
   if (m.muerto) { m.tMuerto += dt; return; }
   if ((m as any).manCd > 0 && !(m as any).man && m.estado === 'perseguir') (m as any).manCd -= dt;
+  if ((m.def.jefe || m.calidad >= 3) && (m.acc === 'caminar' || m.acc === 'correr') && (m.escala ?? 1) >= 1.3) {
+    const o = m as any; o.pasoT = (o.pasoT ?? 0) - dt;
+    if (o.pasoT <= 0) { o.pasoT = 0.44; if (dist(m.x, m.y, j.heroe.x, j.heroe.y) < 14) { j.sacudida = Math.max(j.sacudida, 0.09); particulas(j, m.x, m.y, 4, 'humo', '#6a6050', 0.7, 2); sonar(j, 'objeto_cae', m.x, m.y, 0.25); } }
+  }
   actualizarMonstruo2(j, m, dt);
   // lo que se ve: entre quieto y caminar hace falta un mínimo de 0.2 s en cada estado (sin vaivén de un cuadro a otro)
   const o = m as any; o.tVis = (o.tVis ?? 0) + dt;

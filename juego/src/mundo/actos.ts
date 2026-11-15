@@ -4,7 +4,7 @@ import type { DefZona } from './zona';
 const Z = (d: DefZona) => d;
 export const ZONAS: Record<string, DefZona> = Object.fromEntries([
   // ============================================================== ACTO 1
-  Z({ id: 'a1_refugio', nombre: ['El Refugio de los Cenicientos', 'The Ashen Refuge'], acto: 1, nivel: 1, tipo: 'pueblo', tema: 'paramo', tam: [14, 14], piedraViaje: true, lluvia: true,
+  Z({ id: 'a1_refugio', nombre: ['El Refugio de los Cenicientos', 'The Ashen Refuge'], acto: 1, nivel: 1, tipo: 'pueblo', tema: 'paramo', tam: [16, 16], piedraViaje: true, lluvia: true,
     salidas: [{ destino: 'a1_paramo', entrada: 'o', lado: 'e', nombre: ['Páramo de Velmora', 'Velmora Moor'] }] }),
   Z({ id: 'a1_paramo', nombre: ['Páramo de Velmora', 'Velmora Moor'], acto: 1, nivel: 2, tipo: 'exterior', tema: 'paramo', tam: [26, 26], rio: 'arroyo', extra: [{ t: ['paramo'], p: ['par_horca', 'par_picota', 'par_cabezas_picas', 'par_caravana', 'par_circulo'] }], piedraViaje: true, lluvia: true, niebla: 0.25,
     salidas: [{ destino: 'a1_refugio', entrada: 'e', lado: 'o', nombre: ['El Refugio', 'The Refuge'] }, { destino: 'a1_cementerio', entrada: 'o', lado: 'e', nombre: ['Camposanto de Santa Oria', 'Santa Oria Churchyard'] }, { destino: 'a1_bosque', entrada: 's', lado: 'n', nombre: ['Bosque de los Ahorcados', 'Hanged Men\'s Wood'] }, { destino: 'a1_guarida', entrada: 'arriba', lado: 'abajo', nombre: ['La Guarida del Hambre', 'The Hunger Den'] }, { destino: 'a1_pastor', entrada: 'arriba', lado: 'abajo', nombre: ['Cueva del Pastor', 'Shepherd\'s Cave'] }] }),

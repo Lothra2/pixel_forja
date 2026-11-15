@@ -137,28 +137,30 @@ export const PAISAJES: Paisaje[] = [
     k.regar(k.buscar(['monasterio'], ['brasero', 'antorcha', 'candel', 'vela', 'estatua']), 6, 3, 3, k.W - 2, k.H - 2);
     k.regar(k.buscar(['monasterio'], ['sangre', 'charco']), 1, 8, 8, k.W - 6, k.H - 6);
   } },
-  { id: 'campamento', nombre: ['Campamento', 'Encampment'], ambiente: 'atardecer', tam: [9, 9], armar: (k) => {
-    // Campamento grande (45 x 45 celdas): empalizada y torres por detrás, el pabellón del capitán al fondo mirando a la
-    // fogata, carpas grandes a los lados, carpas chicas hacia el frente, la herrería a un costado y el patio de
-    // prácticas al otro. El centro queda despejado para la gente (radio de 9 celdas alrededor del fuego).
-    k.piso('tierra'); k.piso('pasto', 0, 0, 9, 1); k.piso('pasto', 0, 0, 1, 9);
+  { id: 'campamento', nombre: ['Campamento', 'Encampment'], ambiente: 'atardecer', tam: [12, 12], armar: (k) => {
+    // Campamento abierto (60 x 60 celdas): la fogata en el centro de una plaza ancha (la gente se para en un ruedo de 12
+    // celdas, cada quien frente a su puesto), y los puestos en un segundo ruedo por fuera: el pabellón del capitán al
+    // fondo, las carpas grandes a los lados, la herrería adelante a la derecha, el patio de prácticas adelante a la izquierda.
+    k.piso('tierra'); k.piso('pasto', 0, 0, 12, 1); k.piso('pasto', 0, 0, 1, 12);
     const de = (...pal: string[]) => k.buscar(['campamento'], pal)[0];
     const empal = k.buscar(['campamento'], ['empaliz', 'palizad', 'estacad']);
     borde(k, empal, 'x', 2, 4, k.W - 3); borde(k, empal, 'y', 2, 4, k.H - 3);
     for (const [x, y] of [[5, 5], [k.W - 6, 5], [5, k.H - 6]]) k.poner(de('torre'), x, y);
-    k.poner(k.buscar(['campamento'], ['fogata', 'hoguera'])[0], 22, 22, 'grande');
-    k.poner(k.buscar(['comun'], ['portal_azul'])[0], 20, 27);
-    k.poner(de('pabellon'), 22, 9);
-    k.poner(de('carpa_grande'), 9, 15); k.poner(de('carpa_grande'), 36, 17);
+    k.poner(k.buscar(['campamento'], ['fogata', 'hoguera'])[0], 30, 30, 'grande');
+    k.poner(k.buscar(['comun'], ['portal_azul'])[0], 27, 36);
+    k.poner(de('pabellon'), 33, 8);
+    k.poner(de('carpa_grande'), 9, 30); k.poner(de('carpa_grande'), 50, 18); k.poner(de('carpa_grande'), 15, 13);
     const chica = k.buscar(['campamento'], ['carpa']).find((d) => d.id === 'camp_carpa');
-    for (const [x, y, v] of [[8, 29, 'cerrada'], [14, 38, 'abierta'], [27, 39, 'remendada'], [38, 27, 'abierta']] as [number, number, string][]) k.poner(chica, x, y, v);
-    k.poner(k.buscar(['comun'], ['viaje', 'waypoint'])[0], 31, 6);
-    k.poner(k.buscar(['comun', 'campamento'], ['baul', 'alijo', 'stash'])[0], 14, 27);
+    for (const [x, y, v] of [[36, 52, 'abierta'], [10, 44, 'cerrada'], [24, 54, 'remendada'], [53, 30, 'abierta']] as [number, number, string][]) k.poner(chica, x, y, v);
+    k.poner(k.buscar(['comun'], ['viaje', 'waypoint'])[0], 46, 8);
+    k.poner(k.buscar(['comun', 'campamento'], ['baul', 'alijo', 'stash'])[0], 14, 37);
     // la herrería
-    k.poner(de('fragua'), 36, 34); k.poner(de('yunque'), 32, 33); k.poner(de('armero'), 39, 38); k.poner(de('soporte_armadura'), 33, 37);
+    k.poner(de('fragua'), 50, 41); k.poner(de('yunque'), 46, 40); k.poner(de('armero'), 53, 46); k.poner(de('soporte_armadura'), 47, 46);
     // el patio de prácticas, el agua y la comida
-    k.poner(de('muneco'), 19, 35); k.poner(de('muneco'), 22, 37); k.poner(de('fuente'), 11, 22); k.poner(de('asador'), 30, 27);
-    k.regar(k.buscar(['campamento'], ['carro', 'carreta', 'caja', 'saco', 'barril', 'heno', 'estandarte', 'leña', 'lena']), 22, 5, 5, k.W - 3, k.H - 3);
+    k.poner(de('muneco'), 16, 49); k.poner(de('muneco'), 20, 51); k.poner(de('fuente'), 22, 16); k.poner(de('asador'), 38, 36);
+    // los pertrechos van por fuera de la plaza (el ruedo de 15 celdas alrededor del fuego queda limpio para caminar y tocar)
+    const cosas = k.buscar(['campamento'], ['carro', 'carreta', 'caja', 'saco', 'barril', 'heno', 'estandarte', 'leña', 'lena']);
+    for (let i = 0, n = 0; i < 400 && n < 26; i++) { const x = 5 + Math.floor(k.r() * (k.W - 9)), y = 5 + Math.floor(k.r() * (k.H - 9)); if (Math.hypot(x - 30, y - 30) < 15) continue; if (k.poner(cosas[Math.floor(k.r() * cosas.length)], x, y)) n++; }
   } },
   { id: 'pueblo', nombre: ['Pueblo en ruinas', 'Ruined village'], ambiente: 'noche', tam: [7, 7], armar: (k) => {
     k.piso('pasto_seco'); k.piso('empedrado', 3, 0, 4, 7); k.piso('empedrado', 0, 3, 7, 4);

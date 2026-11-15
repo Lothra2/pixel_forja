@@ -30,6 +30,8 @@ export interface Zona {
   entradas: Record<string, [number, number]>;
   spawns: Spawn[];
   explorado: Uint8Array;
+  /** A cielo abierto: la altura del terreno por celda (0 a 1). El piso se pinta con ella (lomas, sombra de ladera) y donde cambia de terraza van escalones de roca. */
+  alturas?: Float32Array;
   /** Cavernas: celdas de roca maciza dentro de baldosas con piso (se pintan de negro; los peñascos del borde van encima). */
   hueco?: Uint8Array;
   semilla: number;
@@ -525,6 +527,7 @@ function exterior(def: DefZona, semilla: number): Zona {
     if (o) z.marcas.push({ tipo: 'viaje', cx: o.cx, cy: o.cy });
   }
   escenasMundo(k, def, puntos);
+  relieveMundo(k, def.tema, 0.2);
   // cofres, santuarios y pozos
   colocarInteractivos(k, 2 + Math.floor(area / 6000), 1 + Math.floor(area / 9000), def.tema);
   // dónde salen los monstruos: lejos de las entradas
@@ -918,6 +921,23 @@ function bordeCueva(k: Constructor, ab: Uint8Array, id = 'cue_penasco', pre = ''
   }
 }
 
+/** Terrazas en que se parte la altura del terreno (para los escalones y la sombra de escalón del piso). */
+export const TERRAZAS = 5;
+/** El relieve de un mundo abierto: un campo de alturas suave y, en las curvas donde cambia de terraza, escalones de roca del tema. */
+function relieveMundo(k: Constructor, tema: string, cuanto: number) {
+  const z = k.z, r = k.r, { W, H } = z, est = ESTILO_BORDE[tema];
+  const a = ruido2(r, W, H, 9), b = ruido2(r, W, H, 3.6), alt = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) alt[i] = a[i] * 0.75 + b[i] * 0.25;
+  z.alturas = alt;
+  const esc = REGISTRO.find((d) => d.id === 'dec_escalon'); if (!esc || !est) return;
+  const T = (x: number, y: number) => Math.floor(alt[y * W + x] * TERRAZAS);
+  for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x += 2) {
+    if (z.bloq[y * W + x] || k.reserva[y * W + x] || r() > cuanto) continue;
+    // el borde de la terraza corre a lo largo de x (cambia hacia y) o a lo largo de y (cambia hacia x)
+    const enX = T(x, y + 1) !== T(x, y), enY = T(x + 1, y) !== T(x, y); if (!enX && !enY) continue;
+    k.poner(esc, x, y, `${est}_${'abc'[Math.floor(r() * 3)]}${enX ? '' : '_y'}`);
+  }
+}
 /** El decorado propio del mundo (catalogo/decorado.ts): plantas sueltas, ruinas y algún hito, del estilo de sus riscos. */
 function decorarMundo(k: Constructor, estilo: string | undefined, plantas: number, ruinas: number, hitos: number, cerca?: (x: number, y: number) => boolean) {
   if (!estilo) return;
@@ -1010,6 +1030,52 @@ function costa(k: Constructor, tema: string) {
   bordeCueva(k, ab, 'bor_risco', e + '_', (i) => !!fuera[i]);
 }
 
+/**
+ * La arena de cada jefe: la forma de su sala, cuánto mide y qué estorbos la pueblan y en qué figura. Cada pelea se reconoce
+ * por el sitio: la columnata del Rey sin Sombra, el ruedo de soldados congelados del Caballero Espectral, las jaulas del Carcelero.
+ * (clave `jefe@tema` cuando el mismo jefe pelea en dos mundos distintos)
+ */
+interface Arena { forma?: 'chaflan' | 'cruz' | 'diamante'; dim?: [number, number]; patron: 'anillo' | 'filas' | 'esquinas' | 'cruz' | 'disperso'; n?: number; piezas: string[] }
+const ARENAS: Record<string, Arena> = {
+  arana_reina: { patron: 'anillo', n: 8, piezas: ['cue2_capullos', 'cue2_telarana', 'cue_telarana'] },
+  ogro: { patron: 'disperso', n: 7, piezas: ['cue2_nido_huesos', 'cue_huesos', 'cue2_pilar_roca'] },
+  carcelero: { forma: 'cruz', dim: [6, 6], patron: 'cruz', piezas: ['cat_jaula', 'cat_poste_cadenas'] },
+  aparecida: { forma: 'diamante', dim: [6, 6], patron: 'anillo', n: 6, piezas: ['cem_sarcofago', 'cem_velas'] },
+  verdugo: { forma: 'cruz', dim: [6, 6], patron: 'esquinas', piezas: ['for2_horca', 'cat_potro', 'pue_cepo', 'cat_poste_cadenas'] },
+  abadesa: { forma: 'diamante', dim: [6, 6], patron: 'anillo', n: 8, piezas: ['mon_brasero', 'mon_pilar'] },
+  escorpion_gigante: { patron: 'disperso', n: 7, piezas: ['des2_huesos', 'cue2_estalagmitas', 'des2_craneo_cuernos'] },
+  momia: { forma: 'chaflan', dim: [7, 5], patron: 'filas', piezas: ['tum_sarcofago', 'tum_brasero'] },
+  sacerdote_caido: { forma: 'diamante', dim: [6, 6], patron: 'anillo', n: 6, piezas: ['tum_obelisco', 'tum_brasero'] },
+  rey_sin_sombra: { forma: 'chaflan', dim: [7, 5], patron: 'filas', piezas: ['tum_columna'] },
+  trol_pantano: { patron: 'disperso', n: 8, piezas: ['sel_charco', 'cue2_pilar_roca', 'cue2_estalagmitas'] },
+  hechicera_sangre: { forma: 'diamante', dim: [6, 6], patron: 'anillo', n: 8, piezas: ['tem_brasero', 'mon_charco_sangre'] },
+  madre_cienaga: { forma: 'cruz', dim: [7, 7], patron: 'cruz', piezas: ['tem_columna_serpiente', 'tem_estatua_jaguar'] },
+  gigante_helado: { forma: 'chaflan', dim: [6, 6], patron: 'esquinas', piezas: ['hie2_columna', 'hie_pilar'] },
+  caballero_muerto: { forma: 'chaflan', dim: [5, 7], patron: 'filas', piezas: ['for2_tumba', 'cem_sarcofago'] },
+  caballero_espectral: { patron: 'anillo', n: 8, piezas: ['nie2_soldado_hielo'] },
+  rey_escarcha: { patron: 'filas', piezas: ['hie2_pilar_runa', 'hie2_brasero'] },
+  caballero_abismo: { patron: 'esquinas', piezas: ['abi_obelisco', 'abi_cristal_vacio'] },
+  'caballero_abismo@celestial_interior': { forma: 'chaflan', dim: [7, 5], patron: 'filas', piezas: ['cel_columna_rota', 'cel_brasero_blanco'] },
+  segador: { forma: 'diamante', dim: [6, 6], patron: 'anillo', n: 6, piezas: ['inf_jaula_alma', 'inf2_jaula'] },
+  dragon_oseo: { forma: 'diamante', dim: [7, 7], patron: 'disperso', n: 9, piezas: ['inf_huesos', 'inf2_craneo', 'cue2_nido_huesos'] },
+  senor_demonio: { forma: 'diamante', patron: 'anillo', n: 8, piezas: ['inf2_columna_fuego', 'inf2_obelisco'] },
+  ahogado: { forma: 'cruz', dim: [6, 6], patron: 'cruz', piezas: ['ahg_ancla', 'ahg_campana_caida'] },
+  monja_hueca: { forma: 'chaflan', dim: [5, 7], patron: 'filas', piezas: ['ahg_columna_percebes'] },
+  campana_ahoga: { forma: 'diamante', patron: 'anillo', n: 6, piezas: ['ahg_campana_caida', 'ahg_boya_campana'] },
+  lich: { forma: 'diamante', dim: [6, 6], patron: 'anillo', n: 6, piezas: ['arc_pilar_estrella'] },
+  aun_saar: { forma: 'cruz', patron: 'esquinas', piezas: ['cel_obelisco_oro', 'cel_brasero_blanco'] },
+};
+const arenaDe = (def: DefZona): Arena | undefined => (def.jefe ? ARENAS[`${def.jefe}@${def.tema}`] ?? ARENAS[def.jefe] : undefined);
+/** Dónde van los estorbos de una arena, medidos desde su centro (rx, ry: los radios útiles de la sala en celdas). */
+function puntosArena(ar: Arena, rx: number, ry: number, r: () => number): [number, number][] {
+  const P: [number, number][] = [];
+  if (ar.patron === 'anillo') { const n = ar.n ?? 6; for (let i = 0; i < n; i++) { const a = ((i + 0.5) / n) * Math.PI * 2; P.push([Math.cos(a) * rx, Math.sin(a) * ry]); } }
+  else if (ar.patron === 'filas') { const largo = rx >= ry; for (const f of [-1, -0.34, 0.34, 1]) for (const l of [-0.82, 0.82]) P.push(largo ? [f * rx, l * ry] : [l * rx, f * ry]); }
+  else if (ar.patron === 'esquinas') for (const sx of [-1, 1]) for (const sy of [-1, 1]) P.push([sx * rx * 0.78, sy * ry * 0.78], [sx * rx, sy * ry * 0.3]);
+  else if (ar.patron === 'cruz') P.push([rx, 0], [0, ry], [-rx, 0], [0, -ry], [rx * 0.62, ry * 0.62], [-rx * 0.62, ry * 0.62], [-rx * 0.62, -ry * 0.62], [rx * 0.62, -ry * 0.62]);
+  else { const n = ar.n ?? 7; for (let i = 0; i < n; i++) { const a = ((i + r() * 0.7) / n) * Math.PI * 2, d = 0.62 + r() * 0.45; P.push([Math.cos(a) * rx * d, Math.sin(a) * ry * d]); } }
+  return P;
+}
 /** Cuántas regiones separadas de piso libre tiene la zona. Si sube después de poner algo, eso partió el mapa. */
 function regionesLibres(z: Zona): number {
   const W = z.W, v = new Uint8Array(W * z.H); let n = 0;
@@ -1097,9 +1163,10 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   // los jefes grandes pelean en una sala con aire: la del fondo crece (en bloques de 5 casillas) alrededor de su centro
   const SALA_JEFE: Record<string, number> = { senor_demonio: 7, aun_saar: 7, dragon_oseo: 6, campana_ahoga: 6, madre_cienaga: 6, rey_escarcha: 6, abadesa: 5, caballero_abismo: 5, verdugo: 5, rey_sin_sombra: 5, gigante_helado: 5 };
   const lado = def.jefe ? SALA_JEFE[def.jefe] ?? 5 : 0; // (todo jefe pelea en una sala de 5 baldosas por lado como mínimo)
+  const ar = arenaDe(def);
   if (lado) {
     const c = orden[orden.length - 1], cx = c[0] + c[2] / 2, cy = c[1] + c[3] / 2;
-    const w = Math.min(tw - 2, Math.max(c[2], lado)), h = Math.min(th - 2, Math.max(c[3], lado));
+    const w = Math.min(tw - 2, Math.max(c[2], lado, ar?.dim?.[0] ?? 0)), h = Math.min(th - 2, Math.max(c[3], lado, ar?.dim?.[1] ?? 0));
     c[0] = Math.max(1, Math.min(tw - 1 - w, Math.round(cx - w / 2))); c[1] = Math.max(1, Math.min(th - 1 - h, Math.round(cy - h / 2))); c[2] = w; c[3] = h;
   }
   const sala = new Uint8Array(tw * th);
@@ -1108,13 +1175,14 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     const libre = !t.organica && n > 0 && w >= 3 && h >= 3, q = r();
     // la sala del jefe es siempre una arena de esquinas cortadas (ochavada): se reconoce al entrar y no tiene rincones donde quedar encerrado
     const arena = !!def.jefe && n === orden.length - 1 && !t.organica && w >= 4 && h >= 4;
-    const forma = arena ? 'chaflan' : !libre ? 'rect' : q < 0.34 ? 'chaflan' : q < 0.52 && n < orden.length - 1 ? 'ele' : q < 0.66 && w >= 4 && h >= 4 ? 'cruz' : 'rect';
+    const forma = arena ? ar?.forma ?? 'chaflan' : !libre ? 'rect' : q < 0.34 ? 'chaflan' : q < 0.52 && n < orden.length - 1 ? 'ele' : q < 0.66 && w >= 4 && h >= 4 ? 'cruz' : 'rect';
     const esq = Math.floor(r() * 4), cw = Math.max(1, Math.floor(w / 3)), ch = Math.max(1, Math.floor(h / 3));
     for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) {
       const dx = Math.min(i - x, x + w - 1 - i), dy = Math.min(j - y, y + h - 1 - j);
       let fuera = false;
       if (forma === 'chaflan') fuera = dx === 0 && dy === 0;
       else if (forma === 'cruz') fuera = dx < cw && dy < ch;
+      else if (forma === 'diamante') fuera = dx + dy < Math.max(1, Math.floor(Math.min(w, h) / 3));
       else if (forma === 'ele') { const izq = i - x < Math.floor(w / 2), arr = j - y < Math.floor(h / 2); fuera = (esq === 0 && izq && arr) || (esq === 1 && !izq && arr) || (esq === 2 && izq && !arr) || (esq === 3 && !izq && !arr); if (i === Math.floor(x + w / 2) || j === Math.floor(y + h / 2)) fuera = false; }
       if (fuera && !suelo[j * tw + i]) continue;
       suelo[j * tw + i] = 1; sala[j * tw + i] = 1;
@@ -1206,11 +1274,31 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     const mis = ['mis_trono_huesos', 'mis_manos', 'mis_ojos_oscuridad', 'mis_carne_viva', 'mis_estatua_doliente', 'mis_pozo_almas', 'mis_reliquia', 'mis_libro_maldito', 'mis_espejo'];
     // los jefes enormes necesitan la sala despejada: el anillo y el tesoro se abren
     const g = def.jefe === 'aun_saar' || def.jefe === 'senor_demonio' ? 1.7 : def.jefe === 'campana_ahoga' ? 1.3 : 1;
-    for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2 + r(); k.poner(mis[i % mis.length], pN[0] + Math.cos(a) * ((abierto ? 6.5 : 8.5) + r() * 2) * g, pN[1] + 2 + Math.sin(a) * ((abierto ? 6 : 8) + r() * 2) * g); }
+    const rarezas = () => { for (let i = 0, nm = ar ? 3 : 9, a0 = r() * 6; i < nm; i++) { const a = (i / nm) * Math.PI * 2 + (ar ? a0 : r()); k.poner(mis[Math.floor(ar ? r() * mis.length : i) % mis.length], pN[0] + Math.cos(a) * ((abierto ? 6.5 : ar ? 10.5 : 8.5) + r() * 2) * g, pN[1] + 2 + Math.sin(a) * ((abierto ? 6 : ar ? 9.5 : 8) + r() * 2) * g); } };
+    if (!ar) rarezas();
     // la arena: el centro queda despejado (radio de 7 celdas) y cuatro piedras con runa encendida marcan el ruedo y lo
     // alumbran; son además los únicos estorbos, justo donde sirven para cortar una embestida
-    { const estA = abierto ? (typeof t.organica === 'string' ? t.organica : 'paramo') : ESCOMBRO_TEMA[def.tema] ?? 'cementerio';
+    if (ar) {
+      // primero se despeja el ruedo: el decorado suelto de la mazmorra no tapa la figura de la arena
+      const qx = (abierto ? 6 : Math.min(9.5 * g, cN[2] * 2.5 - 4.5)) + 1.5, qy = (abierto ? 5.5 : Math.min(8.5 * g, cN[3] * 2.5 - 4.5)) + 1.5;
+      for (let i = z.objetos.length - 1; i >= 0; i--) {
+        const o = z.objetos[i]; if (o.tag || /muro|pared|muralla|almena|penasco|risco|nichos|reja|puerta|escalera|portal|piedra_viaje|borde|puente|riel|via|isla|mis_|cofre/.test(o.id)) continue;
+        if (((o.cx - pN[0]) / qx) ** 2 + ((o.cy - pN[1] - 2) / qy) ** 2 > 1) continue;
+        z.objetos.splice(i, 1); if (!o.bloquea) continue;
+        const x0 = Math.round(o.cx - (o.hw - 1) / 2), y0 = Math.round(o.cy - (o.hh - 1) / 2);
+        for (let y = y0; y < y0 + o.hh; y++) for (let x = x0; x < x0 + o.hw; x++) if (x >= 0 && y >= 0 && x < z.W && y < z.H && z.bloq[y * z.W + x] === 1 && !(z.hueco && z.hueco[y * z.W + x])) z.bloq[y * z.W + x] = 0;
+      }
+      // la arena propia del jefe: sus estorbos en su figura; si ninguno alumbra, cada tercero es una piedra con runa encendida
+      const estA = abierto ? (typeof t.organica === 'string' ? t.organica : 'paramo') : ESCOMBRO_TEMA[def.tema] ?? 'cementerio';
+      const rx = abierto ? 6 : Math.min(9.5 * g, cN[2] * 2.5 - 4.5), ry = abierto ? 5.5 : Math.min(8.5 * g, cN[3] * 2.5 - 4.5);
+      const piezas = ar.piezas.filter((id) => REGISTRO.some((d) => d.id === id)), conLuz = /brasero|fuego|pira|velas|luz|estrella/.test(piezas.join());
+      puntosArena(ar, rx, ry, r).forEach(([dx, dy], i) => {
+        if (!piezas.length || (!conLuz && i % 3 === 2)) k.poner('dec_hito', pN[0] + dx, pN[1] + 2 + dy, `${estA}_runa`);
+        else k.poner(piezas[i % piezas.length], pN[0] + dx, pN[1] + 2 + dy);
+      });
+    } else { const estA = abierto ? (typeof t.organica === 'string' ? t.organica : 'paramo') : ESCOMBRO_TEMA[def.tema] ?? 'cementerio';
       for (const [dx, dy] of abierto ? [[-5, -4], [5, -4], [-5, 5], [5, 5]] : [[-7, -5], [7, -5], [-7, 6], [7, 6]]) k.poner('dec_hito', pN[0] + dx * g, pN[1] + 2 + dy * g, `${estA}_runa`); }
+    if (ar) rarezas();
     // la sala de Ozmaren: el piso se raja y deja ver la lava
     if (def.jefe === 'senor_demonio') {
       const bx = Math.floor(pN[0] / 5), by = Math.floor((pN[1] + 2) / 5);
@@ -1270,7 +1358,7 @@ function pueblo(def: DefZona, semilla: number): Zona {
   // lugares para NPC alrededor del centro (se reservan antes de poner objetos)
   const cx0 = (ox + m.ancho / 2) * 5, cy0 = (oy + m.alto / 2) * 5;
   const lugares: [number, number][] = [];
-  for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2 + 0.4, rr = m.ancho >= 9 ? 7.5 : 6; lugares.push([Math.round(cx0 + Math.cos(a) * rr), Math.round(cy0 + Math.sin(a) * rr)]); }
+  for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2 + 0.4, rr = m.ancho >= 12 ? 12 : m.ancho >= 9 ? 7.5 : 6; lugares.push([Math.round(cx0 + Math.cos(a) * rr), Math.round(cy0 + Math.sin(a) * rr)]); }
   for (const [x, y] of lugares) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) k.reserva[(y + dy) * z.W + x + dx] = 1;
   for (const o of m.objetos) {
     const cx = o.cx + ox * 5, cy = o.cy + oy * 5;
@@ -1291,6 +1379,18 @@ function pueblo(def: DefZona, semilla: number): Zona {
   if (!z.marcas.some((q) => q.tipo === 'viaje')) { const q = k.poner('com_piedra_viaje', cx0 + 9, cy0 - 7, 'encendida', true); if (q) z.marcas.push({ tipo: 'viaje', cx: q.cx, cy: q.cy }); }
   if (!z.marcas.some((q) => q.tipo === 'baul')) { const q = k.poner('cofre_gg', cx0 - 9, cy0 + 8, 'cerrado', true, 'baul'); if (q) z.marcas.push({ tipo: 'baul', cx: q.cx, cy: q.cy }); }
   lugares.forEach(([x, y], i) => z.marcas.push({ tipo: 'npc', cx: x, cy: y, dato: i }));
+  // el Refugio no es un lugar alegre: afuera de la plaza cuelgan los ahorcados, arden los muertos de la peste, hay
+  // cabezas en picas mirando al camino y una hilera de tumbas frescas. Todo lejos del ruedo donde se habla y se compra.
+  if (def.tema === 'paramo' && m.ancho >= 12) {
+    const T = (id: string, dx: number, dy: number, v?: string) => { for (let i = 0; i < 8; i++) { const o = k.poner(id, Math.round(cx0 + dx + (i ? (r() - 0.5) * 5 : 0)), Math.round(cy0 + dy + (i ? (r() - 0.5) * 5 : 0)), v); if (o) return o; } return null; };
+    T('hor_pila_cadaveres', 22, 24); T('pue_fogata', 19, 26); T('hor_cuervos_cadaver', 25, 21); T('camp_carro_mano', 17, 23);
+    for (const dx of [-9, -4, 4, 9]) T('hor_cabezas_picas', dx, 27 + Math.abs(dx) * 0.2);
+    T('pue_horca', -24, 20); T('hor_colgados', -20, 24); T('par_horca', -27, 15); T('hor_cuervos_cadaver', -22, 27);
+    T('pue_jaula', 26, 4); T('hor_jaula', 27, 9); T('pue_cepo', 23, 12);
+    for (let i = 0; i < 6; i++) { T('cem_tumba_tierra', -26 + (i % 3) * 3, -2 + Math.floor(i / 3) * 4); } T('cem_velas', -24, 5); T('cem_flores_secas', -21, 1);
+    T('hor_crucificado', 12, 27); T('hor_empalado', -14, 27); T('hor_escritura_sangre', 3, 22);
+    for (const [dx, dy] of [[-17, -17], [20, -14], [-17, 14], [17, 16]]) T('pue_farol', dx, dy);
+  }
   // alrededores
   k.regar(pu.extra, Math.floor((z.W * z.H) / 300), 3, 3, z.W - 3, z.H - 3, (x, y) => Math.hypot(x - cx0, y - cy0) > m.ancho * 2.8);
   // salida: hacia el lado de la primera salida
@@ -1308,7 +1408,10 @@ function pueblo(def: DefZona, semilla: number): Zona {
   if (def.tema === 'paramo') sueloParamo(k, [[cx0 / 5, cy0 / 5]]);
   void r;
   z.explorado.fill(1); // el campamento se conoce entero desde que llegas
-  decorarMundo(k, ESTILO_BORDE[def.tema], Math.floor((z.W * z.H) / 220), 0, 0);
+  // el campamento grande queda entero: ni la costa lo muerde ni le caen escalones o matas en la plaza
+  if (m.ancho >= 12) for (let y = 0; y < z.H; y++) for (let x = 0; x < z.W; x++) if (Math.hypot(x - cx0, y - cy0) < 34) k.reserva[y * z.W + x] = 1;
+  relieveMundo(k, def.tema, 0.12);
+  decorarMundo(k, ESTILO_BORDE[def.tema], Math.floor((z.W * z.H) / 220), 0, 0, m.ancho >= 12 ? (x, y) => Math.hypot(x - cx0, y - cy0) > 19 : undefined);
   costa(k, def.tema);
   return z;
 }
@@ -1453,14 +1556,14 @@ function ambientarHorror(z: Zona, def: DefZona) {
   const res = (x: number, y: number, rr: number) => { for (let dy = -rr; dy <= rr; dy++) for (let dx = -rr; dx <= rr; dx++) { const X = Math.round(x) + dx, Y = Math.round(y) + dy; if (X >= 0 && Y >= 0 && X < z.W && Y < z.H) k.reserva[Y * z.W + X] = 1; } };
   for (const e of Object.values(z.entradas)) res(e[0], e[1], 4);
   for (const s of z.salidas) res(s.cx, s.cy, 4);
-  const poner = (id: string, v: string, cx: number, cy: number) => {
-    for (let i = 0; i < 14; i++) { const a = r() * Math.PI * 2, d = 4 + r() * 5; const o = k.poner(id, Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d), v); if (o) return o; }
+  const poner = (id: string, v: string, cx: number, cy: number, d0 = 4) => {
+    for (let i = 0; i < 14; i++) { const a = r() * Math.PI * 2, d = d0 + r() * 5; const o = k.poner(id, Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d), v); if (o) return o; }
     return null;
   };
   const lista = HORROR_ACTO[def.acto] ?? HORROR_ACTO[1];
   // sala del jefe: 3 a 5 piezas alrededor, nunca encima de él (radio 4 a 9)
   const jf = z.spawns.find((s) => s.tipo === 'jefe');
-  if (jf) { const n = 3 + Math.floor(r() * 3); for (let i = 0; i < n; i++) { const [id, vs] = lista[Math.floor(r() * lista.length)]; poner(id, vs[Math.floor(r() * vs.length)], jf.cx, jf.cy); } }
+  if (jf) { const n = 2 + Math.floor(r() * 2); for (let i = 0; i < n; i++) { const [id, vs] = lista[Math.floor(r() * lista.length)]; poner(id, vs[Math.floor(r() * vs.length)], jf.cx, jf.cy, 9); } }
   // la escena de la misión: cerca del centro de la zona, lejos de la entrada
   const esc = HORROR_MISION[def.id];
   if (esc) { const s = z.spawns.filter((q) => q.tipo !== 'jefe'); const c = s[Math.floor(s.length / 2)] ?? { cx: z.W / 2, cy: z.H / 2 }; for (const [id, v] of esc) poner(id, v, c.cx, c.cy); }

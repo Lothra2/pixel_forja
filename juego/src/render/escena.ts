@@ -300,6 +300,10 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   type Item = { prof: number; draw: () => void };
   const items: Item[] = [];
   const cerca = (x: number, y: number, m = 3) => { const [px, py] = aPant(x, y); return px > -220 * m / 3 && px < W + 220 && py > -60 && py < H + 320; };
+  // quién puede apartar el pasto: el héroe y los monstruos vivos que están cerca
+  const pisan: Ent[] = [h]; for (const m of j.monstruos) if (!m.muerto && Math.abs(m.x - h.x) + Math.abs(m.y - h.y) < 22) pisan.push(m);
+  const fViento = (window as any).__sinViento ? 0 : z.tipo === 'mazmorra' ? 0.25 : z.lluvia ? 1.9 : 1;
+  let nMecen = 0, nDoblan = 0;
   // objetos del mapa
   for (const o of z.objetos) {
     if (!cerca(o.cx + 0.5, o.cy + 0.5, 4)) continue;
@@ -322,6 +326,19 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     // (el río es agua: va como suelo y nunca tapa a nadie)
     const prof = meta.plano || o.id === 'par_arroyo' || o.id === 'inf2_rio_lava' ? -1e6 + o.cx + o.cy : pisable(j.zona, o) ? o.cx + o.cy - (o.hw + o.hh) / 2 + 1 : o.cx + o.cy + (o.hw + o.hh) / 2 - 1;
     const alto = q.ay;
+    // lo que es hoja o tela se mece con el viento (un cizallado desde el pie), y el pasto se aparta de quien lo pisa
+    let ciz = 0;
+    if (MECE.test(o.id) && fViento) {
+      const blanda = BLANDA.test(o.id), amp = blanda ? 0.05 : alto > 150 ? 0.011 : 0.028;
+      // ráfagas: una ola lenta que recorre el mapa y, encima, el temblor propio de cada planta
+      const raf = 0.55 + 0.45 * Math.sin(tiempo * 0.5 - (o.cx + o.cy) * 0.11);
+      ciz = (Math.sin(tiempo * 1.5 + o.cx * 0.7 + o.cy * 0.45) + 0.45 * Math.sin(tiempo * 3.3 + o.cx * 1.3)) * amp * raf * fViento + amp * 0.6 * raf * fViento;
+      nMecen++;
+      if (blanda) for (const e of pisan) {
+        const dx = o.cx + 0.5 - e.x, dy = o.cy + 0.5 - e.y, d2 = dx * dx + dy * dy; if (d2 > 1.7) continue;
+        ciz -= (dx - dy >= 0 ? 1 : -1) * 0.42 * (1 - d2 / 1.7); nDoblan++;
+      }
+    }
     items.push({ prof, draw: () => {
       // transparencia si tapa al héroe
       let alfa = 1;
@@ -332,7 +349,9 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
       // lo alto (más de 200 px sobre el ancla) lleva bruma de altura: perspectiva atmosférica
       const br = q.ay > 200 ? conBruma(q, colorBruma) : null;
       if (alfa < 1) ctx.globalAlpha = alfa;
+      if (ciz) { ctx.save(); ctx.transform(1, 0, ciz, 1, -ciz * py, 0); }
       if (br) ctx.drawImage(br, Math.round(px - q.ax), Math.round(py - q.ay)); else dibujar(ctx, q, px, py);
+      if (ciz) ctx.restore();
       if (alfa < 1) ctx.globalAlpha = 1;
       if (esAncla.has(o)) anclasCuadro.push({ q, br, px, py });
       // fuego vivo sobre fogatas, braseros, piras y antorchas
@@ -342,6 +361,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     if (o.dato?.mision && (o.tag === 'pista' || o.tag === 'reliquia' || o.tag === 'altar' || o.tag === 'destino')) items.push({ prof: prof - 0.01, draw: () => haloMision(px, py, tiempo, o.tag === 'destino') });
     if (o.tag === 'pista' || o.tag === 'reliquia' || o.tag === 'altar' || o.tag === 'libro' || o.tag === 'cofre' || o.tag === 'santuario' || o.tag === 'pozo' || o.tag === 'baul' || o.tag === 'romper' || o.id === 'com_piedra_viaje') picks.push({ tipo: 'objeto', ref: o, x0: px - q.ax, y0: py - q.ay, x1: px - q.ax + q.w, y1: py - q.ay + q.h, prof });
   }
+  (window as any).__viento = { mecen: nMecen, doblan: nDoblan };
   // salidas (las puertas/escaleras ya están como objetos; aquí solo la zona de clic)
   // la zona de clic de una salida es chica y centrada: el umbral, no todo el borde (antes se robaba clics para caminar)
   for (const s of z.salidas) { const [px, py] = aPant(...puntoSalida(z, s)); picks.push({ tipo: 'salida', ref: s, x0: px - 26, y0: py - 70, x1: px + 26, y1: py + 12, prof: s.cx + s.cy - 2 }); }
@@ -613,6 +633,10 @@ function rayo(ax: number, ay: number, bx: number, by: number, k: number) {
   for (const [x, y, r] of [[ax, ay, 9], [bx, by, 13]] as [number, number, number][]) { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(255,255,255,${0.9 * k})`); g.addColorStop(0.4, `rgba(150,190,255,${0.5 * k})`); g.addColorStop(1, 'rgba(70,120,255,0)'); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
   ctx.restore();
 }
+const ambJefe: { k: number; m: { x: number; y: number; v: number; f: number; s: number }[] } = { k: 0, m: [] };
+/** Lo que el viento mece: árboles, matas, pasto, estandartes y toldos. Lo BLANDO además se aparta de quien lo pisa. */
+const MECE = /^(arb_(roble|sauce|pino_alto|pino_bajo|abeto|cipres|palmera|arbol_selva|arbol_seco|arbusto|helecho|pasto_alto|flores|juncos)|[a-z0-9]+_estandarte|des2?_(palmera|arbusto)|des_toldo|nie2?_pino|sel2?_(arbol|palmera|helecho|planta|planta_hojas)|par_(juncos_orilla|pasto)|dec_planta|cem_flores_secas|cel_arbol_oro)$/;
+const BLANDA = /^(arb_(arbusto|helecho|pasto_alto|flores|juncos)|dec_planta|par_(juncos_orilla|pasto)|sel2?_(helecho|planta|planta_hojas)|des2?_arbusto|cem_flores_secas)$/;
 function pajaro(x: number, y: number, t: number) {
   const a = Math.sin(t * 18) * 5;
   ctx.strokeStyle = '#0a0a0e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 7, y - a); ctx.lineTo(x, y); ctx.lineTo(x + 7, y - a); ctx.stroke();
@@ -714,6 +738,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (alfaM <= 0.01) return;
   if (alfaM < 1) ctx.globalAlpha = alfaM;
   if (!e.muerto) { const cg = (e as any).congelado > 0; if (cg && !congelados.has(e)) j.efectos.push({ id: 'pfx:fx_congelar', x: e.x, y: e.y, t: 0, dir: 0, escala: Math.max(0.6, Math.min(3, (q.ay * esc) / 75)), z: 0, dur: 3.8 } as Efecto); if (cg) congelados.add(e); else congelados.delete(e); }
+  if (!e.muerto && e.tipo === 'monstruo' && (m.fase ?? 0) >= 1 && (m.def.jefe || m.calidad >= 2) && m.def.sprite !== 'jefe_ozmaren') { ctx.save(); ctx.globalAlpha = 0.22 + 0.2 * Math.sin(tiempo * 6); for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) dibujarTenido(ctx, q, px + ox, py + oy, '#ff2a14', 1, esc); ctx.restore(); }
   // Ozmaren sobre su lava: un borde rojo brillante en la silueta (detrás del cuerpo) para que se despegue del piso
   if (!e.muerto && e.tipo === 'monstruo' && m.def.sprite === 'jefe_ozmaren') { ctx.save(); ctx.globalAlpha = 0.5; for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) dibujarTenido(ctx, q, px + ox, py + oy, '#ff5a20', 1, esc); ctx.restore(); }
   const cambio = e.tipo === 'heroe' ? performance.now() / 1000 - cambioVisible : 9;
@@ -953,7 +978,7 @@ function matizSuelo(j: Juego, bx0: number, bx1: number, by0: number, by1: number
     // el relieve: un campo de alturas suave que la luz (de arriba a la izquierda) convierte en lomas y hondonadas, más
     // unos escalones donde la altura cruza de una terraza a otra. Solo a cielo abierto; en las mazmorras el piso es obra.
     const lomas = campo(9), ondas = campo(3.6), rel = z.tipo === 'mazmorra' ? 0 : z.tipo === 'pueblo' ? 0.6 : 1;
-    const alt = (x: number, y: number) => lomas(x, y) * 0.75 + ondas(x, y) * 0.25;
+    const alt = (x: number, y: number) => (z.alturas ? z.alturas[y * z.W + x] : lomas(x, y) * 0.75 + ondas(x, y) * 0.25);
     for (let y = 0; y < z.H; y++) for (let x = 0; x < z.W; x++) {
       const v = 0.5 * grande(x, y) + 0.32 * medio(x, y) + 0.18 * fino(x, y), c = calor(x, y) - 0.5, o = (y * z.W + x) * 4;
       let luz = 0.74 + 0.4 * v;
@@ -1130,6 +1155,42 @@ function clima(j: Juego, dt: number, t: number) {
   // el clima de pixelfx de la zona; lo que ya dibuja no se repite con las partículas de siempre
   const pf = dibujarClimaPfx(ctx, j, W, H, t);
   if (!(window as any).__sinAmbiente) ambienteAire(j, dt, t, aPant);
+  // el ambiente de la pelea con un jefe: la pantalla se cierra en su color, del piso suben sus motas (brasas, escarcha,
+  // esporas, sombra) y, cuando se enfurece, los bordes laten en rojo
+  { const jf = j.jefe as any, hh = j.heroe;
+    if (jf && !jf.muerto && Math.hypot(jf.x - hh.x, jf.y - hh.y) < 18) {
+      const RGB: Record<string, string> = { fuego: '255,110,40', frio: '140,205,255', rayo: '200,190,255', veneno: '120,220,70', sombra: '150,80,230', luz: '255,225,150', sangre: '220,30,30', fisico: '200,170,130' };
+      const el = (jf.def?.elem as string) ?? 'fisico', rgb = RGB[el] ?? RGB.fisico, furia = (jf.fase ?? 0) >= 1, pulso = 0.5 + 0.5 * Math.sin(t * (furia ? 5.2 : 1.7));
+      ambJefe.k = Math.min(1, ambJefe.k + dt * 0.8);
+      const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.34, W / 2, H / 2, Math.max(W, H) * 0.72);
+      g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(1, `rgba(${furia ? '200,20,10' : rgb},${(0.13 + (furia ? 0.13 * pulso : 0.04 * pulso)) * ambJefe.k})`);
+      ctx.save(); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // motas que suben desde el piso alrededor del jefe
+      const n = E.tactil ? 22 : 40; while (ambJefe.m.length < n) ambJefe.m.push({ x: Math.random() * W, y: H * (0.3 + Math.random() * 0.7), v: 14 + Math.random() * 34, f: Math.random() * 6, s: 1 + Math.floor(Math.random() * 3) });
+      ctx.globalCompositeOperation = el === 'sombra' || el === 'fisico' ? 'source-over' : 'lighter';
+      const baja = el === 'frio';
+      for (const q of ambJefe.m) {
+        q.y += (baja ? q.v : -q.v) * dt * (furia ? 1.7 : 1); q.x += Math.sin(t * 1.3 + q.f) * 14 * dt;
+        if (q.y < -6 || q.y > H + 6) { q.y = baja ? -4 : H + 4; q.x = Math.random() * W; }
+        const a = (0.25 + 0.45 * Math.abs(Math.sin(t * 2.1 + q.f))) * ambJefe.k;
+        ctx.fillStyle = `rgba(${furia && q.s === 1 ? '255,60,30' : rgb},${a})`; ctx.fillRect(Math.round(q.x), Math.round(q.y), q.s, q.s);
+      }
+      ctx.restore();
+    } else { ambJefe.k = 0; } }
+  // sangre en el lente: goterones en los bordes de la pantalla que escurren y se apagan
+  { const le = (j as any).lente as { t: number; sem: number; n: number; color: string } | null;
+    if (le) { const k = (j.t - le.t) / 2.4;
+      if (k >= 1 || k < 0) (j as any).lente = null;
+      else { const hh = (i: number) => { const q = Math.sin(le.sem + i * 91.7) * 43758.5; return q - Math.floor(q); };
+        ctx.save(); ctx.globalAlpha = Math.min(1, (1 - k) * 1.6) * 0.78; ctx.fillStyle = le.color;
+        for (let i = 0; i < le.n; i++) {
+          const lado = i % 4, f = hh(i), m = 14 + hh(i + 40) * 70;
+          const x = lado === 0 ? m : lado === 1 ? W - m : f * W, y = lado === 2 ? m : lado === 3 ? H - m - 90 : f * (H - 120), u = 5 + Math.floor(hh(i + 7) * 4);
+          // el goterón: un racimo de cuadros gruesos, y un hilo que escurre hacia abajo
+          for (let q = 0; q < 7; q++) { const ax = (hh(i * 13 + q) - 0.5) * u * 5, ay = (hh(i * 17 + q) - 0.5) * u * 4, tq = u * (0.6 + hh(i + q * 3)); ctx.fillRect(Math.round(x + ax), Math.round(y + ay), Math.ceil(tq), Math.ceil(tq)); }
+          ctx.fillRect(Math.round(x), Math.round(y), Math.max(2, u >> 1), Math.round(10 + k * (50 + hh(i + 3) * 70)));
+        }
+        ctx.restore(); } } }
   if (z.niebla && !pf.niebla) {
     if (!bancos.length) for (let i = 0; i < 14; i++) bancos.push({ x: R() * W, y: R() * H, r: 80 + R() * 140, v: 6 + R() * 10 });
     ctx.save();

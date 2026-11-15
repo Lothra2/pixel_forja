@@ -5,6 +5,7 @@
 import { ctx, W, H, E } from '../nucleo/lienzo';
 import { ZONAS } from '../mundo/actos';
 import type { Juego, Ent } from '../juego/mundo';
+import { objetoMeta } from '../motor/assets';
 
 type AP = (x: number, y: number) => [number, number];
 const hc = (x: number, y: number) => { const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return h - Math.floor(h); };
@@ -20,9 +21,28 @@ const ratas: { x: number; y: number; vx: number; vy: number; t: number }[] = [];
 const motas: { x: number; y: number; v: number; f: number }[] = [];
 const jirones: { x: number; y: number; r: number; v: number; f: number }[] = [];
 let tChapoteo = 0;
+/** Bandadas de cuervos posadas: por baldosa, cuándo levantaron vuelo (y hacia dónde). */
+const vuelos = new Map<number, { t: number; ang: number }>();
+const enVuelo: { x: number; y: number; z: number; vx: number; vy: number; vz: number; t: number; f: number }[] = [];
+const CUERVOS = /paramo|cementerio|abadia|pueblo|desierto|nieve|fortaleza|ahogada|infierno/;
+/** El cuervo, dibujado punto por punto (X cuerpo, h brillo del lomo, b pico, p pata): posado, alas arriba y alas abajo. */
+const CUERVO: Record<string, string[]> = {
+  posado: ['....XX....', '...XhXXb..', '..XhXXX...', '.XhhXXX...', 'XXXXXXX...', '.XXXXX....', '...p.p....'],
+  arriba: ['XX.......XX', '.XXX...XXX.', '..XXhXhXX..', '...XXXXXb..', '....XXX....'],
+  abajo: ['....XhX....', '..XXXXXXb..', '.XXXXXXXX..', 'XXX.XXX.XXX', 'X.........X'],
+};
+function cuervo(X0: number, Y0: number, ala: number, dir: number) {
+  const m = CUERVO[ala === 0 ? 'posado' : ala > 0 ? 'arriba' : 'abajo'], w = m[0].length, alto = m.length;
+  for (let y = 0; y < alto; y++) for (let x = 0; x < w; x++) {
+    const c = m[y][x]; if (c === '.') continue;
+    ctx.fillStyle = c === 'X' ? '#0a0a10' : c === 'h' ? '#30303e' : c === 'b' ? '#8a8478' : '#1c1a1a';
+    ctx.fillRect(X0 + (dir > 0 ? x - (w >> 1) : (w >> 1) - x), Y0 - alto + y + 1, 1, 1);
+  }
+}
 
 function reiniciar(j: Juego) {
   zonaDe = j.zona.id + ':' + j.zona.semilla;
+  vuelos.clear(); enVuelo.length = 0;
   huellas.length = 0; ultPaso.clear(); chapoteos.length = 0; ratas.length = 0; motas.length = 0; jirones.length = 0;
 }
 const pisoEn = (j: Juego, x: number, y: number) => { const z = j.zona, cx = Math.floor(x), cy = Math.floor(y); if (cx < 0 || cy < 0 || cx >= z.W || cy >= z.H) return null; return z.pisos[Math.floor(cy / 5) * z.tw + Math.floor(cx / 5)]; };
@@ -64,6 +84,66 @@ export function ambienteSuelo(j: Juego, dt: number, t: number, aP: AP, bx0: numb
       if (f < 0.2 || f > 0.8) { const k = f < 0.2 ? f / 0.2 : (f - 0.8) / 0.2; ctx.strokeStyle = `rgba(210,230,250,${0.6 * (1 - k)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x + 2, y, 3 + k * 6, 1.5 + k * 3, 0, 0, Math.PI * 2); ctx.stroke(); }
     }
   }
+  // ---- reflejos: el agua devuelve las luces que tiene cerca (una estela que tiembla) y la sombra de quien pasa por la orilla
+  {
+    const esAgua = (X: number, Y: number) => X >= 0 && Y >= 0 && X < z.tw && Y < z.th && z.pisos[Y * z.tw + X]?.id === 'agua';
+    let hay = false; ctx.save(); ctx.beginPath();
+    for (let by = by0; by <= by1; by++) for (let bx = bx0; bx <= bx1; bx++) if (esAgua(bx, by)) {
+      hay = true; const a = aP(bx * 5, by * 5), b = aP(bx * 5 + 5, by * 5), c = aP(bx * 5 + 5, by * 5 + 5), d = aP(bx * 5, by * 5 + 5);
+      ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath();
+    }
+    let n = 0;
+    if (hay) {
+      ctx.clip();
+      const estela = (px: number, py: number, rgb: string, largo: number, ancho: number, a0: number, sem: number) => {
+        for (let i = 0; i < largo; i += 3) {
+          const k = i / largo, w = ancho * (1 - k * 0.5) * (0.6 + 0.4 * Math.sin(t * 3.1 + i * 0.55 + sem)), dx = Math.sin(t * 2.2 + i * 0.4 + sem) * (1.5 + k * 4);
+          ctx.fillStyle = `rgba(${rgb},${a0 * (1 - k)})`; ctx.fillRect(Math.round(px + dx - w / 2), Math.round(py + 4 + i), Math.max(1, Math.round(w)), 2);
+        }
+        n++;
+      };
+      // luces: cualquier cosa que alumbre a menos de 7 casillas de una baldosa de agua visible
+      for (const o of z.objetos) {
+        if (Math.abs(o.cx - h.x) + Math.abs(o.cy - h.y) > 34) continue;
+        const m = objetoMeta(o.id, o.v); if (!m || !m.luz) continue;
+        const [px, py] = aP(o.cx + 0.5, o.cy + 0.5); if (px < -60 || px > W + 60 || py < -260 || py > H) continue;
+        const hex = m.luz[1], rgb = /^#[0-9a-f]{6}$/i.test(hex) ? `${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)}` : '255,200,120';
+        estela(px, py, rgb, Math.min(150, 50 + m.luz[0] * 0.5), 9, 0.34, o.cx * 3 + o.cy);
+      }
+      // cuerpos: la sombra larga de quien está parado junto al agua
+      const cuerpo = (e: Ent) => { const [px, py] = aP(e.x, e.y); if (px < -40 || px > W + 40 || py < -80 || py > H) return; estela(px, py, '6,10,16', 46 * ((e as any).escala ?? 1), 12 * ((e as any).escala ?? 1), 0.5, e.id); };
+      if (!h.muerto) cuerpo(h);
+      for (const m of j.monstruos) if (!m.muerto && Math.abs(m.x - h.x) + Math.abs(m.y - h.y) < 20) cuerpo(m);
+    }
+    ctx.restore();
+    ((window as any).__amb ??= {}).reflejos = n;
+  }
+  // ---- cuervos posados: en los mundos abiertos picotean en grupos; si te acercas, levantan vuelo graznando el aire
+  if (z.tipo !== 'mazmorra' && CUERVOS.test(tema) && ambienteCfg.nivel >= 1) {
+    let posados = 0;
+    for (let by = by0; by <= by1; by++) for (let bx = bx0; bx <= bx1; bx++) {
+      if (hc(bx * 1.7 + z.semilla % 97, by * 2.3) > 0.045) continue;
+      const p = z.pisos[by * z.tw + bx]; if (!p || p.id === 'agua' || /lava/.test(p.id)) continue;
+      const cx = bx * 5 + 1 + hc(bx, by * 3) * 3, cy = by * 5 + 1 + hc(bx * 3, by) * 3; if (!libre(j, cx, cy)) continue;
+      const key = by * z.tw + bx, v = vuelos.get(key), d = Math.hypot(cx - h.x, cy - h.y), nb = 2 + Math.floor(hc(bx * 5, by * 5) * 4);
+      if (v) { v.t += dt; if (v.t > 50 && d > 16) vuelos.delete(key); continue; }
+      if (d < 4.6 && !h.muerto) {
+        // se espantan: salen en abanico alejándose de ti
+        const ang = Math.atan2(cy - h.y, cx - h.x); vuelos.set(key, { t: 0, ang });
+        for (let i = 0; i < nb; i++) { const a = ang + (hc(bx + i, by) - 0.5) * 1.5, vv = 5 + hc(bx, by + i) * 3; enVuelo.push({ x: cx + (hc(bx + i * 3, by) - 0.5) * 1.6, y: cy + (hc(bx, by + i * 3) - 0.5) * 1.6, z: 0, vx: Math.cos(a) * vv, vy: Math.sin(a) * vv, vz: 38 + hc(i, bx + by) * 30, t: -i * 0.07, f: hc(i * 7, bx) * 6 }); }
+        ((window as any).__amb ??= {}).espantados = (((window as any).__amb.espantados as number) ?? 0) + nb;
+        continue;
+      }
+      for (let i = 0; i < nb; i++) {
+        const x = cx + (hc(bx + i * 3, by) - 0.5) * 1.6, y = cy + (hc(bx, by + i * 3) - 0.5) * 1.6, [px, py] = aP(x, y); if (px < -10 || px > W + 10 || py < -10 || py > H + 10) continue;
+        // picotea: cada tanto baja la cabeza; a veces da un saltito
+        const pic = Math.sin(t * 2.2 + i * 2.1 + bx) > 0.82 ? 2 : 0, sal = Math.sin(t * 0.9 + i * 4 + by) > 0.97 ? 2 : 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(Math.round(px) - 5, Math.round(py), 10, 2);
+        cuervo(Math.round(px), Math.round(py) + pic - sal, 0, hc(i, bx * by) < 0.5 ? -1 : 1); posados++;
+      }
+    }
+    ((window as any).__amb ??= {}).cuervos = posados;
+  }
   // ---- huellas: quien camina sobre nieve, arena o ceniza deja la pisada, que se va borrando
   const marca = (e: Ent) => {
     const p = pisoEn(j, e.x, e.y); if (!p || !/nieve|arena|tierra_infierno/.test(p.id)) return;
@@ -77,6 +157,7 @@ export function ambienteSuelo(j: Juego, dt: number, t: number, aP: AP, bx0: numb
   if (!h.muerto) marca(h);
   for (const m of j.monstruos) if (!m.muerto && Math.abs(m.x - h.x) + Math.abs(m.y - h.y) < 16) marca(m);
   (window as any).__huellas = huellas.length;
+  ((window as any).__amb ??= {}).ratas = ratas.length; (window as any).__amb.chapoteos = chapoteos.length;
   for (let i = huellas.length - 1; i >= 0; i--) {
     const q = huellas[i]; q.t += dt; if (q.t > 16) { huellas.splice(i, 1); continue; }
     const [px, py] = aP(q.x, q.y); if (px < -8 || px > W + 8 || py < -8 || py > H + 8) continue;
@@ -130,7 +211,18 @@ export function ambienteAire(j: Juego, dt: number, t: number, aP: AP) {
   if (zonaDe !== j.zona.id + ':' + j.zona.semilla) reiniciar(j);
   const z = j.zona, h = j.heroe, tema = temaDe(j), poco = ambienteCfg.nivel < 2;
   ctx.save();
+  // ---- cuervos en vuelo: suben aleteando y se pierden por arriba
+  for (let i = enVuelo.length - 1; i >= 0; i--) {
+    const q = enVuelo[i]; q.t += dt; if (q.t < 0) continue;
+    q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; q.vz += 26 * dt;
+    const [px, py] = aP(q.x, q.y), Y = py - q.z; if (q.t > 6 || Y < -30 || px < -40 || px > W + 40) { enVuelo.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.min(1, 1.4 - q.t / 5);
+    cuervo(Math.round(px), Math.round(Y), Math.sin(t * 17 + q.f), q.vx - q.vy < 0 ? -1 : 1);
+    ctx.globalAlpha = 1;
+  }
+  ((window as any).__amb ??= {}).volando = enVuelo.length;
   // ---- neblina baja: jirones anchos y bajos que se arrastran con el viento, anclados al mundo
+  ((window as any).__amb ??= {}).jirones = jirones.length; (window as any).__amb.motas = motas.length;
   if (z.tipo !== 'mazmorra' && BRUMA.test(tema) && !poco) {
     while (jirones.length < (E.tactil ? 5 : 9)) jirones.push({ x: h.x + (Math.random() - 0.5) * 44, y: h.y + (Math.random() - 0.5) * 44, r: 90 + Math.random() * 110, v: 0.5 + Math.random() * 0.9, f: Math.random() * 6 });
     for (const q of jirones) {

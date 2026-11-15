@@ -1,5 +1,6 @@
 import { registrar, type Arma, type Pieza, type V3 } from '../objeto';
 import { MATERIALES } from '../materiales';
+import { girarPiezas } from '../render';
 
 // Decorado propio de cada mundo: ruinas (muro roto, arco partido, columnas truncas, pila de sillares), plantas y hitos
 // (piedra tallada con runa encendida, estatua rota en su plinto). Ocho estilos, los mismos de los riscos de borde
@@ -144,3 +145,24 @@ registrar(
     },
   },
 );
+
+// Escalones de roca: el labio de piedra que marca un desnivel del terreno. El juego los pone a lo largo de las curvas de
+// nivel de cada mundo abierto (donde el piso pintado ya cambia de terraza). Son bajos y se pisan por encima.
+registrar({
+  id: 'dec_escalon', nombre: ['Escalón de roca', 'Rock ledge'], tema: 'comun',
+  variantes: ESTILOS.flatMap((e) => ['a', 'b', 'c'].flatMap((t) => [`${e}_${t}`, `${e}_${t}_y`])), huella: [2, 1], bloquea: false,
+  armar: (v, _f, a) => {
+    const ps: Pieza[] = [], enY = v.endsWith('_y'), base = enY ? v.slice(0, -2) : v, e = estiloDe(base), mat = ROCA[e];
+    adelantar(a, base);
+    // lajas a lo largo, altas por el lado de atrás y vencidas hacia adelante: de frente se lee como un escalón
+    const n = 4 + Math.floor(a.r() * 2);
+    for (let i = 0; i < n; i++) {
+      const x = -15 + (i / (n - 1)) * 30 + (a.r() - 0.5) * 3, w = 8 + a.r() * 4, h = 5 + a.r() * 4;
+      ps.push(a.caja(x, (a.r() - 0.5) * 2, 0, w, 6 + a.r() * 2, h, { mat, giro: (a.r() - 0.5) * 14, tono: (a.r() - 0.5) * 0.12, incl: 10 + a.r() * 8 }));
+      if (a.r() < 0.45) capa(a, ps, e, x, 0, h + 0.5, w * 0.8);
+    }
+    for (let i = 0; i < 4; i++) ps.push(a.elipsoide(-16 + a.r() * 32, 5 + a.r() * 4, 0.8, 2 + a.r() * 2, 1.8, 1.4, { mat, giro: a.r() * 180, tono: (a.r() - 0.5) * 0.1 }));
+    ps.push(suelo(a));
+    return enY ? girarPiezas(ps, 90) : ps;
+  },
+});
