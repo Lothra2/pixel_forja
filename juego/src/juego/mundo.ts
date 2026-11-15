@@ -1937,7 +1937,7 @@ function actualizarHeroe(j: Juego, dt: number) {
   if (h.acc === 'atacar' || h.acc === 'lanzar' || h.acc === 'herido') {
     const cb = (h as any).combo3 as { i: number; t: number[]; remate: boolean } | null;
     if (cb && h.acc === 'atacar') { while (cb.i < cb.t.length && h.t >= cb.t[cb.i]) { resolverHabilidad(j, cb.i, cb); cb.i++; } if (cb.i >= cb.t.length) h.golpeo = true; }
-    else if ((h.acc === 'atacar' || h.acc === 'lanzar') && !h.golpeo && h.t >= h.golpeEn) { h.golpeo = true; resolverHabilidad(j); }
+    else if ((h.acc === 'atacar' || h.acc === 'lanzar') && !h.golpeo && h.t >= h.golpeEn) { h.golpeo = true; resolverHabilidad(j); if (h.acc === 'atacar') romperCerca(j); }
     if (h.t >= h.dur) { h.acc = 'quieto'; h.t = 0; }
     return;
   }
@@ -2122,6 +2122,25 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
   if (m.objetivo) pelear(j, m, m.objetivo, dt, lento);
 }
 
+/**
+ * Lo que se rompe de un golpe: barriles, vasijas, cajas, sacos y canastos que estén al alcance del arma, del lado al que
+ * mira el héroe. Saltan astillas o tiestos, queda libre el paso y a veces había unas monedas adentro.
+ */
+const ROMPIBLE = /barril|jarr|vasij|urna|anfora|caja|saco|canast|cantaro|tonel|heno|pertrech/;
+function romperCerca(j: Juego) {
+  const h = j.heroe, z = j.zona, [vx, vy] = DIR_VEC[h.dir];
+  for (let i = z.objetos.length - 1; i >= 0; i--) {
+    const o = z.objetos[i]; if (o.tag || o.hw * o.hh > 6 || !ROMPIBLE.test(o.id)) continue;
+    const dx = o.cx - h.x, dy = o.cy - h.y, d = Math.hypot(dx, dy); if (d > 2.1 || (d > 0.6 && (dx * vx + dy * vy) / d < 0.25)) continue;
+    z.objetos.splice(i, 1);
+    const x0 = Math.round(o.cx - (o.hw - 1) / 2), y0 = Math.round(o.cy - (o.hh - 1) / 2);
+    if (o.bloquea) for (let y = y0; y < y0 + o.hh; y++) for (let x = x0; x < x0 + o.hw; x++) if (x >= 0 && y >= 0 && x < z.W && y < z.H && z.bloq[y * z.W + x] === 1) z.bloq[y * z.W + x] = 0;
+    const barro = /jarr|vasij|urna|anfora|cantaro/.test(o.id);
+    particulas(j, o.cx, o.cy, 12, 'chispa', barro ? '#b07850' : '#8a6238', 1.5, 14); particulas(j, o.cx, o.cy, 5, 'humo', barro ? '#8a6a50' : '#6a5038', 0.8, 8);
+    efecto(j, 'onda_aterrizaje', o.cx, o.cy, 0, 0.5); sonar(j, 'objeto_cae', o.cx, o.cy, 0.8); j.sacudida = Math.max(j.sacudida, 0.12);
+    if (R() < 0.4) soltar(j, o.cx, o.cy, [{ oro: 2 + Math.floor(R() * (4 + h.d.nivel * 2)) }]);
+  }
+}
 function efectoProy(p: string) { return p === 'fuego' ? 'saeta_fuego' : p === 'hielo' ? 'saeta_hielo' : p === 'veneno' ? 'saeta_veneno' : p === 'sombra' ? 'lanza_hueso' : p === 'luz' ? 'saeta_sagrada' : p === 'lanza' ? 'flecha' : 'flecha'; }
 
 function pelear(j: Juego, m: Monstruo, obj: Ent, dt: number, lento: number) {

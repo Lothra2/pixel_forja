@@ -12,7 +12,8 @@ const { entrar } = require('./comun');
       const pila = [ini]; vis[ini] = 1;
       while (pila.length) { const i = pila.pop(), x = i % W, y = (i - x) / W; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= W || Y >= H) continue; const j = Y * W + X; if (vis[j] || z.bloq[j]) continue; vis[j] = 1; pila.push(j); } }
       const cerca = (x, y) => { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const X = Math.floor(x) + dx, Y = Math.floor(y) + dy; if (X >= 0 && Y >= 0 && X < W && Y < H && vis[Y * W + X]) return true; } return false; };
-      const f = [];
+      const f = []; let libres = 0, vistos = 0; for (let i = 0; i < W * H; i++) if (!z.bloq[i]) { libres++; if (vis[i]) vistos++; }
+      if (vistos < libres * 0.95) f.push(`aislado ${libres - vistos} de ${libres}`);
       for (const sa of z.salidas) if (!cerca(sa.cx, sa.cy)) f.push('salida ' + sa.destino);
       for (const [k, q] of Object.entries(z.entradas)) if (!cerca(q[0], q[1])) f.push('entrada ' + k);
       for (const sp of z.spawns) if (!cerca(sp.cx, sp.cy)) f.push('spawn ' + sp.tipo);

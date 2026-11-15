@@ -23,6 +23,7 @@ import { prepararFuegos, vivosDe, tieneFuegoDoom, dibujarVivos } from './fuego_v
 import { dibujarPfx, alfaCuerpo, efectoPfx, dirPfx } from './pfx';
 import { estadosPfx, usosPfx } from '../juego/pfx_usos';
 import { dibujarAmbiente, dibujarClimaPfx } from './pfx_mundo';
+import { ambienteSuelo, ambienteAire, ambienteCfg } from './ambiente';
 import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde, cometa, llamaViva } from './fuego_especial';
 let dtCuadro = 1 / 60;
 // bruma de altura: cada cuadro alto se pinta una vez con el degradado del color de la niebla de la zona
@@ -243,6 +244,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     ctx.fill();
   }
   if (z.lluvia && z.tipo !== 'mazmorra' && !(window as any).__sinLluvia) lluviaSuelo(j, dt, tiempo, aPant, aMundo);
+  if (!(window as any).__sinAmbiente) ambienteSuelo(j, dt, tiempo, aPant, bx0, bx1, by0, by1);
   // manchas
   for (const m of j.manchas) {
     const [px, py] = aPant(m.x, m.y); if (px < -60 || px > W + 60 || py < -40 || py > H + 40) continue;
@@ -948,8 +950,21 @@ function matizSuelo(j: Juego, bx0: number, bx1: number, by0: number, by1: number
     const g = matizCv.getContext('2d')!, im = g.createImageData(z.W, z.H), r = rng(z.semilla * 31 + 7);
     const campo = (esc: number) => { const gw = Math.ceil(z.W / esc) + 2, gh = Math.ceil(z.H / esc) + 2, gr = Float32Array.from({ length: gw * gh }, () => r()); return (x: number, y: number) => { const fx = x / esc, fy = y / esc, ix = Math.floor(fx), iy = Math.floor(fy), u = fx - ix, v = fy - iy, su = u * u * (3 - 2 * u), sv = v * v * (3 - 2 * v); const a = gr[iy * gw + ix], b = gr[iy * gw + ix + 1], c = gr[(iy + 1) * gw + ix], d = gr[(iy + 1) * gw + ix + 1]; return a + (b - a) * su + (c - a + (a - b - c + d) * su) * sv; }; };
     const grande = campo(11), medio = campo(4.3), fino = campo(1.7), calor = campo(15);
+    // el relieve: un campo de alturas suave que la luz (de arriba a la izquierda) convierte en lomas y hondonadas, más
+    // unos escalones donde la altura cruza de una terraza a otra. Solo a cielo abierto; en las mazmorras el piso es obra.
+    const lomas = campo(9), ondas = campo(3.6), rel = z.tipo === 'mazmorra' ? 0 : z.tipo === 'pueblo' ? 0.6 : 1;
+    const alt = (x: number, y: number) => lomas(x, y) * 0.75 + ondas(x, y) * 0.25;
     for (let y = 0; y < z.H; y++) for (let x = 0; x < z.W; x++) {
-      const v = 0.5 * grande(x, y) + 0.32 * medio(x, y) + 0.18 * fino(x, y), luz = 0.74 + 0.4 * v, c = calor(x, y) - 0.5, o = (y * z.W + x) * 4;
+      const v = 0.5 * grande(x, y) + 0.32 * medio(x, y) + 0.18 * fino(x, y), c = calor(x, y) - 0.5, o = (y * z.W + x) * 4;
+      let luz = 0.74 + 0.4 * v;
+      if (rel) {
+        const a0 = alt(x, y), dx = alt(Math.min(z.W - 1, x + 1), y) - a0, dy = alt(x, Math.min(z.H - 1, y + 1)) - a0;
+        // ladera que mira a la luz, más clara; la que le da la espalda, en sombra
+        luz *= 1 + Math.max(-0.2, Math.min(0.2, -(dx * 1.1 + dy * 1.6) * 4.2)) * rel;
+        // el escalón entre terrazas: sombra corta al pie del que baja, filo claro en el que sube
+        const t0 = Math.floor(a0 * 5), t1 = Math.floor(alt(Math.min(z.W - 1, x + 1), Math.min(z.H - 1, y + 1)) * 5);
+        if (t1 < t0) luz *= 1 - 0.2 * rel; else if (t1 > t0) luz *= 1 + 0.09 * rel;
+      }
       im.data[o] = Math.min(255, 255 * luz * (1 + c * 0.16)); im.data[o + 1] = Math.min(255, 255 * luz); im.data[o + 2] = Math.min(255, 255 * luz * (1 - c * 0.18)); im.data[o + 3] = 255;
     }
     g.putImageData(im, 0, 0);
@@ -1027,7 +1042,7 @@ function detalleBaldosa(z: Juego['zona'], bx: number, by: number): HTMLCanvasEle
 //   2: todo   1: mitad de lluvia, charcos sin ondas y sin bruma   0: además, sin el matiz que multiplica el piso
 export const calidadMundo = { nivel: 2, lento: 0, espera: 0 };
 function gobernar(dt: number) {
-  const c = calidadMundo; if ((window as any).__calidad !== undefined) { c.nivel = (window as any).__calidad; return; }
+  const c = calidadMundo; ambienteCfg.nivel = c.nivel; if ((window as any).__calidad !== undefined) { c.nivel = (window as any).__calidad; return; }
   if (c.nivel <= 0 || dt <= 0) return;
   if (c.espera > 0) { c.espera -= dt; return; }
   if (dt > 1 / 38 && dt < 0.25) c.lento += dt; else c.lento = Math.max(0, c.lento - dt * 2);
@@ -1114,6 +1129,7 @@ function clima(j: Juego, dt: number, t: number) {
   const z = j.zona;
   // el clima de pixelfx de la zona; lo que ya dibuja no se repite con las partículas de siempre
   const pf = dibujarClimaPfx(ctx, j, W, H, t);
+  if (!(window as any).__sinAmbiente) ambienteAire(j, dt, t, aPant);
   if (z.niebla && !pf.niebla) {
     if (!bancos.length) for (let i = 0; i < 14; i++) bancos.push({ x: R() * W, y: R() * H, r: 80 + R() * 140, v: 6 + R() * 10 });
     ctx.save();
