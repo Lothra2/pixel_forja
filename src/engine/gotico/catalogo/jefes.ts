@@ -392,7 +392,7 @@ function jefe(id: string, nombre: [string, string], alto: number, huella: number
       id: `jefe_${id}_${acc}`, nombre: [`${nombre[0]} · ${es}`, `${nombre[1]} · ${en}`], tema: 'monstruos',
       variantes: [...DIRS], cuadros: CUADROS[acc], t: acc === 'quieto' ? 6 : 3, huella: [huella, huella], bloquea: true,
       armar: (v, f) => {
-        const r = armar(acc, acc === 'atacar' && id !== 'verdugo' ? TIEMPO_ATAQUE[f] : f), g = RUMBO[v as Dir], c = Math.cos(rad(g)), s = Math.sin(rad(g));
+        const r = armar(acc, acc === 'atacar' && id !== 'verdugo' ? TIEMPO_ATAQUE[f] : f), g = RUMBO[v as Dir] ?? +String(v).slice(1), c = Math.cos(rad(g)), s = Math.sin(rad(g));
         if (acc === 'morir') {
           // tendido: el tronco no se mete en el piso (se alza todo el cuerpo, salvo lo que ya está pintado en el piso)
           let lo = Infinity;

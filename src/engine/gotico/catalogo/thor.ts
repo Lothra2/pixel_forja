@@ -79,7 +79,7 @@ const Ry = (g: number): M3 => { const c = Math.cos(rad(g)), s = Math.sin(rad(g))
 const Rz = (g: number): M3 => { const c = Math.cos(rad(g)), s = Math.sin(rad(g)); return [[c, s, 0], [-s, c, 0], [0, 0, 1]]; };
 const T = (o: V3, ...ms: M3[]): Tr => ({ o, m: ms.reduce(mm, I3) });
 const RUMBO: Record<Dir, number> = { se: 0, s: 45, so: 90, o: 135, no: 180, n: 225, ne: 270, e: 315 };
-const mundo = (d: Dir): Tr => { const th = rad(RUMBO[d]); return { o: [0, 0, 0], m: [[Math.cos(th), Math.sin(th), 0], [Math.sin(th), -Math.cos(th), 0], [0, 0, 1]] }; };
+const mundo = (d: Dir): Tr => { const th = rad(RUMBO[d] ?? +String(d).slice(1)); return { o: [0, 0, 0], m: [[Math.cos(th), Math.sin(th), 0], [Math.sin(th), -Math.cos(th), 0], [0, 0, 1]] }; };
 const ejesDe = (t: Tr): [V3, V3, V3] => [nor(t.m[0]), nor(t.m[1]), nor(t.m[2])];
 const bT = (t: Tr, c: V3, r: V3, o: OpcComp = {}) => bulto(ap(t, c), r, { ...o, ejes: ejesDe(t) });
 const bG = (t: Tr, c: V3, r: V3, giros: M3[], o: OpcComp = {}) => bulto(ap(t, c), r, { ...o, ejes: ejesDe(cmp(t, T([0, 0, 0], ...giros))) });

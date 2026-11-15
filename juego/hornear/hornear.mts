@@ -77,6 +77,25 @@ if (GRUPOS.includes('j')) for (const jf of JEFES as any[]) {
     for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'j', clave: `jefe_${jf.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
   }
 }
+// el paso fino: caminar (y correr, quien lo tenga) en los ocho rumbos intermedios, 'r22.5', 'r67.5'..., para todo lo que
+// camina. El juego elige el rumbo de 16 más cercano al que lleva de verdad: con ocho el cuerpo iba hasta 30° cruzado
+// respecto de sus pies y parecía patinar. Van al manifiesto junto a los demás cuadros del monstruo (grupo 'f' de atlas).
+const DIRS_FINOS = [1, 3, 5, 7, 9, 11, 13, 15].map((k) => 'r' + k * 22.5);
+if (GRUPOS.includes('f')) {
+  for (const m of [...MONSTRUOS, ...extras.MONSTRUOS_EXTRA]) {
+    if (SOLO && !SOLO.includes(m.id)) continue;
+    for (const acc of ['caminar', 'correr']) { if (acc === 'correr' && !CORREN.has(m.id)) continue; for (const dir of DIRS_FINOS) jobs.push({ id_job: nid++, grupo: 'f', clave: `${m.id}/${acc}/${dir}`, tipo: 'personaje', cuerpo: m.cuerpo, equipo: m.equipo, dir, acc, cuadros: CUADROS[acc] }); }
+  }
+  for (const bs of BESTIAS as any[]) {
+    if (SOLO && !SOLO.includes(bs.id)) continue;
+    for (const acc of ['caminar', 'correr']) { const id = `mon_${bs.id}_${acc}`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue; for (const dir of DIRS_FINOS) jobs.push({ id_job: nid++, grupo: 'f', clave: `${bs.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 }); }
+  }
+  for (const jf of JEFES as any[]) {
+    if (SOLO && !SOLO.includes(jf.id)) continue;
+    const id = `jefe_${jf.id}_caminar`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue;
+    for (const dir of DIRS_FINOS) jobs.push({ id_job: nid++, grupo: 'f', clave: `jefe_${jf.id}/caminar/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
+  }
+}
 const objMeta: Record<string, any> = {};
 const poderMeta: Record<string, any> = {};
 if (GRUPOS.includes('w')) for (const p of PODERES as any[]) {
@@ -163,6 +182,7 @@ for (const g of GRUPOS) {
   // borrar lo viejo del grupo si se hornea completo
   if (!SOLO) {
     if (g === 'm') { const ids = new Set(js.map((j) => j.clave.split('/')[0])); for (const k of Object.keys(man.m ?? {})) if (ids.has(k.split('/')[0])) delete man.m[k]; }
+    else if (g === 'f') { for (const k of Object.keys(man.m ?? {})) if (/\/r[\d.]+$/.test(k)) delete man.m[k]; }
     else if (g !== 'n' && g !== 'b' && g !== 'j') man[g] = {};
     for (const k of Object.keys(man.atlas)) if (k.startsWith(g + '_')) delete man.atlas[k]; }
   const items: { j: Job; f: number; c: any }[] = [];
@@ -205,7 +225,7 @@ for (const g of GRUPOS) {
   }
   for (const [k, fs] of Object.entries(listas)) {
     if (g === 'o') man.o[k] = { f: fs, ...objMeta[k] };
-    else (man[g === 'n' || g === 'b' || g === 'j' ? 'm' : g] ??= {})[k] = fs;
+    else (man[g === 'n' || g === 'b' || g === 'j' || g === 'f' ? 'm' : g] ??= {})[k] = fs;
   }
 }
 // alto de cada cuerpo: el juego lo usa con la zancada del motor para que los pies no patinen

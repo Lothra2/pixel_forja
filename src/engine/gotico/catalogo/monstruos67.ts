@@ -877,7 +877,7 @@ const Rz = (g: number): M3 => { const c = Math.cos(rad(g)), s = Math.sin(rad(g))
 const T = (o: V3, ...ms: M3[]): Tr => ({ o, m: ms.reduce(mm, I3) });
 const RUMBO: Record<Dir, number> = { se: 0, s: 45, so: 90, o: 135, no: 180, n: 225, ne: 270, e: 315 };
 /** El marco del mundo para una dirección del juego (se = 0°, s = 45°, ... e = 315°). */
-const mundo = (d: Dir): Tr => { const th = rad(RUMBO[d]); return { o: [0, 0, 0], m: [[Math.cos(th), Math.sin(th), 0], [Math.sin(th), -Math.cos(th), 0], [0, 0, 1]] }; };
+const mundo = (d: Dir): Tr => { const th = rad(RUMBO[d] ?? +String(d).slice(1)); return { o: [0, 0, 0], m: [[Math.cos(th), Math.sin(th), 0], [Math.sin(th), -Math.cos(th), 0], [0, 0, 1]] }; };
 const ejesT = (t: Tr): [V3, V3, V3] => [nor(t.m[0]), nor(t.m[1]), nor(t.m[2])];
 const bT = (t: Tr, c: V3, r: V3, o: OpcComp = {}) => bulto(apT(t, c), r, { ...o, ejes: ejesT(t) });
 const hT = (t: Tr, a: V3, b: V3, r0: number, r1: number, o: OpcComp = {}) => hueso(apT(t, a), apT(t, b), r0, r1, o);

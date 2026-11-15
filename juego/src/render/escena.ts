@@ -16,6 +16,7 @@ import ZANCADA_MONSTRUO from '../../../src/engine/gotico/datos/zancada_monstruos
 import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
 import { cuadrosVivos, cuadrosFinos, cambioVisible, FINO_RUMBOS } from '../motor/pintor';
+import { energiaSuelo, energiaAire } from './energia';
 import { R, rng } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { calorOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
@@ -311,6 +312,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   }
   // lista de cosas a ordenar
   type Item = { prof: number; draw: () => void };
+  energiaSuelo(ctx, j, aPant);
   const items: Item[] = [];
   const cerca = (x: number, y: number, m = 3) => { const [px, py] = aPant(x, y); return px > -220 * m / 3 && px < W + 220 && py > -60 && py < H + 320; };
   // quién puede apartar el pasto: el héroe y los monstruos vivos que están cerca
@@ -431,6 +433,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   // los de mucha materia (sangre, hueso, humo, flechas) van con alfa normal: sumados se pierden
   const mezclar = (id: string) => { ctx.globalCompositeOperation = LUZ_EFECTO[id]?.mezcla === 'normal' ? 'source-over' : 'lighter'; };
   for (const e of j.efectos) { if ((e as any).partido && !(window as any).__sinPartir) continue; mezclar(e.id); dibujarEfecto(e, tiempo); }
+  energiaAire(ctx, j, aPant, W, H);
   for (const p of j.proyectiles) {
     const [px, py] = aPant(p.x, p.y);
     if (p.arco) { const [ax, ay] = [px, py - p.z * 1.2]; ctx.fillStyle = p.elem === 'frio' ? '#a0e0ff' : p.elem === 'veneno' ? '#80ff60' : '#ffa040'; ctx.beginPath(); ctx.arc(ax, ay, 4, 0, Math.PI * 2); ctx.fill(); continue; }
@@ -722,6 +725,18 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
     if ((m as any).surgiendo > 0) acc = 'morir';
     if (acc === 'lanzar' && m.def.sprite.startsWith('jefe_') && ((m as any).fase ?? 0) >= 1) acc = 'especial' as any;
     fs = framesMonstruo(m.def.sprite, acc, e.dir);
+    // caminando: el rumbo real en 16, si la Forja lo horneó para este cuerpo (los ocho intermedios van como 'r22.5'...)
+    if ((acc === 'caminar' || acc === 'correr') && !(window as any).__sinFino) {
+      const ru = (e as any).rumbo as number | undefined;
+      if (ru !== undefined) {
+        const g = ((ru * 180) / Math.PI + 360) % 360, k = Math.round(g / 22.5) % 16, D8 = ['se', 's', 'so', 'o', 'no', 'n', 'ne', 'e'];
+        if (Math.abs(((k * 22.5 - D8.indexOf(e.dir) * 45 + 540) % 360) - 180) <= 34) {
+          const df = k % 2 ? 'r' + k * 22.5 : D8[k / 2];
+          let ff = cuadrosMonstruo(m.def.sprite, acc, df); if (!ff.length && acc === 'correr') ff = cuadrosMonstruo(m.def.sprite, 'caminar', df);
+          if (ff.length) fs = ff;
+        }
+      }
+    }
   }
   if (!fs.length) return;
   let i: number;
