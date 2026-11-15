@@ -14,7 +14,7 @@ import { shotP } from './footballPremium';
 const joy = { eyes: 'happy' as const, mouth: 'grin' as const };
 const fury = { eyes: 'angry' as const, mouth: 'shout' as const };
 /** Los dos brazos arriba en V, con las palmas abiertas: adelante de la cara de lado y a los costados de la cabeza de frente, que si no la cabeza del chibi los tapa. */
-const up = (w: number): Pose['arms'] => ({ near: { shoulder: 168 + w, elbow: 0, spread: 24 }, far: { shoulder: 172 - w, elbow: 0, spread: 24 } }) as Pose['arms'];
+const up = (w: number): Pose['arms'] => ({ near: { shoulder: 150 + w, elbow: 25, spread: 55 }, far: { shoulder: 154 - w, elbow: 25, spread: 55 } }) as Pose['arms'];
 const palms = { near: 'palma' as const, far: 'palma' as const };
 
 /** El festejo de Nintendo World Cup: corre con los dos brazos arriba, el pecho afuera y gritando. */
@@ -22,7 +22,7 @@ export const nkGoalRun: AnimDef = {
   name: 'nk_goal_run', pack: 'football', fps: 14, loop: true, steady: true, hairTrail: -1,
   events: run.events,
   build: (c) => run.build(c).map((p, i) => ({
-    ...p, torso: -8, load: true, arms: up(i % 4 < 2 ? 8 : -8), hands: palms,
+    ...p, torso: -8, freeArms: true, arms: up(i % 4 < 2 ? 8 : -8), hands: palms,
     head: { ...p.head, tilt: -10 }, face: i % 4 < 2 ? joy : { eyes: 'happy' as const, mouth: 'shout' as const },
   })),
 };
@@ -34,10 +34,10 @@ export const nkGoalJump: AnimDef = {
   build: (c) => {
     const L = c.L, u = c.u;
     const crouch = P(c, { torso: 14, legs: feet(c, 0.6, 0.26), arms: { near: { shoulder: -35, elbow: 30, spread: 20 }, far: { shoulder: -35, elbow: 30, spread: 20 } }, face: joy, support: 'both' });
-    const rise = P(c, { torso: -6, air: 5 * u, load: true, legs: { near: { x: 0.1 * L, y: L - 0.4, toe: 40 }, far: { x: -0.1 * L, y: L - 0.4, toe: 40 } }, arms: up(0), hands: palms, face: { eyes: 'happy', mouth: 'shout' } });
-    const apex = P(c, { torso: -10, air: 10 * u, load: true, legs: { near: { x: 0.32 * L, y: 0.52 * L, toe: 20 }, far: { x: -0.3 * L, y: 0.58 * L, toe: 50 } },
+    const rise = P(c, { torso: -6, air: 5 * u, freeArms: true, legs: { near: { x: 0.1 * L, y: L - 0.4, toe: 40 }, far: { x: -0.1 * L, y: L - 0.4, toe: 40 } }, arms: up(0), hands: palms, face: { eyes: 'happy', mouth: 'shout' } });
+    const apex = P(c, { torso: -10, air: 10 * u, freeArms: true, legs: { near: { x: 0.32 * L, y: 0.52 * L, toe: 20 }, far: { x: -0.3 * L, y: 0.58 * L, toe: 50 } },
       arms: up(8), hands: palms, head: { dx: 0, dy: 0, tilt: -12 }, face: { eyes: 'happy', mouth: 'shout' } });
-    const fall = P(c, { torso: -2, air: 4 * u, load: true, legs: { near: { x: 0.12 * L, y: L - 0.5, toe: 25 }, far: { x: -0.12 * L, y: L - 0.5, toe: 25 } }, arms: up(-6), hands: palms, face: joy });
+    const fall = P(c, { torso: -2, air: 4 * u, freeArms: true, legs: { near: { x: 0.12 * L, y: L - 0.5, toe: 25 }, far: { x: -0.12 * L, y: L - 0.5, toe: 25 } }, arms: up(-6), hands: palms, face: joy });
     return keyed(8, [[0, crouch], [1, crouch, 'out'], [2, rise], [3, apex, 'hold'], [4, apex], [5, fall], [6, crouch, 'out'], [7, crouch]], true);
   },
 };
@@ -45,7 +45,7 @@ export const nkGoalJump: AnimDef = {
 /** Parado con los dos brazos arriba, gritando el gol: se balancea en las rodillas y abre y cierra la boca (el juego lo hace saltar). */
 export const nkBanzai: AnimDef = {
   name: 'nk_banzai', pack: 'football', fps: 10, loop: true,
-  build: (c) => [0, 1, 0, 1].map((b, i) => P(c, { torso: -6 + b * 2, load: true, legs: feet(c, 0.12 + b * 0.22, 0.24), arms: up(i < 2 ? 6 : -6), hands: palms,
+  build: (c) => [0, 1, 0, 1].map((b, i) => P(c, { torso: -6 + b * 2, freeArms: true, legs: feet(c, 0.12 + b * 0.22, 0.24), arms: up(i < 2 ? 6 : -6), hands: palms,
     head: { dx: 0, dy: 0, tilt: i < 2 ? -6 : 6 }, face: b ? joy : { eyes: 'happy' as const, mouth: 'shout' as const }, support: 'both' })),
 };
 
