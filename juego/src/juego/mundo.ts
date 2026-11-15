@@ -513,7 +513,15 @@ function letrero(j: Juego, e: Ent, txt: [string, string], color: string) {
   const h = j.heroe, k = 'L' + txt[0]; if ((h.avisos[k] ?? -99) > j.t - 1.2) return; h.avisos[k] = j.t;
   j.numeros.push({ x: e.x, y: e.y, z: 64 * e.escala, txt: txt[j.idi], color, t: 0 });
 }
-export function efecto(j: Juego, id: string, x: number, y: number, dir = 0, escala = 1, z = 0, dur?: number) { j.efectos.push({ id, x, y, t: 0, dir, escala, z, dur }); }
+/** Efectos que rodean a quien los hace (gritos, ondas, círculos, novas): su mitad de atrás se dibuja detrás del cuerpo. */
+const RODEA = /^(grito_guerra|onda_aterrizaje|circulo_invocacion|nova_escarcha|glifo_trampa|maldicion_sombra|llanto_animas|estallido_enredaderas|pfx:fx_(aviso|circulo|aura|nova|onda|grito))/;
+export function efecto(j: Juego, id: string, x: number, y: number, dir = 0, escala = 1, z = 0, dur?: number) {
+  // lo que nace justo en los pies del héroe (auras, gritos, curación, subir de nivel, el círculo al conjurar) lo envuelve:
+  // se parte en dos por la línea de sus pies, atrás por detrás del cuerpo y adelante por delante. Antes todo el efecto se
+  // pintaba encima y el arco de atrás le cruzaba la espalda.
+  const h = j.heroe, partido = z === 0 && ((!!h && Math.abs(x - h.x) + Math.abs(y - h.y) < 0.05) || RODEA.test(id));
+  j.efectos.push({ id, x, y, t: 0, dir, escala, z, dur, ...(partido ? { partido: true } : {}) } as Efecto);
+}
 export function particulas(j: Juego, x: number, y: number, n: number, tipo: Particula['tipo'], color: string, fuerza = 1, z = 30) {
   if (j.particulas.length > 900) return;
   for (let i = 0; i < n; i++) {

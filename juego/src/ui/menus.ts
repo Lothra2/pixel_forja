@@ -1,5 +1,6 @@
 // Fuera del juego: intro, menú principal, elegir y crear héroe, opciones y pantalla de carga.
-import { cuadrosDeFirma } from '../motor/pintor';
+import { cuadrosDeFirma, retratoVivo, RETRATO_K } from '../motor/pintor';
+import { equipoVisual, firmaVisual, cuerpoDe } from '../juego/heroe';
 import { ctx, W, H, E } from '../nucleo/lienzo';
 import { texto, T, TT, IDI, boton, dentro, envolver, TITULO, fijarIdioma } from './comun';
 import { cuadrosHeroe, cuadrosPiso, variantePiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
@@ -353,7 +354,10 @@ export function menuPrincipal(t: number, hayPartidas: boolean, ultimo?: DatosHer
       const lg = ctx.createRadialGradient(hx, hy, 4, hx, hy, 120); lg.addColorStop(0, `rgba(255,130,40,${0.34 + 0.06 * Math.sin(t * 7)})`); lg.addColorStop(1, 'rgba(255,110,30,0)');
       ctx.fillStyle = lg; ctx.fillRect(hx - 130, hy - 130, 260, 200);
       ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.ellipse(hx, hy, 30 * esc * 0.5, 9 * esc * 0.5, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.imageSmoothingEnabled = false; dibujar(ctx, fs[Math.floor(t * 6) % fs.length], hx, hy, esc);
+      // en grande y con su equipo (retrato pintado a ese tamaño); mientras se pinta, el sprite del juego ampliado
+      const ret = retratoVivo(ultimo.clase, cuerpoDe(ultimo.clase as any), equipoVisual(ultimo as any), firmaVisual(ultimo as any));
+      if (ret?.length) { ctx.imageSmoothingEnabled = true; (ctx as any).imageSmoothingQuality = 'high'; dibujar(ctx, ret[Math.floor(t * 2.6) % ret.length], hx, hy, (esc * 1.25) / RETRATO_K); }
+      else { ctx.imageSmoothingEnabled = false; dibujar(ctx, fs[Math.floor(t * 6) % fs.length], hx, hy, esc); }
     }
   }
   ctx.restore();
@@ -418,7 +422,9 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
     const vivo = cuadrosDeFirma((window as any).__firmaSel ?? '', 'quieto', 's');
     const fs = vivo?.length ? vivo : cuadrosHeroe(hr.clase, 'quieto', 's');
     ctx.fillStyle = `rgba(0,0,0,${0.6 * entra})`; ctx.beginPath(); ctx.ellipse(hx, hy, 26 * esc * 0.62, 8 * esc * 0.62, 0, 0, Math.PI * 2); ctx.fill();
-    if (fs.length) { ctx.save(); ctx.globalAlpha = entra; ctx.imageSmoothingEnabled = false; dibujar(ctx, fs[Math.floor(t * 6) % fs.length], hx, hy + (1 - entra) * 10, esc); ctx.restore(); }
+    const ret = retratoVivo(hr.clase, cuerpoDe(hr.clase as any), equipoVisual(hr as any), firmaVisual(hr as any));
+    if (ret?.length) { ctx.save(); ctx.globalAlpha = entra; ctx.imageSmoothingEnabled = true; (ctx as any).imageSmoothingQuality = 'high'; dibujar(ctx, ret[Math.floor(t * 2.6) % ret.length], hx, hy + (1 - entra) * 10, esc / RETRATO_K); ctx.restore(); }
+    else if (fs.length) { ctx.save(); ctx.globalAlpha = entra; ctx.imageSmoothingEnabled = false; dibujar(ctx, fs[Math.floor(t * 6) % fs.length], hx, hy + (1 - entra) * 10, esc); ctx.restore(); }
     // la brasa a sus pies y las chispas que suben
     for (let c = 0; c < 9; c++) { const u = (t * 0.45 + c * 0.113) % 1, sx = hx + 60 * esc * 0.36 + Math.sin(u * 9 + c * 1.7) * 14; ctx.fillStyle = `rgba(255,${150 + (c % 3) * 30},70,${(1 - u) * 0.85})`; ctx.fillRect(Math.round(sx), Math.round(hy + 6 - u * 130 * esc * 0.4), 2, 2); }
     rombo2(hx + 60 * esc * 0.36, hy + 6, 7 + Math.sin(t * 9) * 1.2, '#ff8a2a'); rombo2(hx + 60 * esc * 0.36, hy + 6, 3.2, '#fff0b0');

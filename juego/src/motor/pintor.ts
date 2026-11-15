@@ -62,7 +62,7 @@ async function escribir(k: string, v: any) {
     const st = d.transaction('sprites', 'readwrite').objectStore('sprites');
     st.put(v, k);
     // guardar solo los últimos 6
-    const ks = st.getAllKeys(); ks.onsuccess = () => { const all = ks.result as string[]; if (all.length > 5) for (const x of all.slice(0, all.length - 5)) if (x !== k) st.delete(x); };
+    const ks = st.getAllKeys(); ks.onsuccess = () => { const ret = k.startsWith('R|'), all = (ks.result as string[]).filter((x) => x.startsWith('R|') === ret); if (all.length > 5) for (const x of all.slice(0, all.length - 5)) if (x !== k) st.delete(x); };
   } catch { /* sin espacio */ }
 }
 
@@ -151,4 +151,38 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
   if (nuevos.size) { vivos = nuevos; firmaVivos = firma; nuevosVivos = null; accListas.clear(); escribir(clave, crudos); recordar(clase, clave); }
   progresoPintura = 1;
   if (nuevos.size) void afinar(crudos);
+}
+
+// ------------------------------------------------------------------ el retrato de los menús
+/** Cuánto más grande que el sprite del juego se pinta el retrato. */
+export const RETRATO_K = 2.6;
+const retratos = new Map<string, Cuadro[] | 'pintando'>();
+/**
+ * El héroe en grande para los menús (la portada y «Tus héroes»), con el equipo que lleva: cuatro cuadros de su reposo
+ * pintados a tamaño de retrato. Devuelve null mientras se pinta (quien llama muestra el sprite chico entretanto).
+ */
+export function retratoVivo(clase: string, cuerpo: any, equipo: any, firma: string): Cuadro[] | null {
+  const clave = 'R|' + VER + '|' + clase + '|' + firma, ya = retratos.get(clave);
+  if (ya) return ya === 'pintando' ? null : ya;
+  retratos.set(clave, 'pintando');
+  void (async () => {
+    const cache = await leer(clave);
+    if (cache?.length) { retratos.set(clave, cache.map(aCuadro)); return; }
+    const n = (accionesClase(clase).find((a) => a[0] === 'quieto') ?? ['quieto', 4])[1], fs = [0, 1, 2, 3].map((i) => (i * n) / 4), out: any[] = new Array(4);
+    let hechos = 0;
+    await new Promise<void>((fin) => {
+      const N = Math.max(1, Math.min(2, (navigator.hardwareConcurrency || 4) - 2));
+      for (let w0 = 0; w0 < N; w0++) {
+        let w: Worker; try { w = new Obrero(); } catch { fin(); return; }
+        let sig = w0;
+        const dar = () => { if (sig < 4) { w.postMessage({ id: clave, cuerpo, equipo, acc: 'quieto', dir: 'so', retrato: RETRATO_K, fs: [fs[sig]], clave: String(sig), calidad: 1 }); sig += N; } else w.terminate(); };
+        w.onmessage = (ev) => { const m = ev.data; if (!m.error && m.out?.[0]) out[+m.clave] = m.out[0]; if (++hechos >= 4) fin(); dar(); };
+        w.onerror = () => { if (++hechos >= 4) fin(); dar(); };
+        dar();
+      }
+    });
+    const buenos = out.filter(Boolean);
+    if (buenos.length) { retratos.set(clave, buenos.map(aCuadro)); (window as any).__retratos = ((window as any).__retratos ?? 0) + 1; escribir(clave, buenos); } else retratos.delete(clave);
+  })();
+  return null;
 }

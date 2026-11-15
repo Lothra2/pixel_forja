@@ -17,6 +17,8 @@ let zonaDe = '';
 const huellas: { x: number; y: number; t: number; ang: number; lado: number; clara: boolean; rgb?: string; vida?: number; k?: number }[] = [];
 /** Pasos que le quedan al héroe con las botas ensangrentadas (pisó donde acaba de caer alguien). */
 let pasosSangre = 0;
+/** Pasos que le quedan con barro en las botas (viene de pisar tierra, barro, nieve o ceniza) y de qué color. */
+let pasosBarro = 0, barroRgb = '30,20,10', barroClaro = false;
 const ultPaso = new Map<number, [number, number, number]>();
 const chapoteos: { x: number; y: number; t: number }[] = [];
 const ratas: { x: number; y: number; vx: number; vy: number; t: number }[] = [];
@@ -153,15 +155,18 @@ export function ambienteSuelo(j: Juego, dt: number, t: number, aP: AP, bx0: numb
   const marca = (e: Ent) => {
     const p = pisoEn(j, e.x, e.y); if (!p) return;
     const esH = e === (h as Ent), bl = BLANDO.find((b) => b[0].test(p.id));
-    const sangre = esH && pasosSangre > 0, mojado = !bl && z.lluvia && z.tipo !== 'mazmorra';
-    if (!bl && !sangre && !mojado) { ultPaso.delete(e.id); return; }
+    const sangre = esH && pasosSangre > 0, mojado = !bl && z.lluvia && z.tipo !== 'mazmorra', barro = esH && !bl && pasosBarro > 0;
+    if (esH && bl) { pasosBarro = 12; barroRgb = bl[1]; barroClaro = /nieve|hielo/.test(p.id); }
+    if (!bl && !sangre && !mojado && !barro) { ultPaso.delete(e.id); return; }
     const u = ultPaso.get(e.id);
     if (!u) { ultPaso.set(e.id, [e.x, e.y, 1]); return; }
     const d = Math.hypot(e.x - u[0], e.y - u[1]); if (d < (esH ? 0.42 : 0.55)) return;
     if (d < 3) {
       const ang = Math.atan2((e.x + e.y - u[0] - u[1]) / 2, e.x - e.y - u[0] + u[1]), tam = Math.min(1.7, Math.max(0.8, (e as any).escala ?? 1));
       if (sangre) { huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: '120,8,6', vida: 26, k: (pasosSangre / 14) * tam }); pasosSangre--; }
-      else if (bl) huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: /nieve|hielo/.test(p.id), rgb: bl[1], vida: 18, k: bl[2] * tam });
+      else if (bl) huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: /nieve|hielo/.test(p.id), rgb: bl[1], vida: 22, k: bl[2] * tam });
+      // sobre piedra, con las botas todavía sucias: la pisada de barro (o de nieve) que se va gastando paso a paso
+      else if (barro) { huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: barroClaro ? '200,214,230' : barroRgb, vida: 16, k: (0.35 + 0.65 * pasosBarro / 12) * tam }); pasosBarro--; }
       else huellas.push({ x: e.x, y: e.y, t: 0, ang, lado: u[2], clara: false, rgb: '8,10,14', vida: 5, k: 0.6 * tam });
     }
     ultPaso.set(e.id, [e.x, e.y, -u[2]]);
@@ -175,8 +180,8 @@ export function ambienteSuelo(j: Juego, dt: number, t: number, aP: AP, bx0: numb
     const q = huellas[i], vida = q.vida ?? 16; q.t += dt; if (q.t > vida) { huellas.splice(i, 1); continue; }
     const [px, py] = aP(q.x, q.y); if (px < -8 || px > W + 8 || py < -8 || py > H + 8) continue;
     // la pisada va a un costado de la línea de marcha (pie izquierdo, pie derecho) y tiene forma de pie: planta y talón
-    const k = q.k ?? 1, ox = -Math.sin(q.ang) * 2.8 * q.lado, oy = Math.cos(q.ang) * 1.4 * q.lado, a = 0.6 * Math.min(1, k) * (1 - q.t / vida) ** 0.8;
-    const fx = px + ox, fy = py + oy, ca = Math.cos(q.ang), sa = Math.sin(q.ang), tm = Math.max(0.8, k);
+    const k = q.k ?? 1, ox = -Math.sin(q.ang) * 2.8 * q.lado, oy = Math.cos(q.ang) * 1.4 * q.lado, a = 0.78 * Math.min(1, k) * (1 - q.t / vida) ** 0.7;
+    const fx = px + ox, fy = py + oy, ca = Math.cos(q.ang), sa = Math.sin(q.ang), tm = Math.max(0.8, k) * 1.2;
     ctx.fillStyle = `rgba(${q.rgb ?? '40,26,12'},${a})`;
     ctx.beginPath(); ctx.ellipse(fx + ca * 1.2 * tm, fy + sa * 0.6 * tm, 2.5 * tm, 1.25 * tm, q.ang, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(fx - ca * 2.4 * tm, fy - sa * 1.2 * tm, 1.3 * tm, 0.9 * tm, q.ang, 0, Math.PI * 2); ctx.fill();

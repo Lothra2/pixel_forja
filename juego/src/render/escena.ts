@@ -414,6 +414,13 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
       ctx.globalAlpha = a; dibujarTenido(ctx, q, px, py, '#000000', 0.6); ctx.globalAlpha = 1;
     } });
   }
+  // los efectos que envuelven un cuerpo van en el orden de profundidad, partidos por la línea de los pies: la mitad de
+  // atrás justo antes del cuerpo y la de adelante justo después
+  const mezclaDe = (id: string) => (LUZ_EFECTO[id]?.mezcla === 'normal' ? 'source-over' : 'lighter');
+  for (const e of j.efectos) if ((e as any).partido && !(window as any).__sinPartir) {
+    const [, py] = aPant(e.x, e.y), mitad = (atras: boolean) => () => { ctx.save(); ctx.beginPath(); ctx.rect(-4000, atras ? py - 4000 : py, W + 8000, 4000); ctx.clip(); ctx.globalCompositeOperation = mezclaDe(e.id) as GlobalCompositeOperation; dibujarEfecto(e, tiempo); ctx.restore(); };
+    items.push({ prof: e.x + e.y - 0.03, draw: mitad(true) }, { prof: e.x + e.y + 0.03, draw: mitad(false) });
+  }
   items.sort((a, b) => a.prof - b.prof);
   for (const it of items) it.draw();
   dibujarFuegosMundo(ctx, tiempo, cam.x, cam.y);
@@ -423,7 +430,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   // los de mucha materia (sangre, hueso, humo, flechas) van con alfa normal: sumados se pierden
   const mezclar = (id: string) => { ctx.globalCompositeOperation = LUZ_EFECTO[id]?.mezcla === 'normal' ? 'source-over' : 'lighter'; };
-  for (const e of j.efectos) { mezclar(e.id); dibujarEfecto(e, tiempo); }
+  for (const e of j.efectos) { if ((e as any).partido && !(window as any).__sinPartir) continue; mezclar(e.id); dibujarEfecto(e, tiempo); }
   for (const p of j.proyectiles) {
     const [px, py] = aPant(p.x, p.y);
     if (p.arco) { const [ax, ay] = [px, py - p.z * 1.2]; ctx.fillStyle = p.elem === 'frio' ? '#a0e0ff' : p.elem === 'veneno' ? '#80ff60' : '#ffa040'; ctx.beginPath(); ctx.arc(ax, ay, 4, 0, Math.PI * 2); ctx.fill(); continue; }
@@ -722,6 +729,17 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   else if ((e as any).estado === 'surgir') return;
   else i = fr(acc, e.t, e.dur, e, acc === 'correr' && e.tipo !== 'heroe' && !cuadrosMonstruo(m.def.sprite, 'correr', e.dir).length ? 'caminar' : acc, fs.length);
   if (e.tipo === 'monstruo' && m.estado === 'surgir') return;
+  // los pies clavados: un cuadro de paso vale para un punto exacto del recorrido, pero se muestra mientras el cuerpo sigue
+  // avanzando (hasta 6 píxeles) y el pie apoyado se corría con él, para volver de un salto en el cuadro siguiente. El
+  // cuerpo se dibuja donde corresponde al cuadro que se ve (a lo sumo media zancada de cuadro atrás o adelante de donde
+  // está): el pie no se mueve del piso y el cuerpo avanza al ritmo de su animación.
+  if (!e.muerto && (acc === 'caminar' || acc === 'correr') && !(window as any).__sinClavo && e.tipo !== 'npc') {
+    const esH = e.tipo === 'heroe', zp = zancadaDe(e, acc === 'correr' && !esH && !cuadrosMonstruo(m.def.sprite, 'correr', e.dir).length ? 'caminar' : acc) / fs.length;
+    if (zp > 0.02 && zp < 0.8) {
+      const resto = ((e.recorrido ?? 0) % zp) - zp / 2, ru = (e as any).rumbo as number | undefined, [vx, vy] = ru !== undefined ? [Math.cos(ru), Math.sin(ru)] : DIR_VEC[e.dir] ?? [0, 0];
+      px -= (vx - vy) * 16 * resto; py -= (vx + vy) * 8 * resto;
+    }
+  }
   const q = fs[Math.min(fs.length - 1, i)];
   const esc = e.escala;
 

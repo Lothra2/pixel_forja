@@ -67,7 +67,11 @@ export function cuadroAtaque(u: number, g: number, n: number, curva: Curva, impa
     // lo canalizado llega pronto a la pose alzada y la sostiene: el último cuadro de carga se guarda para justo antes de soltar
     return Math.min(I - 1, Math.floor((curva === 'canal' ? Math.min(k, x < 0.9 ? 0.74 : 1) : k) * I));
   }
-  const y = Math.min(1, (u - g) / Math.max(0.01, 1 - g));
-  const k = curva === 'pesado' ? 1 - (1 - y) ** 3 : curva === 'seco' ? 1 - (1 - y) ** 2 : curva === 'rapido' ? y ** 0.85 : curva === 'fluido' ? y * y * (3 - 2 * y) : 1 - (1 - y) ** 2;
+  // la vuelta: el golpe se queda clavado un instante en el cuadro de impacto (lo pesado más) y después el arma vuelve a
+  // paso parejo. Antes la vuelta arrancaba a toda velocidad (dos cuadros en el primer quinto) y el impacto duraba un
+  // parpadeo: el hachazo pegaba bien pero se devolvía de un tirón.
+  const y0 = Math.min(1, (u - g) / Math.max(0.01, 1 - g)), clavo = curva === 'pesado' ? 0.2 : curva === 'rapido' ? 0.06 : 0.12;
+  const y = Math.max(0, (y0 - clavo) / (1 - clavo));
+  const k = curva === 'pesado' ? y ** 1.15 : curva === 'seco' ? 1 - (1 - y) ** 1.4 : curva === 'rapido' ? y ** 0.9 : curva === 'fluido' ? y * y * (3 - 2 * y) : 1 - (1 - y) ** 1.5;
   return I + Math.min(n - 1 - I, Math.floor(k * (n - I)));
 }
