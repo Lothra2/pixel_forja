@@ -29,7 +29,7 @@ export function rasgos(m: MarcoCab, o: { piel: string; pelo?: string; mujer: boo
     // (la cara del juego está a ~3.8 cabezas del centro a la altura de los ojos: la cuenca asoma apenas)
     // (la cuenca casi negra juntaba cejas, ojos y barba en un antifaz: todas las caras eran la misma mancha)
     ps.push(elipCab(m, 3.62, s * 1.4, 0.3, [0.4, 0.72, 0.42], o.piel, -0.3));
-    if (!o.brilla) { ps.push(elipCab(m, 3.9, s * 1.42, 0.3, [0.25, 0.5, 0.3], 'cu_ojo_blanco')); ps.push(elipCab(m, 4.02, s * 1.3, 0.28, [0.2, 0.26, 0.26], o.ojo)); }
+    if (!o.brilla) { ps.push(elipCab(m, 3.9, s * 1.46, 0.3, [0.22, 0.36, 0.22], 'cu_ojo_blanco')); ps.push(elipCab(m, 4.02, s * 1.34, 0.28, [0.2, 0.24, 0.24], o.ojo)); }
     // la ceja: una raya de pelo apenas inclinada (más fina en ella); sin pelo, el canto del arco con luz
     const ceja = o.pelo ?? o.piel, tc = o.pelo ? 0 : 0.2;
     ps.push(palo(P(m, 4.05, s * 0.5, 1.25), P(m, 3.72, s * 2.1, o.mujer ? 1.6 : 1.45), (o.mujer ? 0.24 : 0.34) * m.H, { mat: ceja, tono: tc, r1: (o.mujer ? 0.14 : 0.24) * m.H }));
