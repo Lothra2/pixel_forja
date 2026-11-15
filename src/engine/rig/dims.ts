@@ -30,6 +30,13 @@ type Base = Omit<Dims, 'cell' | 'groundY' | 'pivot' | 'u'>;
 
 const PRESETS: Record<PresetName, Record<CellSize, Base>> = {
   // cabezón: la cabeza es casi la mitad de la altura
+  // el rechoncho de Kunio: el mismo cabezón, pero con el cuerpo casi tan ancho como la cabeza y brazos y piernas cortos y
+  // gruesos. Nada se alarga: solo engorda.
+  rechoncho: {
+    32: { headW: 13, torsoW: 9, torsoH: 6, pantsRows: 2, legUpper: 3, legLower: 2, legT: 3, hipSpread: 3, armUpper: 3, armLower: 2, armT: 2, hand: 2, footLen: 4, footH: 1 },
+    48: { headW: 18, torsoW: 14, torsoH: 9, pantsRows: 3, legUpper: 4, legLower: 3, legT: 4, hipSpread: 5, armUpper: 4, armLower: 3, armT: 3, hand: 3, footLen: 5, footH: 2 },
+    64: { headW: 24, torsoW: 18, torsoH: 12, pantsRows: 4, legUpper: 6, legLower: 4, legT: 5, hipSpread: 6, armUpper: 5, armLower: 4, armT: 4, hand: 4, footLen: 7, footH: 3 },
+  },
   chibi: {
     32: { headW: 14, torsoW: 7, torsoH: 6, pantsRows: 2, legUpper: 3, legLower: 2, legT: 2, hipSpread: 3, armUpper: 3, armLower: 2, armT: 2, hand: 2, footLen: 3, footH: 1 },
     48: { headW: 20, torsoW: 10, torsoH: 9, pantsRows: 3, legUpper: 4, legLower: 4, legT: 3, hipSpread: 4, armUpper: 4, armLower: 3, armT: 2, hand: 3, footLen: 4, footH: 2 },
@@ -59,7 +66,8 @@ export function dimsFor(cell: CellSize, p: Proportions): Dims {
     pivot: [cell / 2, cell - 2],
     u: cell / 48,
     headW: r(b.headW, p.head, 7),
-    torsoW: r(b.torsoW, p.build * p.shoulders, 4),
+    // (el rechoncho ya es ancho: el más corpulento no pasa del ancho de su cabeza)
+    torsoW: p.preset === 'rechoncho' ? Math.min(r(b.headW, p.head, 7), r(b.torsoW, p.build * p.shoulders, 4)) : r(b.torsoW, p.build * p.shoulders, 4),
     torsoH: r(b.torsoH, p.height, 4),
     legUpper: r(b.legUpper, p.legs * p.height),
     legLower: r(b.legLower, p.legs * p.height),
