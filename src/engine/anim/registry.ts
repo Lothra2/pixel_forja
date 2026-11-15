@@ -2,7 +2,7 @@ import type { AnimDef, Pack } from './types';
 import { BASIC, swim } from './basic';
 import { FOOTBALL, kick } from './football';
 import { FOOTBALL_NEW } from './footballPremium';
-import { NEKKETSU_FUTBOL, nekketsuFrom } from './nekketsuFutbol';
+import { NEKKETSU_FUTBOL, NEKKETSU_PROPUESTA, nekketsuFrom } from './nekketsuFutbol';
 import { premiumAnim } from './premium';
 import { SPORTS } from './sports';
 import { ATHLETICS_NEW } from './athletics';
@@ -27,7 +27,7 @@ import { type Pose, keyed } from '../rig/pose';
 import type { CustomAnim, Ficha } from '../sheet/ficha';
 import { isHuman } from '../sheet/ficha';
 
-const HUMAN_BASE: AnimDef[] = [...BASIC, kick, ...FOOTBALL, ...FOOTBALL_NEW, ...NEKKETSU_FUTBOL, ...SPORTS.filter((a) => a !== swim), ...ATHLETICS_NEW, ...NET_NEW, ...FIGHT_NEW, ...BRAWL, ...PELEA, ...BURLAS, ...RECORRIDOS, ...TREPAR, ...CALLE, ...PRUEBAS, ...JUDO_NUEVAS, ...ESPECIALES, ...TECNICAS, swim, ...SWIM_NEW, ...RPG, ...SKILLS, ...ENEMY];
+const HUMAN_BASE: AnimDef[] = [...BASIC, kick, ...FOOTBALL, ...FOOTBALL_NEW, ...NEKKETSU_FUTBOL, ...NEKKETSU_PROPUESTA, ...SPORTS.filter((a) => a !== swim), ...ATHLETICS_NEW, ...NET_NEW, ...FIGHT_NEW, ...BRAWL, ...PELEA, ...BURLAS, ...RECORRIDOS, ...TREPAR, ...CALLE, ...PRUEBAS, ...JUDO_NUEVAS, ...ESPECIALES, ...TECNICAS, swim, ...SWIM_NEW, ...RPG, ...SKILLS, ...ENEMY];
 /** con la versión Nekketsu (exagerada) de las del fútbol: ver anim/nekketsuFutbol.ts. Parte de la premium de cada una, si la hay */
 const baseByName = new Map(HUMAN_BASE.map((a) => [a.name, a]));
 export const HUMAN_ANIMS: AnimDef[] = [...HUMAN_BASE, ...nekketsuFrom((n) => premiumAnim(n) ?? baseByName.get(n))];

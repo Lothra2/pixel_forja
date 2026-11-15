@@ -181,3 +181,163 @@ export function nekketsuFrom(find: (name: string) => AnimDef | undefined): AnimD
 }
 
 export const NEKKETSU_FUTBOL: AnimDef[] = [nkGoalRun, nkGoalJump, nkBanzai, nkShoulder, nkPunch, nkHeader, nkSprint, nkShot];
+
+// ---------- Propuesta (nkx_): las acciones que más flojas se veían, dibujadas de cero ----------
+
+const hurt = { eyes: 'hurt' as const, mouth: 'o' as const };
+
+/** La barrida de Nintendo World Cup: se tira casi acostado, una pierna estirada adelante, la otra doblada y un brazo al cielo. */
+export const nkxSlide: AnimDef = {
+  name: 'nkx_slide', pack: 'football', fps: 14, loop: false, hairTrail: -1,
+  events: [{ type: 'impacto', phase: 3 / 8, joint: 'footNear' }],
+  build: (c) => {
+    const L = c.L;
+    const dip = P(c, { torso: 18, legs: feet(c, 0.7, 0.3), arms: { near: { shoulder: -50, elbow: 40 }, far: { shoulder: 60, elbow: 40 } }, face: fury, support: 'both' });
+    const throwIt = P(c, { torso: -34, x: 0.1 * L, legs: { near: { x: 0.85 * L, y: 0.45 * L, toe: -20 }, far: { x: 0.1 * L, y: 0.6 * L, toe: 30 } },
+      arms: { near: { shoulder: 120, elbow: 20, spread: 30 }, far: { shoulder: -60, elbow: 30, spread: 30 } }, face: fury, fit: true });
+    const low = (k: number) => P(c, { torso: -66, x: (0.15 + k * 0.05) * L, freeArms: true, legs: { near: { x: 1.08 * L, y: 0.1 * L, toe: -25 }, far: { x: 0.38 * L, y: 0.3 * L, toe: 20 } },
+      arms: { near: { shoulder: 150 + k * 10, elbow: 10, spread: 40 }, far: { shoulder: -35, elbow: 50, spread: 30 } }, head: { dx: 0, dy: 0, tilt: 10 }, face: fury, fit: true });
+    const sit = P(c, { torso: -28, legs: { near: { x: 0.8 * L, y: 0.2 * L, toe: -20 }, far: { x: 0.5 * L, y: 0.3 * L, toe: 0 } }, arms: { near: { shoulder: -40, elbow: 30 }, far: { shoulder: -50, elbow: 30 } }, face: { eyes: 'angry', mouth: 'line' }, fit: true });
+    return [dip, throwIt, low(0), low(1), low(0), low(1), sit, sit];
+  },
+};
+
+/** El pase de Kunio: abre los brazos, gira el cuerpo entero y barre con la pierna de lado a lado con un saltito. */
+export const nkxPass: AnimDef = {
+  name: 'nkx_pass', pack: 'football', fps: 16, loop: false,
+  events: [{ type: 'impacto', phase: 3 / 8 }],
+  build: (c) => {
+    const L = c.L, u = c.u;
+    const wind = P(c, { torso: -14, legs: { far: { x: 0.2 * L, y: L - 0.4, toe: 0 }, near: { x: -0.7 * L, y: 0.5 * L, toe: 55 } },
+      arms: { near: { shoulder: -80, elbow: 20, spread: 30 }, far: { shoulder: 100, elbow: 10, spread: 65 } }, face: fury, support: 'far' });
+    const hit = P(c, { torso: 20, air: 2 * u, legs: { far: { x: 0.1 * L, y: L - 0.6, toe: 20 }, near: { x: 0.8 * L, y: 0.6 * L, toe: -15 } },
+      arms: { near: { shoulder: 80, elbow: 20, spread: 30 }, far: { shoulder: -70, elbow: 20, spread: 50 } }, face: fury });
+    const through = P(c, { torso: 8, air: 3 * u, legs: { far: { x: -0.1 * L, y: L - 0.7, toe: 30 }, near: { x: 0.9 * L, y: 0.35 * L, toe: -5 } },
+      arms: { near: { shoulder: 110, elbow: 10, spread: 40 }, far: { shoulder: -90, elbow: 10, spread: 50 } }, face: { eyes: 'angry', mouth: 'grin' } });
+    const land = P(c, { torso: 14, legs: { near: { x: 0.4 * L, y: L - 0.5, toe: 0 }, far: { x: -0.35 * L, y: 0.8 * L, toe: 40 } }, arms: { near: { shoulder: 30, elbow: 50 }, far: { shoulder: -20, elbow: 50 } }, face: { eyes: 'angry', mouth: 'line' }, support: 'near' });
+    return [wind, wind, hit, hit, through, through, land, P(c, { torso: 8, legs: feet(c, 0.3, 0.24) })];
+  },
+};
+
+/** Lo mandaron a volar: la cabeza se va atrás, sale por el aire de espaldas con brazos y piernas abiertos, cae, rebota y queda tendido. */
+export const nkxFly: AnimDef = {
+  name: 'nkx_fly', pack: 'football', fps: 12, loop: false,
+  events: [{ type: 'aterriza', phase: 6 / 10 }],
+  build: (c) => {
+    const L = c.L, u = c.u, dir = c.view === 'back' ? 1 : -1;
+    const snap = P(c, { torso: -30, x: -2 * u, head: { tilt: -30, dx: -u, dy: 0 }, legs: { near: { x: -0.4 * L, y: L - 0.6 }, far: { x: 0.25 * L, y: L - 0.5 } },
+      arms: { near: { shoulder: 60, elbow: 20, spread: 60 }, far: { shoulder: 80, elbow: 20, spread: 60 } }, face: hurt, support: 'both' });
+    const air = (h: number, t: number, k: number) => P(c, { torso: t, air: h * u, x: -dir * 0.2 * L, freeArms: true,
+      legs: { near: { x: (0.75 + k * 0.15) * L, y: (0.3 - k * 0.2) * L, toe: -20 }, far: { x: (0.35 - k * 0.2) * L, y: (0.55 + k * 0.15) * L, toe: 10 } },
+      arms: { near: { shoulder: 150 - k * 30, elbow: 15, spread: 55 }, far: { shoulder: 120 + k * 40, elbow: 15, spread: 55 } }, head: { dx: 0, dy: 0, tilt: -20 }, face: hurt, fit: true });
+    const down = P(c, { torso: -88, legs: { near: { x: 0.8 * L, y: 0.1 * L, toe: -30 }, far: { x: 0.7 * L, y: 0.22 * L, toe: -30 } },
+      arms: { near: { shoulder: 130, elbow: 30, spread: 40 }, far: { shoulder: 150, elbow: 30, spread: 40 } }, face: { eyes: 'closed', mouth: 'o' }, fit: true });
+    return [snap, air(5, -50, 1), air(10, -72, -1), air(12, -92, 1), air(9, -100, -1), air(4, -92, 1), down, { ...down, air: 3 * u }, down, down];
+  },
+};
+
+/** Mareado: se va de lado a lado con todo el cuerpo, la cabeza dando vueltas y los brazos colgando. */
+export const nkxDizzy: AnimDef = {
+  name: 'nkx_dizzy', pack: 'football', fps: 9, loop: true,
+  build: (c) => {
+    const u = c.u, L = c.L;
+    return [0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+      const a = (i / 8) * Math.PI * 2, s = Math.sin(a), co = Math.cos(a);
+      return P(c, { torso: s * 18, x: s * 2.5 * u, head: { tilt: s * 26 + co * 8, dx: co * 2 * u, dy: Math.abs(s) * u },
+        legs: { near: { x: (0.3 + s * 0.12) * L, y: L - 0.8 - Math.abs(co), toe: 0 }, far: { x: (-0.3 + s * 0.12) * L, y: L - 0.8 - Math.abs(co), toe: 0 } },
+        arms: { near: { shoulder: -s * 34 + 6, elbow: 14, spread: 18 }, far: { shoulder: -s * 34 - 6, elbow: 14, spread: 18 } },
+        face: { eyes: i % 4 < 2 ? 'hurt' as const : 'closed' as const, mouth: 'o' as const }, support: 'both' });
+    });
+  },
+};
+
+/** Se levanta de un salto, como Kunio: las piernas al cielo, se impulsa, vuela recogido y cae en guardia con el puño cerrado. */
+export const nkxGetup: AnimDef = {
+  name: 'nkx_getup', pack: 'football', fps: 14, loop: false,
+  events: [{ type: 'despegue', phase: 2 / 8 }, { type: 'aterriza', phase: 5 / 8 }],
+  build: (c) => {
+    const L = c.L, u = c.u;
+    const down = P(c, { torso: -88, legs: { near: { x: 0.8 * L, y: 0.1 * L, toe: -30 }, far: { x: 0.7 * L, y: 0.22 * L, toe: -30 } }, arms: { near: { shoulder: 130, elbow: 30 }, far: { shoulder: 150, elbow: 30 } }, face: { eyes: 'angry', mouth: 'line' }, fit: true });
+    const curl = P(c, { torso: -70, legs: { near: { x: 0.2 * L, y: -0.3 * L, toe: -30 }, far: { x: 0.1 * L, y: -0.15 * L, toe: -30 } }, arms: { near: { shoulder: 170, elbow: 60 }, far: { shoulder: 170, elbow: 60 } }, face: fury, fit: true });
+    const kip = P(c, { torso: -30, air: 6 * u, legs: { near: { x: 0.6 * L, y: 0.4 * L, toe: 0 }, far: { x: 0.4 * L, y: 0.5 * L, toe: 0 } }, arms: { near: { shoulder: 60, elbow: 40, spread: 40 }, far: { shoulder: 70, elbow: 40, spread: 40 } }, face: fury });
+    const tuck = P(c, { torso: 10, air: 8 * u, legs: { near: { x: 0.3 * L, y: 0.5 * L, toe: 20 }, far: { x: -0.2 * L, y: 0.55 * L, toe: 40 } }, arms: { near: { shoulder: 40, elbow: 80, spread: 20 }, far: { shoulder: 30, elbow: 80, spread: 20 } }, face: fury });
+    const land = P(c, { torso: 22, legs: feet(c, 0.7, 0.3), arms: { near: { shoulder: 20, elbow: 60, spread: 30 }, far: { shoulder: 10, elbow: 60, spread: 30 } }, face: { eyes: 'angry', mouth: 'line' }, support: 'both' });
+    const fist = P(c, { torso: 4, legs: feet(c, 0.25, 0.28), arms: { near: { shoulder: 60, elbow: 120, spread: 10 }, far: { shoulder: 10, elbow: 80, spread: 10 } }, face: { eyes: 'angry', mouth: 'grin' }, support: 'both' });
+    return [down, curl, kip, tuck, tuck, land, fist, fist];
+  },
+};
+
+/** La estirada del arquero: se agacha hasta el piso y vuela acostado en el aire, entero, el doble de alto, con los brazos por delante. */
+export const nkxKeeperDive: AnimDef = {
+  name: 'nkx_keeper_dive', pack: 'football', fps: 12, loop: false,
+  events: [{ type: 'despegue', phase: 1 / 8 }, { type: 'atrapa', phase: 3 / 8, joint: 'handNear' }, { type: 'aterriza', phase: 6 / 8 }],
+  travel: { ref: 'run', k: [0.3, 1.1, 1.1, 0.9, 0.6, 0.2, 0] },
+  build: (c) => {
+    const L = c.L, u = c.u;
+    const load = P(c, { torso: 30, legs: feet(c, 0.95, 0.34), arms: { near: { shoulder: -50, elbow: 30, spread: 40 }, far: { shoulder: -40, elbow: 30, spread: 40 } }, face: fury, support: 'both' });
+    const launch = P(c, { air: 5 * u, torso: 58, freeArms: true, legs: { near: { x: -0.6 * L, y: 0.6 * L, toe: 55 }, far: { x: -0.78 * L, y: 0.78 * L, toe: 65 } }, arms: { near: { shoulder: 165, elbow: 8 }, far: { shoulder: 158, elbow: 8 } }, face: { eyes: 'wide', mouth: 'open' } });
+    const fly = (h: number, k: number) => P(c, { air: h * u, torso: 88, flat: true, freeArms: true, legs: { near: { x: -0.98 * L, y: (0.04 + k * 0.1) * L, toe: 80 }, far: { x: -0.9 * L, y: (0.22 - k * 0.1) * L, toe: 80 } },
+      arms: { near: { shoulder: 178, elbow: 0 }, far: { shoulder: 172, elbow: 0 } }, hands: palms, face: { eyes: 'wide', mouth: 'open' } });
+    const ground = P(c, { torso: 86, flat: true, freeArms: true, legs: { near: { x: -0.9 * L, y: 0, toe: 80 }, far: { x: -0.8 * L, y: 0.2 * L, toe: 80 } }, arms: { near: { shoulder: 160, elbow: 50 }, far: { shoulder: 150, elbow: 55 } }, face: { eyes: 'closed', mouth: 'grin' } });
+    return [load, launch, fly(10, 0), fly(12, 1), fly(11, 0), fly(6, 1), ground, ground];
+  },
+};
+
+/** El arquero esperando: las piernas muy abiertas, agachado, los brazos abiertos con las palmas, y se balancea de un lado al otro. */
+export const nkxKeeperReady: AnimDef = {
+  name: 'nkx_keeper_ready', pack: 'football', fps: 10, loop: true,
+  build: (c) => [0, 1, 2, 1, 0, -1, -2, -1].map((s) => P(c, { torso: 22, x: s * 1.5 * c.u, legs: feet(c, 0.6 + Math.abs(s) * 0.06, 0.52),
+    arms: { near: { shoulder: 62 + s * 6, elbow: 18, spread: 78 }, far: { shoulder: 62 - s * 6, elbow: 18, spread: 78 } }, hands: palms,
+    head: { dx: 0, dy: 0, tilt: s * 4 }, face: { eyes: 'angry', mouth: 'line' }, support: 'both' })),
+};
+
+/** La baja con el pecho: salta, saca el pecho con los brazos abiertos y cae con el balón muerto. */
+export const nkxTrap: AnimDef = {
+  name: 'nkx_trap', pack: 'football', fps: 12, loop: false,
+  events: [{ type: 'impacto', phase: 2 / 7 }],
+  build: (c) => {
+    const L = c.L, u = c.u;
+    const up = P(c, { torso: -8, air: 3 * u, legs: { near: { x: 0.15 * L, y: L - 0.5, toe: 30 }, far: { x: -0.15 * L, y: L - 0.5, toe: 30 } }, arms: { near: { shoulder: 50, elbow: 20, spread: 70 }, far: { shoulder: 50, elbow: 20, spread: 70 } }, face: { eyes: 'open', mouth: 'line' } });
+    const chest = P(c, { torso: -32, air: 5 * u, legs: { near: { x: 0.3 * L, y: 0.75 * L, toe: 10 }, far: { x: -0.25 * L, y: 0.8 * L, toe: 40 } }, arms: { near: { shoulder: 70, elbow: 10, spread: 85 }, far: { shoulder: 70, elbow: 10, spread: 85 } }, hands: palms, head: { dx: 0, dy: 0, tilt: -14 }, face: { eyes: 'closed', mouth: 'line' } });
+    const give = P(c, { torso: -10, air: 2 * u, legs: { near: { x: 0.2 * L, y: L - 0.5, toe: 20 }, far: { x: -0.2 * L, y: L - 0.5, toe: 20 } }, arms: { near: { shoulder: 40, elbow: 30, spread: 60 }, far: { shoulder: 40, elbow: 30, spread: 60 } }, face: { eyes: 'open', mouth: 'line' } });
+    const land = P(c, { torso: 18, legs: feet(c, 0.55, 0.28), arms: { near: { shoulder: 20, elbow: 50, spread: 25 }, far: { shoulder: 15, elbow: 50, spread: 25 } }, support: 'both' });
+    return [P(c, { torso: 10, legs: feet(c, 0.5, 0.24) }), up, chest, chest, give, land, P(c, { torso: 8, legs: feet(c, 0.3, 0.24) })];
+  },
+};
+
+/** La carcajada de Kunio: se echa atrás, señala al caído con el dedo y se agarra la barriga, saltando de la risa. */
+export const nkxLaugh: AnimDef = {
+  name: 'nkx_laugh', pack: 'football', fps: 10, loop: true,
+  build: (c) => [0, 1, 0, 1, 0, 1, 0, 1].map((b, i) => P(c, { torso: -24 + b * 12, air: b ? 0 : 2 * c.u, legs: feet(c, 0.2 + b * 0.25, 0.3),
+    arms: { near: { shoulder: 86 - b * 10, elbow: 0, spread: 6 }, far: { shoulder: 28, elbow: 115, spread: 8 } }, hands: { near: 'dedo' as const },
+    head: { dx: 0, dy: 0, tilt: -22 + b * 10 }, face: { eyes: 'happy' as const, mouth: i % 2 ? 'grin' as const : 'open' as const }, support: 'both' })),
+};
+
+/** Les metieron un gol: de rodillas, doblado hacia el piso, y le pega al pasto con el puño. */
+export const nkxSad: AnimDef = {
+  name: 'nkx_sad', pack: 'football', fps: 8, loop: true,
+  build: (c) => {
+    const L = c.L;
+    return [0, 0, 1, 2, 2, 1, 0, 0].map((b) => P(c, { torso: 50 + b * 8, legs: { near: { x: 0.45 * L, y: 0.5 * L, toe: 0 }, far: { x: -0.55 * L, y: 0.42 * L, toe: 70 } },
+      arms: { near: { shoulder: 95 - b * 40, elbow: 30 - b * 12, spread: 10 }, far: { shoulder: 20, elbow: 20, spread: 20 } },
+      head: { dx: 0, dy: b * 0.5 * c.u, tilt: 26 + b * 5 }, face: { eyes: 'closed' as const, mouth: b === 2 ? 'o' as const : 'line' as const } }));
+  },
+};
+
+/** Esperando, como Kunio: en guardia, los puños arriba y rebotando en las puntas. */
+export const nkxIdle: AnimDef = {
+  name: 'nkx_idle', pack: 'football', fps: 8, loop: true, steady: true,
+  build: (c) => [0, 1, 2, 1, 0, 1, 2, 1].map((b, i) => P(c, { torso: 10 + b, legs: feet(c, 0.22 + b * 0.1, 0.3),
+    arms: { near: { shoulder: 38 + b * 4, elbow: 105, spread: 14 }, far: { shoulder: 22 + b * 4, elbow: 105, spread: 14 } },
+    head: { dx: 0, dy: 0, tilt: 0 }, face: { eyes: i === 5 ? 'closed' as const : 'angry' as const, mouth: 'line' as const }, support: 'both' })),
+};
+
+/** La carrera de Kunio: el cuerpo adelante, los codos doblados barriendo de adelante a atrás y las rodillas bien arriba, con vuelo. */
+export const nkxRun: AnimDef = {
+  name: 'nkx_run', pack: 'football', fps: 14, loop: true, steady: true, hairTrail: -1,
+  events: run.events,
+  build: (c) => exaggerate(run.build(c), { t: 1.5, a: 2.1, l: 1.28, lean: 14 }).map((p, i) => ({ ...p, air: i % 4 === 1 || i % 4 === 2 ? Math.round(1.5 * c.u) : 0,
+    arms: { near: { ...p.arms.near, elbow: 105 }, far: { ...p.arms.far, elbow: 105 } }, face: { eyes: 'angry' as const, mouth: 'line' as const } })),
+};
+
+export const NEKKETSU_PROPUESTA: AnimDef[] = [nkxSlide, nkxPass, nkxFly, nkxDizzy, nkxGetup, nkxKeeperDive, nkxKeeperReady, nkxTrap, nkxLaugh, nkxSad, nkxIdle, nkxRun];
