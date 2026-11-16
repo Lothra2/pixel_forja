@@ -31,7 +31,7 @@ const jobs: Job[] = [];
 let nid = 0;
 const ACCS = ['quieto', 'caminar', 'correr', 'atacar', 'lanzar', 'herido', 'morir'];
 /** Cada cuánto del cuadro del motor se hornea un cuadro de andar: 0.5 = el doble de cuadros (monstruos y bestias); los jefes, 2/3. */
-const PASO_ANDAR = 0.5, PASO_ANDAR_JEFE = 2 / 3;
+const PASO_ANDAR = 0.5, PASO_ANDAR_JEFE = 0.5;
 const andar = (acc: string) => acc === 'caminar' || acc === 'correr';
 const CORREN = new Set(['necrofago', 'diablillo', 'chacal', 'cazacabezas']);
 if (GRUPOS.includes('h')) for (const h of HEROES) {

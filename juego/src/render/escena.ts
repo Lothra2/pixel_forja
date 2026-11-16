@@ -1,6 +1,6 @@
 // Dibuja la zona: pisos, manchas, objetos y personajes por profundidad, poderes, partículas, luz, niebla y clima.
 import { nuevoCuadroSombras } from './luces';
-import { ctx, W, H, E } from '../nucleo/lienzo';
+import { ctx, W, H, E, ZM, MW, MH } from '../nucleo/lienzo';
 import { Sonido } from '../audio/sonido';
 import { ZONAS } from '../mundo/actos';
 import { puntoSalida } from '../mundo/zona';
@@ -53,9 +53,11 @@ export const cam = { x: 0, y: 0 };
 /** Hacia dónde mira la cámara además del héroe (presentación de un jefe): k de 0 a 1. */
 export const foco = { x: 0, y: 0, k: 0 };
 const camS = { x: 0, y: 0, mx: 0, my: 0 }; let camZona = '';
-export const aPant = (x: number, y: number): [number, number] => [(x - y) * 16 - cam.x + W / 2, (x + y) * 8 - cam.y + (H - 96) / 2];
+export const aPant = (x: number, y: number): [number, number] => [(x - y) * 16 - cam.x + MW / 2, (x + y) * 8 - cam.y + (MH - 96 / ZM) / 2];
+/** Lo mismo en puntos del HUD (fuera del pase del mundo, que va acercado). */
+export const aPantUI = (x: number, y: number): [number, number] => { const [a, b] = aPant(x, y); return [a * ZM, b * ZM]; };
 export const aMundo = (sx: number, sy: number): [number, number] => {
-  const X = sx - W / 2 + cam.x, Y = sy - (H - 96) / 2 + cam.y;
+  const X = sx - MW / 2 + cam.x, Y = sy - (MH - 96 / ZM) / 2 + cam.y;
   return [(Y / 8 + X / 16) / 2, (Y / 8 - X / 16) / 2];
 };
 
@@ -221,7 +223,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   camJefe += ((enPelea ? 1 : 0) - camJefe) * Math.min(1, dt * 1.8);
   if (camJefe > 0.002 && jf) {
     const q0 = cuadrosMonstruo(jf.def.sprite, 'quieto', 's')[0], alto = (q0?.ay ?? 120) * (jf.escala ?? 1);
-    const bx = (jf.x - jf.y) * 16, by = (jf.x + jf.y) * 8, hx = (h.x - h.y) * 16, hy = (h.x + h.y) * 8, c0 = (H - 96) / 2;
+    const bx = (jf.x - jf.y) * 16, by = (jf.x + jf.y) * 8, hx = (h.x - h.y) * 16, hy = (h.x + h.y) * 8, c0 = (H - 96 / ZM) / 2;
     const barra = hud.jefe ? hud.jefe[1] + hud.jefe[3] : 70;
     // y de cámara: el jefe con los pies a (barra + alto + 16) como mínimo; el héroe nunca más abajo que H - 170
     const maxJefe = by + c0 - (barra + alto + 16), minHeroe = hy + c0 - (H - 170);

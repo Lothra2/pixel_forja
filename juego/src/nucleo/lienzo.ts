@@ -2,6 +2,8 @@
 export const lienzo = document.getElementById('juego') as HTMLCanvasElement;
 export const ctx = lienzo.getContext('2d', { alpha: false })!;
 export let W = 960, H = 540, ESCALA = 1;
+/** El acercamiento del mundo (solo el mundo: el HUD y los menús no cambian), el tamaño del mundo visible y los puntos del lienzo por punto lógico. */
+export let ZM = 1, MW = 960, MH = 540, RES = 1;
 
 /** Área segura del teléfono (notch, isla, barra de inicio) en puntos de pantalla, leída de env(safe-area-inset-*). */
 export const SEGURO = { l: 0, r: 0, t: 0, b: 0 };
@@ -15,7 +17,8 @@ function leerSeguro() {
 }
 /**
  * La vista: cuánto se acerca la cámara. 0 = clásica (unos 640 puntos de alto: se ve mucho mundo y el héroe queda chico),
- * 1 = cerca (×1,3), 2 = muy cerca (×1,6: el héroe ocupa casi el doble). Todo el lienzo se acerca, también los menús.
+ * 1 = cerca (×1,3), 2 = muy cerca (×1,6 a ×2: el héroe ocupa casi el doble). Se acerca solo el mundo: el HUD, los paneles y
+ * los menús quedan del mismo tamaño, así sirve igual en el teléfono, donde antes no había lugar para acercar todo el lienzo.
  * Se guarda con las opciones.
  */
 const ZOOMS = [1, 1.3, 1.6];
@@ -29,7 +32,7 @@ export function ajustar() {
   // altura lógica cerca de 620 (como los juegos de 800x600): en pantallas grandes se agranda
   const k0 = Math.max(wh / 640, 0.78);
   // (el acercamiento no pasa de lo que deja un lienzo de 680 × 400: menos que eso los paneles no entran)
-  const zoom = Math.max(1, Math.min(ZOOMS[vista] ?? 1, ww / k0 / 680, wh / k0 / 400));
+  const zoom = 1;
   const k = k0 * zoom;
   const h = wh / k;
   const w = ww / k;
@@ -45,11 +48,39 @@ export function ajustar() {
   const ke = Math.max(1, Math.round((dh * zoom) / 600));
   const entero = ww >= wh && dh / ke >= 480 / zoom && dh / ke <= 780 / zoom && dw / ke >= (zoom > 1 ? 680 : 760) && (ke / dpr >= k * 0.95 || !(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)) && !(window as unknown as { __sinEntero?: boolean }).__sinEntero;
   if (entero) { W = Math.min(1600, Math.floor(dw / ke)); H = Math.floor(dh / ke); ESCALA = ke / dpr; }
-  lienzo.width = W; lienzo.height = H;
+  // el acercamiento: cada punto del mundo ocupa un número entero de puntos del lienzo (2, o los del aparato si la escala
+  // ya es entera), y el lienzo gana resolución para que el mundo acercado salga nítido y no a pixeles desparejos
+  ZM = 1; RES = 1;
+  const zq = ZOOMS[vista] ?? 1;
+  if (zq > 1) {
+    const TOPE = 2.4e6;
+    if (entero) {
+      // T = puntos del aparato por punto del mundo; m = puntos del aparato por punto del lienzo (divide a T y a ke)
+      const nivel = (T0: number): number => {
+        for (let T = T0; T <= ke * 2; T++) for (let m = Math.min(ke, T); m >= 1; m--) if (T % m === 0 && W * H * (ke / m) * (ke / m) <= TOPE) { ZM = T / ke; RES = ke / m; return T; }
+        ZM = 2; RES = 1; return ke * 2;
+      };
+      const T1 = nivel(Math.max(ke + 1, Math.round(ke * zq)));
+      if (vista === 2) nivel(Math.max(T1 + 1, Math.round(ke * zq)));
+    } else { ZM = zq; RES = 2 / zq; if (W * H * RES * RES > TOPE) RES = Math.sqrt(TOPE / (W * H)); }
+  }
+  MW = Math.ceil(W / ZM); MH = Math.ceil(H / ZM);
+  lienzo.width = Math.round(W * RES); lienzo.height = Math.round(H * RES);
   lienzo.style.width = `${entero ? (W * ke) / dpr : Math.floor(W * ESCALA)}px`;
   lienzo.style.height = `${entero ? (H * ke) / dpr : Math.floor(H * ESCALA)}px`;
   lienzo.style.imageRendering = entero || Math.abs(ESCALA - Math.round(ESCALA)) < 0.01 ? 'pixelated' : 'auto';
   ctx.imageSmoothingEnabled = false;
+  ctx.setTransform(RES, 0, 0, RES, 0, 0);
+}
+/** Al empezar cada cuadro: el lienzo dibuja en puntos lógicos aunque tenga más resolución. */
+export function baseLienzo() { ctx.setTransform(RES, 0, 0, RES, 0, 0); ctx.imageSmoothingEnabled = false; }
+/** Dibuja el mundo acercado: adentro, W y H son el tamaño del mundo visible y todo lo que se pinta sale ×ZM. */
+export function enMundo(f: () => void) {
+  if (ZM === 1) { f(); return; }
+  const w0 = W, h0 = H;
+  W = MW; H = MH;
+  ctx.save(); ctx.scale(ZM, ZM);
+  try { f(); } finally { ctx.restore(); W = w0; H = h0; }
 }
 
 export interface Entrada {

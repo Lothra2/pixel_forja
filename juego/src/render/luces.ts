@@ -1,5 +1,6 @@
 // Luces del mundo: cada fuego, proyectil, hechizo y la antorcha del héroe es una luz con color.
 // Sirve para tres cosas: sombras proyectadas de los personajes, reflejo de color en sus cuerpos y destellos.
+import { W, H } from '../nucleo/lienzo';
 import type { Cuadro } from '../motor/assets';
 import { LUZ_EFECTO, intensidadLuz, rgbLuz } from '../../../src/engine/gotico/luz_efectos';
 import { luzDeArma } from '../../../src/engine/gotico/elementos_arma';
@@ -354,7 +355,7 @@ export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: nu
   // los sprites gigantes (jefes) se dibujan con menos sombras y una sola copia: son caros
   const grande = q.w * q.h * esc * esc > 50000;
   // lejos del centro de la pantalla, o pasado el presupuesto, basta la sombra de la luz más fuerte en una sola copia
-  const lejos = Math.hypot(px - ctx.canvas.width / 2, py - ctx.canvas.height * 0.45) > 320;
+  const lejos = Math.hypot(px - W / 2, py - H * 0.45) > 320;
   if ((lejos || gastoSombras > 150) && !grande && e.tipo !== 'heroe') { const s0 = lista[0]; dibujarSombra(ctx, q, px, py, esc, s0.gx, s0.gy, s0.len, Math.min(0.72, s0.a), 1); gastoSombras += 1; return; }
   const usar = grande ? lista.slice(0, 2) : lista;
   for (const s of usar) dibujarSombra(ctx, q, px, py, esc, s.gx, s.gy, s.len, Math.min(0.72, s.a * norm), grande ? 1 : 3);

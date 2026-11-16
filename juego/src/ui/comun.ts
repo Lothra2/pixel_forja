@@ -1,5 +1,5 @@
 // Piezas comunes de la interfaz: texto, marcos de piedra y latón, botones, íconos de objetos y tooltips.
-import { ctx, E } from '../nucleo/lienzo';
+import { ctx, E, W as LW, H as LH } from '../nucleo/lienzo';
 import { objetoMeta, dibujar } from '../motor/assets';
 import { baseDe, colorObj, textoStat, type Objeto } from '../juego/objetos';
 import { reqNivel } from '../juego/heroe';
@@ -279,7 +279,7 @@ export function tooltip(lineas: [string, string][], x: number, y: number, extra?
   w += 24; const h = todas.length * 16 + 12;
   let tx = x - w / 2, ty = y - h - 10;
   if (ty < 4) ty = y + 30;
-  tx = Math.max(4, Math.min(ctx.canvas.width - w - 4, tx)); ty = Math.max(4, Math.min(ctx.canvas.height - h - 4, ty));
+  tx = Math.max(4, Math.min(LW - w - 4, tx)); ty = Math.max(4, Math.min(LH - h - 4, ty));
   ctx.fillStyle = 'rgba(6,5,4,0.92)'; ctx.fillRect(tx, ty, w, h);
   ctx.strokeStyle = '#5a4a30'; ctx.strokeRect(tx + 0.5, ty + 0.5, w - 1, h - 1);
   todas.forEach(([s, c], i) => texto(s, tx + w / 2, ty + 20 + i * 16, { color: c, alin: 'center', tam: 13 }));

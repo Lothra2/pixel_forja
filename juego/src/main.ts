@@ -1,5 +1,5 @@
 // Réquiem de Ceniza: arranque, estados (carga, intro, menú, elegir, crear, juego) y el control del héroe.
-import { ctx, W, H, E, ajustar, instalarEntrada, finCuadro, pulso, alPrimerGesto } from './nucleo/lienzo';
+import { ctx, W, H, E, ZM, ajustar, instalarEntrada, finCuadro, pulso, alPrimerGesto, baseLienzo, enMundo } from './nucleo/lienzo';
 import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto, objetoMeta, liberarAtlas, precargar, marcarCuadro } from './motor/assets';
 import * as Assets from './motor/assets';
 import { pintarHeroe, progresoPintura } from './motor/pintor';
@@ -15,7 +15,7 @@ import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal,
 import { hud, etiquetasMundo } from './ui/hud_rects';
 import { abrirTienda, cerrarPaneles, cambiarAgresivo, rectPanel, compacto } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, entradaFicha, dibujarFicha, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
-import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
+import { dibujarMundo, picks, aMundo, aPantUI, foco, opciones as opcionesRender, type Pick } from './render/escena';
 import { vinetaSangre, dibujarPresentacion, dibujarCaida, DUR_PRESENTA } from './ui/horror';
 import { prepararPortada, esperarPortada, reiniciarPortada, durForjaTitulo, tituloFijo } from './ui/portada';
 import { miedoPaso } from './juego/miedo';
@@ -223,7 +223,7 @@ function etiquetasBotin(jj: Juego) {
   ctx.font = '12px Georgia, serif';
   const lista = jj.suelo.filter((s) => E.alt || dist(s.x, s.y, h.x, h.y) < 9).sort((a, b) => a.y + a.x - b.y - b.x);
   for (const s of lista) {
-    const [px, py] = aPant(s.x, s.y);
+    const [px, py0] = aPantUI(s.x, s.y), py = py0 - 28 * (ZM - 1);
     const txt = s.oro ? `${s.oro} ${T('de oro', 'gold')}` : TT(s.o!.nombre);
     const w = ctx.measureText(txt).width + 10, hh = 16;
     let x = px - w / 2, y = py - 28;
@@ -262,7 +262,7 @@ function controlar(jj: Juego, dt: number) {
   if (ui.izq === 'cofre' && dist(h.x, h.y, (ui as any).cofreX ?? h.x, (ui as any).cofreY ?? h.y) > 4) ui.izq = null;
   if (ui.izq !== 'cofre' && (ui as any).baul) { (ui as any).baul.v = 'cerrado'; (ui as any).baul = null; Sonido.efecto('puerta', { vol: 0.5 }); }
   pickEncima = ui.sobreUI ? null : encimaDe();
-  const [mx, my] = aMundo(E.x, E.y);
+  const [mx, my] = aMundo(E.x / ZM, E.y / ZM);
   // soltar lo que tengo en la mano al piso
   // soltar un arrastre fuera de los paneles no hace nada (ni camina ni tira el objeto al piso)
   if ((ui as any).clicSoltar && E.clicIzq) E.clicIzq = false;
@@ -571,6 +571,7 @@ function cuadro(ahora: number) {
   tiempo += dt; tEstado += dt;
   // si sales del menú antes de que el título termine de forjarse, entra ya la música del menú
   if (musicaMenuEn && estado !== 'menu') { musicaMenuEn = 0; if (estado !== 'intro' && estado !== 'juego') Sonido.musica('menu'); }
+  baseLienzo();
   try { paso(dt); } catch (e) { console.error(e); }
   finCuadro();
   requestAnimationFrame(cuadro);
@@ -667,7 +668,7 @@ function paso(dt: number) {
       break;
     }
     case 'opciones': {
-      if (opcionesDesde === 'juego' && j) { dibujarMundo(j, 0, tiempo); }
+      if (opcionesDesde === 'juego' && j) { const jo = j; enMundo(() => dibujarMundo(jo, 0, tiempo)); }
       const r = dibujarOpciones(tiempo, opcionesDesde !== 'juego');
       dibujarCursor('senalar');
       if (r || pulso('Escape')) { estado = opcionesDesde; if (j) j.idi = IDI; }
@@ -712,9 +713,9 @@ function paso(dt: number) {
       if (caida) { caida.t += dt; if (caida.m) { foco.x = caida.m.x; foco.y = caida.m.y; } foco.k = Math.min(1, caida.t / 0.4); if (caida.t >= DUR_CAIDA) { const c = caida; caida = null; foco.k = 0; empezarCine(c.acto, c.despues); } }
       const dtMundo = presenta ? dt * 0.18 : caida ? dt * 0.22 : dt;
       if (!pausa) { actualizar(jj, dtMundo); historiaPaso(jj, dtMundo); miedoPaso(jj, dtMundo); }
-      dibujarMundo(jj, dtMundo, tiempo);
-      dibujarMiedo(jj, tiempo);
-      dibujarHistoria(jj, tiempo);
+      enMundo(() => { dibujarMundo(jj, dtMundo, tiempo); dibujarMiedo(jj, tiempo); dibujarHistoria(jj, tiempo); });
+      // los blancos del clic salen del pase del mundo: se llevan a puntos del HUD, que es donde está el puntero
+      if (ZM !== 1) for (const p of picks) { p.x0 *= ZM; p.y0 *= ZM; p.x1 *= ZM; p.y1 *= ZM; }
       {
         // el latido bajo el 30 % de vida, más rápido cuanto menos queda, y la pantalla late con él
         const frac = jj.heroe.muerto ? 0 : jj.heroe.vida / jj.heroe.vidaMax;
@@ -805,7 +806,8 @@ async function arrancar() {
   Promise.all([import('./juego/heroe'), import('./juego/objetos'), import('./datos/objetos_datos'), import('./motor/pintor')]).then(([H, O, D, P]) => { (window as any).__T = { H, O, D, P }; });
   (window as any).__ir = (id: string, e: string) => irAZona(id, e);
   (window as any).__historia = { entreacto: (n: number) => empezarEntreacto(n), revelacion: (luegoFinal = false) => empezarRevelacion(luegoFinal), final: () => { estado = 'final'; finalT = 0; }, t: (s: number) => { entreT = s; revT = s; finalT = s; } };
-  (window as any).__aPant = (x: number, y: number) => { const [a, b] = aPant(x, y); const r = (document.getElementById('juego') as HTMLCanvasElement).getBoundingClientRect(); return [r.left + a * r.width / W, r.top + b * r.height / H]; };
+  (window as any).__vista = () => { const c = document.getElementById('juego') as HTMLCanvasElement; return { W, H, ZM, cw: c.width, ch: c.height }; };
+  (window as any).__aPant = (x: number, y: number) => { const [a, b] = aPantUI(x, y); const r = (document.getElementById('juego') as HTMLCanvasElement).getBoundingClientRect(); return [r.left + a * r.width / W, r.top + b * r.height / H]; };
   (window as any).__pick = () => pickEncima && { tipo: pickEncima.tipo, id: (pickEncima.ref as any)?.def?.id };
 }
 function aplicarMusicaEstado() { Sonido.musica(estado === 'intro' ? 'intro' : estado === 'juego' && j ? (MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any) : 'menu'); }
