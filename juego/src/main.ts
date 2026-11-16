@@ -1,4 +1,5 @@
 // Réquiem de Ceniza: arranque, estados (carga, intro, menú, elegir, crear, juego) y el control del héroe.
+import { partidaEnEnlace } from './ui/traslado';
 import { ctx, W, H, E, ZM, ajustar, instalarEntrada, finCuadro, pulso, alPrimerGesto, baseLienzo, enMundo } from './nucleo/lienzo';
 import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto, objetoMeta, liberarAtlas, precargar, marcarCuadro } from './motor/assets';
 import * as Assets from './motor/assets';
@@ -785,6 +786,7 @@ const npcsNombre = (id: string) => NPCS[id]?.nombre ?? ['', ''];
 // ------------------------------------------------------------------ arranque
 async function arrancar() {
   ajustar(); instalarEntrada();
+  void partidaEnEnlace((() => { try { return JSON.parse(localStorage.getItem('marca.opciones') ?? '{}').idioma === 1; } catch { return false; } })());
   cargarOpciones(); cargarPartidas();
   alPrimerGesto(() => { Sonido.iniciar(); aplicarMusicaEstado(); });
   requestAnimationFrame(cuadro);

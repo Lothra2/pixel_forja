@@ -1,6 +1,7 @@
 // Fuera del juego: intro, menú principal, elegir y crear héroe, opciones y pantalla de carga.
 import { cuadrosDeFirma, retratoVivo, RETRATO_K } from '../motor/pintor';
 import { equipoVisual, firmaVisual, cuerpoDe } from '../juego/heroe';
+import { abrirExportar, abrirImportar } from './traslado';
 import { ctx, W, H, E, vistaActual, fijarVista } from '../nucleo/lienzo';
 import { texto, T, TT, IDI, boton, dentro, envolver, TITULO, fijarIdioma } from './comun';
 import { cuadrosHeroe, cuadrosPiso, variantePiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
@@ -505,7 +506,7 @@ const opcP = { agarra: '' };
 export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
   const chico = H < 520;
   if (fondo) { fondoVigilia(t, W / 2, H * 0.62, 320); brasas(t, 22); } else { ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fillRect(0, 0, W, H); }
-  const fh = chico ? 30 : 44, w = Math.min(W - 24, chico ? 560 : 600), cab = chico ? 44 : 74, pie = chico ? 46 : 70, h = Math.min(H - 12, cab + fh * 8 + (chico ? 10 : 34) + pie), x = Math.round(W / 2 - w / 2), y = Math.round(H / 2 - h / 2);
+  const fh = chico ? 30 : 44, w = Math.min(W - 24, chico ? 560 : 600), cab = chico ? 44 : 74, pie = chico ? 46 : 70, h = Math.min(H - 12, cab + fh * 9 + (chico ? 10 : 34) + pie), x = Math.round(W / 2 - w / 2), y = Math.round(H / 2 - h / 2);
   const pant: Record<string, [number, number]> = ((window as any).__pantalla = {});
   // la losa: esquinas cortadas, hierro oscuro, doble filo de oro y rombos en los cuatro costados
   const c = 14, losa = (m: number) => { ctx.beginPath(); ctx.moveTo(x + c + m, y + m); ctx.lineTo(x + w - c - m, y + m); ctx.lineTo(x + w - m, y + c + m); ctx.lineTo(x + w - m, y + h - c - m); ctx.lineTo(x + w - c - m, y + h - m); ctx.lineTo(x + c + m, y + h - m); ctx.lineTo(x + m, y + h - c - m); ctx.lineTo(x + m, y + c + m); ctx.closePath(); };
@@ -559,6 +560,9 @@ export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
   const completa = typeof document !== 'undefined' && !!document.fullscreenElement;
   const lp = llave(T('Pantalla', 'Screen'), [T('Ventana', 'Window'), T('Completa', 'Full')], completa ? 1 : 0, 'pantalla');
   if (lp !== null) { E.clicIzq = false; try { if (lp === 0) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch { /* nada */ } }
+  // la partida: sacarla como código o traerla de otro sitio (el guardado es de cada dirección web)
+  const lt = llave(T('Partida', 'Save'), [T('Sacar', 'Export'), T('Traer', 'Import')], -1, 'partida');
+  if (lt !== null) { E.clicIzq = false; E.izq = false; if (lt === 0) void abrirExportar(IDI === 1); else abrirImportar(IDI === 1); }
   const bw = chico ? 150 : 200, bh = chico ? 30 : 40;
   pant.volver = [W / 2, y + h - pie / 2 - (chico ? 0 : 4)];
   if (boton(T('Volver', 'Back'), W / 2 - bw / 2, y + h - pie / 2 - bh / 2 - (chico ? 0 : 4), bw, bh, { tam: chico ? 14 : 16 })) { E.clicIzq = false; return 'volver'; }
